@@ -87,6 +87,8 @@ class Event(Base):
     end_date: Mapped[datetime] = mapped_column(DateTime)
     visibility: Mapped[str] = mapped_column(String(20), default="PUBLIC")  # PUBLIC, MEMBERS_ONLY, INVITE_ONLY
     capacity: Mapped[int] = mapped_column(Integer, default=0)  # 0 = unlimited
+    is_paid: Mapped[bool] = mapped_column(Boolean, default=False)
+    fee_amount: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), nullable=True)
     
     registrations: Mapped[List["EventRegistration"]] = relationship(back_populates="event", cascade="all, delete-orphan")
 
@@ -97,7 +99,8 @@ class EventRegistration(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"))
     samaj_id: Mapped[str] = mapped_column(ForeignKey("users.samaj_id", ondelete="CASCADE"))
-    status: Mapped[str] = mapped_column(String(20), default="CONFIRMED")  # CONFIRMED, WAITLISTED, CANCELLED
+    payment_mode: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # ONLINE, OFFLINE
+    payment_status: Mapped[str] = mapped_column(String(20), default="PENDING")  # PENDING, COMPLETED, FAILED
     
     event: Mapped["Event"] = relationship(back_populates="registrations")
     user: Mapped["User"] = relationship(back_populates="event_registrations")
@@ -152,6 +155,11 @@ class Payment(Base):
     gateway_reference: Mapped[Optional[str]] = mapped_column(String(100), unique=True, index=True, nullable=True)
     payment_type: Mapped[str] = mapped_column(String(20))  # ONLINE, CASH
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    samaj_id: Mapped[Optional[str]] = mapped_column(ForeignKey("users.samaj_id", ondelete="SET NULL"), nullable=True)
+    purpose: Mapped[str] = mapped_column(String(20), default="DONATION")  # EVENT, BOOKING, DONATION
+    reference_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+    user: Mapped[Optional["User"]] = relationship("User")
     
     refunds: Mapped[List["Refund"]] = relationship(back_populates="payment", cascade="all, delete-orphan")
 

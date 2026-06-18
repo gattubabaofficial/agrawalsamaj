@@ -77,7 +77,7 @@ export default function Dashboard() {
   const [members, setMembers] = useState<any[]>([]); 
   const [bookings, setBookings] = useState<any[]>([]); 
   const [events, setEvents] = useState<any[]>([]);
-  const [newEvent, setNewEvent] = useState<{title: string, description: string, location: string, start_date: Date | null, end_date: Date | null, visibility: string, capacity: number}>({ title: "", description: "", location: "", start_date: new Date(), end_date: new Date(), visibility: "PUBLIC", capacity: 100 });
+  const [newEvent, setNewEvent] = useState<{title: string, description: string, location: string, start_date: Date | null, end_date: Date | null, visibility: string, capacity: number, is_paid: boolean, fee_amount: number}>({ title: "", description: "", location: "", start_date: new Date(), end_date: new Date(), visibility: "PUBLIC", capacity: 100, is_paid: false, fee_amount: 0 });
   const [myFamily, setMyFamily] = useState<any>(null); 
   const [myPrivacy, setMyPrivacy] = useState({ phone: false, email: false, address: false });
   const [addressForm, setAddressForm] = useState({ address_text: "", colony: "", area: "" });
@@ -86,6 +86,7 @@ export default function Dashboard() {
   const [newFamSamajId, setNewFamSamajId] = useState("");
   const [newFamRelation, setNewFamRelation] = useState("Son");
   const [newFamName, setNewFamName] = useState(""); // For registration
+  const [pendingPayments, setPendingPayments] = useState<any[]>([]);
 
   const loadData = async (token: string, role: string) => {
     try {
@@ -103,6 +104,11 @@ export default function Dashboard() {
       if (role === "ADMIN" || role === "MEMBER") {
         const resMembers = await fetch("http://127.0.0.1:8000/api/v1/members", { headers: hdrs });
         if (resMembers.ok) setMembers(await resMembers.json());
+      }
+      
+      if (role === "ADMIN") {
+        const resPendingPayments = await fetch("http://127.0.0.1:8000/api/v1/payments/pending", { headers: hdrs });
+        if (resPendingPayments.ok) setPendingPayments(await resPendingPayments.json());
       }
 
       const resEvents = await fetch("http://127.0.0.1:8000/api/v1/events", { headers: hdrs });
@@ -298,13 +304,32 @@ export default function Dashboard() {
       });
       if (res.ok) {
         alert("Event successfully created!");
-        setNewEvent({ title: "", description: "", location: "", start_date: new Date(), end_date: new Date(), visibility: "PUBLIC", capacity: 100 });
+        setNewEvent({ title: "", description: "", location: "", start_date: new Date(), end_date: new Date(), visibility: "PUBLIC", capacity: 100, is_paid: false, fee_amount: 0 });
         loadData(token as string, userRole);
       } else {
         alert("Failed to create event.");
       }
     } catch (error) {
       alert("Error communicating with server.");
+    }
+  };
+
+  const handleVerifyPayment = async (paymentId: number, status: string) => {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/api/v1/payments/${paymentId}/verify`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) {
+        alert(`Payment marked as ${status}`);
+        loadData(token as string, userRole);
+      } else {
+        alert("Failed to verify payment.");
+      }
+    } catch (e) {
+      alert("Error verifying payment.");
     }
   };
 
@@ -1200,6 +1225,13 @@ export default function Dashboard() {
                   <option value="MEMBERS_ONLY">Members Only</option>
                 </select>
                 <input required type="number" placeholder="Capacity" className="p-3 border border-gray-200 rounded-xl" value={newEvent.capacity || ""} onChange={e => setNewEvent({...newEvent, capacity: parseInt(e.target.value) || 0})} />
+                <label className="flex items-center gap-2 p-3 border border-gray-200 rounded-xl bg-white">
+                  <input type="checkbox" checked={newEvent.is_paid} onChange={e => setNewEvent({...newEvent, is_paid: e.target.checked})} className="w-5 h-5 text-bhagwa rounded" />
+                  <span className="font-semibold text-gray-700">Paid Event</span>
+                </label>
+                {newEvent.is_paid && (
+                  <input required type="number" placeholder="Fee Amount (₹)" className="p-3 border border-gray-200 rounded-xl" value={newEvent.fee_amount || ""} onChange={e => setNewEvent({...newEvent, fee_amount: parseFloat(e.target.value) || 0})} />
+                )}
                 <textarea required placeholder="Description" className="p-3 border border-gray-200 rounded-xl md:col-span-2" rows={3} value={newEvent.description} onChange={e => setNewEvent({...newEvent, description: e.target.value})} />
                 <button type="submit" className="md:col-span-2 bg-bhagwa text-white font-bold py-3 rounded-xl hover:bg-orange-600 shadow-md shadow-bhagwa/20">Publish Event</button>
               </form>
@@ -1216,10 +1248,33 @@ export default function Dashboard() {
                     </div>
                     <p className="text-xs text-bhagwa font-bold">{new Date(ev.start_date).toLocaleString()} — {new Date(ev.end_date).toLocaleString()}</p>
                     <p className="text-xs text-gray-700 font-semibold">{ev.location} &bull; Capacity: {ev.capacity}</p>
+                    {ev.is_paid ? <p className="text-xs font-bold text-green-600">Paid Event (₹{ev.fee_amount})</p> : <p className="text-xs font-bold text-gray-500">Free Event</p>}
                     <p className="text-sm mt-2 text-gray-600">{ev.description}</p>
                   </div>
                 ))}
                 {events.length === 0 && <p className="text-gray-500 text-sm font-medium">No events found in catalog.</p>}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-4 mt-6 border-t border-gray-200 pt-6">
+              <h3 className="font-extrabold text-lg text-gray-900">Pending Offline Payments</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {pendingPayments.map((pay: any) => (
+                  <div key={pay.id} className="border border-gray-200 bg-white rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+                    <div className="flex justify-between">
+                      <span className="font-bold text-gray-800">Payment #{pay.id}</span>
+                      <span className="text-xs font-bold bg-orange-100 text-orange-700 px-2 py-1 rounded-md">PENDING</span>
+                    </div>
+                    <p className="text-sm text-gray-600">User ID: <span className="font-semibold">{pay.samaj_id}</span></p>
+                    <p className="text-sm text-gray-600">Amount: <span className="font-bold text-gray-900">₹{pay.amount}</span></p>
+                    <p className="text-sm text-gray-600">Purpose: <span className="font-semibold">{pay.purpose}</span> (Ref: {pay.reference_id})</p>
+                    <div className="flex gap-2 mt-2">
+                      <button onClick={() => handleVerifyPayment(pay.id, "COMPLETED")} className="flex-1 bg-green-600 text-white text-sm font-bold py-2 rounded-xl hover:bg-green-700">Approve</button>
+                      <button onClick={() => handleVerifyPayment(pay.id, "FAILED")} className="flex-1 bg-red-50 text-red-600 text-sm font-bold py-2 rounded-xl hover:bg-red-100">Reject</button>
+                    </div>
+                  </div>
+                ))}
+                {pendingPayments.length === 0 && <p className="text-gray-500 text-sm font-medium">No pending offline payments.</p>}
               </div>
             </div>
           </div>

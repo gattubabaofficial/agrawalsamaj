@@ -10,8 +10,8 @@ import logging
 from app.config import settings
 from app.database import get_db
 from app.core.dependencies import get_current_user, RoleChecker
-from app.models.all_models import User, Family, Booking, Event, Donation, ChatGroup, Payment, Refund, Address
-from app.schemas.all_schemas import UserResponse, BookingResponse, BookingCreate, EventResponse, DonationResponse, DonationCreate, EventCreate, AddressUpdate
+from app.models.all_models import User, Family, Booking, Event, Donation, ChatGroup, Payment, Refund, Address, EventRegistration
+from app.schemas.all_schemas import UserResponse, BookingResponse, BookingCreate, EventResponse, DonationResponse, DonationCreate, EventCreate, AddressUpdate, EventRegistrationCreate, EventRegistrationResponse, PaymentResponse, PaymentVerifyRequest
 from sqlalchemy import func
 from app.modules.auth.router import router as auth_router
 
@@ -179,7 +179,7 @@ async def list_events(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Event))
     return result.scalars().all()
 
-@app.post(f"{settings.API_V1_STR}/events")
+@app.post(f"{settings.API_V1_STR}/events", response_model=EventResponse)
 async def create_event(
         payload: EventCreate,
         db: AsyncSession = Depends(get_db),
@@ -192,11 +192,118 @@ async def create_event(
         start_date=payload.start_date, 
         end_date=payload.end_date,
         visibility=payload.visibility,
-        capacity=payload.capacity
+        capacity=payload.capacity,
+        is_paid=payload.is_paid,
+        fee_amount=payload.fee_amount
     )
     db.add(event)
     await db.commit()
+    await db.refresh(event)
     return event
+
+@app.get(f"{settings.API_V1_STR}/events/my-registrations", response_model=List[EventRegistrationResponse])
+async def get_my_event_registrations(
+        db: AsyncSession = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    result = await db.execute(select(EventRegistration).filter(EventRegistration.samaj_id == current_user.samaj_id))
+    return result.scalars().all()
+
+@app.post(f"{settings.API_V1_STR}/events/{{event_id}}/register", response_model=EventRegistrationResponse)
+async def register_event(
+        event_id: int,
+        payload: EventRegistrationCreate,
+        db: AsyncSession = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    # Check if already registered
+    result = await db.execute(
+        select(EventRegistration).filter(
+            EventRegistration.samaj_id == current_user.samaj_id,
+            EventRegistration.event_id == event_id
+        )
+    )
+    if result.scalars().first():
+        raise HTTPException(status_code=400, detail="Already registered for this event.")
+
+    # Fetch event
+    event_result = await db.execute(select(Event).filter(Event.id == event_id))
+    event = event_result.scalars().first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found.")
+
+    if not event.is_paid:
+        payment_mode = "FREE"
+        payment_status = "COMPLETED"
+    else:
+        payment_mode = payload.payment_mode
+        payment_status = "COMPLETED" if payment_mode == "ONLINE" else "PENDING"
+
+    # Create registration
+    registration = EventRegistration(
+        event_id=event.id,
+        samaj_id=current_user.samaj_id,
+        payment_mode=payment_mode,
+        payment_status=payment_status
+    )
+    db.add(registration)
+
+    # If it's a paid event, track payment
+    if event.is_paid and event.fee_amount:
+        payment = Payment(
+            amount=event.fee_amount,
+            currency="INR",
+            status=payment_status,
+            payment_type=payload.payment_mode,
+            samaj_id=current_user.samaj_id,
+            purpose="EVENT",
+            reference_id=event.id
+        )
+        db.add(payment)
+
+    await db.commit()
+    await db.refresh(registration)
+    return registration
+
+@app.get(f"{settings.API_V1_STR}/payments/pending", response_model=List[PaymentResponse])
+async def get_pending_payments(
+        db: AsyncSession = Depends(get_db),
+        admin_user: User = Depends(RoleChecker(["ADMIN"]))
+):
+    result = await db.execute(
+        select(Payment).filter(Payment.status == "PENDING")
+    )
+    return result.scalars().all()
+
+@app.put(f"{settings.API_V1_STR}/payments/{{payment_id}}/verify", response_model=PaymentResponse)
+async def verify_payment(
+        payment_id: int,
+        payload: PaymentVerifyRequest,
+        db: AsyncSession = Depends(get_db),
+        admin_user: User = Depends(RoleChecker(["ADMIN"]))
+):
+    result = await db.execute(select(Payment).filter(Payment.id == payment_id))
+    payment = result.scalars().first()
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found.")
+
+    payment.status = payload.status
+    
+    # If payment was for an event, update registration
+    if payment.purpose == "EVENT" and payment.reference_id:
+        reg_result = await db.execute(
+            select(EventRegistration).filter(
+                EventRegistration.event_id == payment.reference_id,
+                EventRegistration.samaj_id == payment.samaj_id
+            )
+        )
+        registration = reg_result.scalars().first()
+        if registration:
+            registration.payment_status = payload.status
+
+    await db.commit()
+    await db.refresh(payment)
+    return payment
 
 
 # ==============================================================================

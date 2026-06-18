@@ -147,10 +147,24 @@ class EventCreate(BaseModel):
     end_date: datetime
     visibility: str = "PUBLIC"  # PUBLIC, MEMBERS_ONLY, INVITE_ONLY
     capacity: int = 0
+    is_paid: bool = False
+    fee_amount: Optional[float] = None
 
 class EventResponse(EventCreate):
     id: int
     banner: Optional[str] = None
+    class Config:
+        from_attributes = True
+
+class EventRegistrationCreate(BaseModel):
+    payment_mode: str  # ONLINE, OFFLINE
+
+class EventRegistrationResponse(BaseModel):
+    id: int
+    event_id: int
+    samaj_id: str
+    payment_mode: Optional[str] = None
+    payment_status: str
     class Config:
         from_attributes = True
 
@@ -199,14 +213,21 @@ class DonationCreate(BaseModel):
     amount: float
 
 class PaymentResponse(BaseModel):
+    id: int
     amount: float
     currency: str
     status: str
     gateway_reference: Optional[str] = None
     payment_type: str
+    samaj_id: Optional[str] = None
+    purpose: str
+    reference_id: Optional[int] = None
     created_at: datetime
     class Config:
         from_attributes = True
+
+class PaymentVerifyRequest(BaseModel):
+    status: str  # COMPLETED or FAILED
 
 class DonationResponse(BaseModel):
     category: str
