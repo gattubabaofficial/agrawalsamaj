@@ -11,8 +11,7 @@ from app.core.security import get_password_hash, create_access_token, create_ref
 from app.core.email import send_otp_email
 from app.schemas.all_schemas import UserCreate, OTPVerify
 from app.models.all_models import (
-    User, MemberProfile, UserPrivacySettings, Area, Colony, 
-    ChatGroup, ChatGroupMember
+    User, ChatGroup, ChatGroupMember
 )
 
 logger = logging.getLogger(__name__)
@@ -66,6 +65,9 @@ async def verify_otp_service(payload: OTPVerify) -> bool:
     otp_store.pop(target, None)
     return True
 
+def generate_samaj_id() -> str:
+    return "".join(random.choices("0123456789", k=16))
+
 async def register_user_service(db: AsyncSession, payload: UserCreate) -> User:
     # Check if user already exists
     phone_check = await db.execute(select(User).filter(User.phone == payload.phone))
@@ -77,79 +79,40 @@ async def register_user_service(db: AsyncSession, payload: UserCreate) -> User:
         if email_check.scalars().first():
             raise HTTPException(status_code=400, detail="Email already registered")
 
-    # 1. Resolve Area & Colony (Create them if they don't exist)
-    area_name_stripped = payload.area_name.strip().title()
-    colony_name_stripped = payload.colony_name.strip().title()
-    
-    area_query = await db.execute(select(Area).filter(Area.area_name == area_name_stripped))
-    area_obj = area_query.scalars().first()
-    if not area_obj:
-        area_obj = Area(area_name=area_name_stripped)
-        db.add(area_obj)
-        await db.flush()  # populate ID
-        
-    colony_query = await db.execute(select(Colony).filter(Colony.colony_name == colony_name_stripped))
-    colony_obj = colony_query.scalars().first()
-    if not colony_obj:
-        colony_obj = Colony(colony_name=colony_name_stripped, area_id=area_obj.id)
-        db.add(colony_obj)
-        await db.flush()  # populate ID
+    # Generate unique 16-digit samaj_id
+    while True:
+        new_samaj_id = str(uuid.uuid4().int)[:16]
+        existing = await db.execute(select(User).filter(User.samaj_id == new_samaj_id))
+        if not existing.scalars().first():
+            break
+
+    from app.models.all_models import Address
+    new_address = Address()
+    db.add(new_address)
+    await db.flush()
 
     # 2. Create User
     new_user = User(
         uuid=str(uuid.uuid4()),
+        samaj_id=new_samaj_id,
         first_name=payload.first_name,
         last_name=payload.last_name,
         phone=payload.phone,
         email=payload.email,
         password_hash=get_password_hash(payload.password) if payload.password else None,
-        role="USER",  # Starts as outsider USER
-        status="PENDING"  # Awaiting Admin review to check if Samaj Member or Outsider
-    )
-    db.add(new_user)
-    await db.flush()
-
-    # 3. Create Member Profile
-    new_profile = MemberProfile(
-        user_id=new_user.id,
+        role="USER",
+        status="NOT_APPLIED",
         profession=payload.profession,
-        approval_status="PENDING"
-    )
-    db.add(new_profile)
-
-    # 4. Create Privacy Settings (Default to show nothing to other users except name)
-    new_privacy = UserPrivacySettings(
-        user_id=new_user.id,
+        approval_status="NOT_APPLIED",
+        address_id=new_address.id,
         show_phone=False,
         show_email=False,
         show_address=False
     )
-    db.add(new_privacy)
+    db.add(new_user)
+    await db.flush()
 
-    # 5. Join Colony & Area chat groups (Auto-creates the chat groups if missing)
-    area_group_name = f"{area_name_stripped} Area Group"
-    colony_group_name = f"{colony_name_stripped} Colony Group"
-    
-    # Area group lookup
-    area_group_query = await db.execute(select(ChatGroup).filter(ChatGroup.group_name == area_group_name))
-    area_group = area_group_query.scalars().first()
-    if not area_group:
-        area_group = ChatGroup(group_name=area_group_name, group_type="AREA")
-        db.add(area_group)
-        await db.flush()
-        
-    # Colony group lookup
-    colony_group_query = await db.execute(select(ChatGroup).filter(ChatGroup.group_name == colony_group_name))
-    colony_group = colony_group_query.scalars().first()
-    if not colony_group:
-        colony_group = ChatGroup(group_name=colony_group_name, group_type="COLONY")
-        db.add(colony_group)
-        await db.flush()
-
-    # Add memberships
-    db.add(ChatGroupMember(group_id=area_group.id, user_id=new_user.id))
-    db.add(ChatGroupMember(group_id=colony_group.id, user_id=new_user.id))
-    
+    # 3. Join Community Group
     # Also add automatically to standard "Community Group" (which holds all users)
     community_group_query = await db.execute(select(ChatGroup).filter(ChatGroup.group_name == "Agrawal Samaj Community Group"))
     community_group = community_group_query.scalars().first()
@@ -157,8 +120,12 @@ async def register_user_service(db: AsyncSession, payload: UserCreate) -> User:
         community_group = ChatGroup(group_name="Agrawal Samaj Community Group", group_type="COMMUNITY")
         db.add(community_group)
         await db.flush()
-    db.add(ChatGroupMember(group_id=community_group.id, user_id=new_user.id))
+    db.add(ChatGroupMember(group_id=community_group.id, samaj_id=new_user.samaj_id))
 
     await db.commit()
     await db.refresh(new_user)
+    
+    # Attach address manually to avoid lazy-loading error on serialization
+    new_user.address = new_address
+    
     return new_user

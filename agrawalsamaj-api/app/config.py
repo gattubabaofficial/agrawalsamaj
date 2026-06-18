@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     
     # Database
-    DATABASE_URL: str = Field("postgresql+asyncpg://postgres:postgres@localhost:5432/agrawalsamaj", env="DATABASE_URL")
+    DATABASE_URL: str = Field("sqlite+aiosqlite:///./test.db", env="DATABASE_URL")
     
     # Redis (For Socket.IO and Rate limiting, optional if not supplied)
     REDIS_URL: str = Field("redis://localhost:6379/0", env="REDIS_URL")

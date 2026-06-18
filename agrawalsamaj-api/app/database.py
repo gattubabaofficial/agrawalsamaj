@@ -2,13 +2,18 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.orm import DeclarativeBase
 from app.config import settings
 
-# Create async engine for PostgreSQL
+# Create async engine
+engine_kwargs = {"echo": False}
+if settings.DATABASE_URL.startswith("postgresql"):
+    engine_kwargs.update({
+        "pool_size": 10,
+        "max_overflow": 20,
+        "pool_recycle": 3600
+    })
+
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=False,
-    pool_size=10,
-    max_overflow=20,
-    pool_recycle=3600
+    **engine_kwargs
 )
 
 # Create async session factory

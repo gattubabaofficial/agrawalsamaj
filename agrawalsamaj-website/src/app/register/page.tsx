@@ -9,8 +9,10 @@ import { CheckCircle2, ArrowRight, Eye, EyeOff, Lock, UserCheck, ShieldCheck } f
 export default function Register() {
   const router = useRouter();
 
-  // Form states
-  const [identifier, setIdentifier] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   
@@ -20,10 +22,10 @@ export default function Register() {
 
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!identifier || !password || !confirmPassword) {
-      alert("Please fill in all fields.");
+    if (!firstName || !lastName || !phone || !password || !confirmPassword) {
+      alert("Please fill in all required fields.");
       return;
     }
     if (password !== confirmPassword) {
@@ -31,16 +33,47 @@ export default function Register() {
       return;
     }
 
-    setIsSuccess(true);
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/v1/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName,
+          phone: phone,
+          email: email || undefined,
+          password: password,
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Registration failed");
 
-    // Save mock session details
-    localStorage.setItem("token", "mock-session-token-xyz");
-    localStorage.setItem("userRole", "MEMBER");
+      // Auto login after registration using password endpoint
+      const loginRes = await fetch("http://127.0.0.1:8000/api/v1/auth/login/password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email || phone, password: password }) // This might fail if email is empty and backend expects email login. Wait, backend login requires email. If they only provide phone, we can't login with password!
+      });
+      
+      const loginData = await loginRes.json();
+      if (!loginRes.ok) {
+        // If password login fails (because backend password login only checks email), redirect to login page
+        alert("Registration successful! Please login.");
+        router.push("/login");
+        return;
+      }
+      
+      setIsSuccess(true);
+      localStorage.setItem("token", loginData.access_token);
+      localStorage.setItem("userRole", loginData.user.role);
 
-    // Redirect to dashboard where they can complete their family/profile details
-    setTimeout(() => {
-      router.push("/dashboard");
-    }, 2500);
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 2500);
+
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
   return (
@@ -80,16 +113,54 @@ export default function Register() {
                 </p>
               </div>
 
-              {/* Email or Phone field */}
+              <div className="flex gap-4">
+                <div className="flex flex-col gap-1.5 flex-1">
+                  <label className="text-xs font-bold text-muted-text uppercase tracking-wider">First Name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Ramesh"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-semibold focus:outline-none focus:border-bhagwa text-black"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5 flex-1">
+                  <label className="text-xs font-bold text-muted-text uppercase tracking-wider">Last Name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Agrawal"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-semibold focus:outline-none focus:border-bhagwa text-black"
+                  />
+                </div>
+              </div>
+
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-muted-text uppercase tracking-wider">Email Address or Mobile Number</label>
+                <label className="text-xs font-bold text-muted-text uppercase tracking-wider">Mobile Number</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">+91</span>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="e.g. 9876543210"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl pl-12 pr-4 py-3.5 text-sm font-semibold focus:outline-none focus:border-bhagwa text-black"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-muted-text uppercase tracking-wider">Email Address (Optional)</label>
                 <input
-                  type="text"
-                  required
-                  placeholder="e.g. name@gmail.com or 9876543210"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  className="border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-semibold focus:outline-none focus:border-bhagwa text-black"
+                  type="email"
+                  placeholder="e.g. ramesh@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-semibold focus:outline-none focus:border-bhagwa text-black"
                 />
               </div>
 

@@ -20,43 +20,72 @@ function LoginForm() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSendOtp = (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phone) {
       alert("Please enter a valid Mobile Number.");
       return;
     }
-    setOtpSent(true);
-    alert("Verification SMS OTP sent: Use code 123456 to verify.");
-  };
-
-  const handleVerifyOtp = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otpCode === "123456" || otpCode === "1234") {
-      performLogin();
-    } else {
-      alert("Invalid OTP code. Please enter 123456.");
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/v1/auth/otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email_or_phone: phone })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Failed to send OTP");
+      setOtpSent(true);
+      alert(`OTP sent! ${data.test_otp ? `(Test OTP: ${data.test_otp})` : ""}`);
+    } catch (err: any) {
+      alert(err.message);
     }
   };
 
-  const handleEmailLogin = (e: React.FormEvent) => {
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email_or_phone: phone, otp: otpCode })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Invalid OTP");
+      performLogin(data.access_token, data.user.role);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       alert("Please enter both Email and Password.");
       return;
     }
-    performLogin();
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/v1/auth/login/password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Invalid email or password");
+      performLogin(data.access_token, data.user.role);
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
   const handleOAuthLogin = (provider: string) => {
     alert(`Connecting with ${provider} OAuth integration...`);
-    performLogin();
+    // Fallback or skip for now since it's mock
   };
 
-  const performLogin = () => {
+  const performLogin = (token: string, role: string) => {
     setIsSuccess(true);
-    localStorage.setItem("token", "mock-session-token-xyz");
-    localStorage.setItem("userRole", "MEMBER");
+    localStorage.setItem("token", token);
+    localStorage.setItem("userRole", role);
     setTimeout(() => {
       if (redirectPath === "bhavan") {
         router.push("/bhavan");

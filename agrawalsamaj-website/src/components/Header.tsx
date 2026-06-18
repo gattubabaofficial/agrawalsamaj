@@ -2,12 +2,46 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogIn, UserPlus, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { LogIn, UserPlus, Menu, X, LayoutDashboard, LogOut } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export default function Header() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState("");
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      setIsLoggedIn(true);
+      // We can do a quick check to set user name if we want, or just show Dashboard
+      const fetchUser = async () => {
+        try {
+          const res = await fetch("http://127.0.0.1:8000/api/v1/auth/me", {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setUserName(data.first_name || "User");
+          } else {
+            localStorage.removeItem("token");
+            setIsLoggedIn(false);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      };
+      fetchUser();
+    }
+  }, [pathname]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userRole");
+    setIsLoggedIn(false);
+    window.location.href = "/login";
+  };
 
   const navItems = [
     { name: "Home", href: "/" },
@@ -59,20 +93,41 @@ export default function Header() {
       {/* Auth CTAs & Mobile toggle */}
       <div className="flex items-center gap-3">
         <div className="hidden sm:flex items-center gap-3">
-          <Link
-            href="/login"
-            className="flex items-center gap-2 border border-light-border px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-all text-black"
-          >
-            <LogIn className="w-4 h-4 text-muted-text" />
-            Login
-          </Link>
-          <Link
-            href="/register"
-            className="flex items-center gap-2 bg-bhagwa hover:bg-bhagwa-hover text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-md shadow-bhagwa/10"
-          >
-            <UserPlus className="w-4 h-4" />
-            Join Samaj
-          </Link>
+          {isLoggedIn ? (
+            <>
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 border border-light-border px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-all text-black"
+              >
+                <LayoutDashboard className="w-4 h-4 text-bhagwa" />
+                {userName ? `${userName}'s Dashboard` : 'Dashboard'}
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="flex items-center gap-2 border border-light-border px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-all text-black"
+              >
+                <LogIn className="w-4 h-4 text-muted-text" />
+                Login
+              </Link>
+              <Link
+                href="/register"
+                className="flex items-center gap-2 bg-bhagwa hover:bg-bhagwa-hover text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-md shadow-bhagwa/10"
+              >
+                <UserPlus className="w-4 h-4" />
+                Join Samaj
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile menu toggle */}
@@ -106,22 +161,47 @@ export default function Header() {
           </nav>
           <div className="h-px bg-gray-100 my-2" />
           <div className="flex flex-col gap-2.5">
-            <Link
-              href="/login"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center justify-center gap-2 border border-light-border py-3 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-all text-black"
-            >
-              <LogIn className="w-4 h-4 text-muted-text" />
-              Login
-            </Link>
-            <Link
-              href="/register"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center justify-center gap-2 bg-bhagwa hover:bg-bhagwa-hover text-white py-3 rounded-xl text-sm font-semibold transition-all shadow-md shadow-bhagwa/10"
-            >
-              <UserPlus className="w-4 h-4" />
-              Join Samaj
-            </Link>
+            {isLoggedIn ? (
+              <>
+                <Link
+                  href="/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-center gap-2 bg-bhagwa hover:bg-bhagwa-hover text-white py-3 rounded-xl text-sm font-semibold transition-all shadow-md shadow-bhagwa/10"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  Dashboard
+                </Link>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="flex items-center justify-center gap-2 border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 py-3 rounded-xl text-sm font-semibold transition-all"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-center gap-2 border border-light-border py-3 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-all text-black"
+                >
+                  <LogIn className="w-4 h-4 text-muted-text" />
+                  Login
+                </Link>
+                <Link
+                  href="/register"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-center gap-2 bg-bhagwa hover:bg-bhagwa-hover text-white py-3 rounded-xl text-sm font-semibold transition-all shadow-md shadow-bhagwa/10"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Join Samaj
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}

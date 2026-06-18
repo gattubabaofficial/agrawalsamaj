@@ -2,6 +2,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.core.security import decode_token
 from app.models.all_models import User
@@ -29,12 +30,9 @@ async def get_current_user(
     if not user_id_str:
         raise credentials_exception
         
-    try:
-        user_id = int(user_id_str)
-    except ValueError:
-        raise credentials_exception
+    samaj_id = str(user_id_str)
     
-    result = await db.execute(select(User).filter(User.id == user_id))
+    result = await db.execute(select(User).options(selectinload(User.address)).filter(User.samaj_id == samaj_id))
     user = result.scalars().first()
     if not user:
         raise credentials_exception
