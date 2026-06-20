@@ -40,20 +40,20 @@ export default function Sidebar({ isAdmin = false }: SidebarProps) {
 
   return (
     <div
-      className={`relative flex flex-col h-full bg-zinc-50 dark:bg-zinc-950 border-r border-zinc-200/50 dark:border-zinc-800/50 transition-all duration-300 ${
+      className={`relative flex flex-col h-full bg-zinc-50 border-r border-zinc-200/50 transition-all duration-300 ${
         collapsed ? "w-16" : "w-64"
       }`}
     >
       {/* Collapse Toggle Button */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-8 z-10 p-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-500 hover:text-zinc-900 dark:hover:text-white shadow-sm transition-colors"
+        className="absolute -right-3 top-8 z-10 p-1.5 rounded-full border border-zinc-200 bg-white text-zinc-500 hover:text-zinc-900 shadow-sm transition-colors"
       >
         {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
       </button>
 
       {/* Brand area */}
-      <div className="p-6 flex items-center justify-between border-b border-zinc-200/50 dark:border-zinc-800/50">
+      <div className="p-6 flex items-center justify-between border-b border-zinc-200/50">
         <Link href="/" className="flex items-center gap-2 group overflow-hidden">
           <span className="text-xl font-bold bg-gradient-to-r from-amber-500 to-rose-600 bg-clip-text text-transparent flex-shrink-0">
             {collapsed ? "AS" : "Agrawal Samaj"}
@@ -71,11 +71,11 @@ export default function Sidebar({ isAdmin = false }: SidebarProps) {
               href={link.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors group relative ${
                 isActive
-                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-white"
+                  ? "bg-amber-500/10 text-amber-600"
+                  : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
               }`}
             >
-              <link.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-amber-600 dark:text-amber-400" : ""}`} />
+              <link.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-amber-600" : ""}`} />
               
               {!collapsed && (
                 <motion.span
@@ -90,7 +90,7 @@ export default function Sidebar({ isAdmin = false }: SidebarProps) {
 
               {/* Tooltip for collapsed state */}
               {collapsed && (
-                <div className="absolute left-16 top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 rounded-lg bg-zinc-900 dark:bg-zinc-800 text-white text-xs font-medium opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-md whitespace-nowrap z-50">
+                <div className="absolute left-16 top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 rounded-lg bg-zinc-900 text-white text-xs font-medium opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-md whitespace-nowrap z-50">
                   {link.name}
                 </div>
               )}
@@ -100,12 +100,12 @@ export default function Sidebar({ isAdmin = false }: SidebarProps) {
       </div>
 
       {/* Footer Area with Sign Out */}
-      <div className="p-4 border-t border-zinc-200/50 dark:border-zinc-800/50">
+      <div className="p-4 border-t border-zinc-200/50">
         <button
           onClick={() => {
             // Add logout functionality
           }}
-          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors group relative"
+          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors group relative"
         >
           <LogOut className="w-5 h-5 flex-shrink-0" />
           {!collapsed && <span>Sign Out</span>}

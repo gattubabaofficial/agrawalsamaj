@@ -28,28 +28,28 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-zinc-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute top-1/10 left-1/10 w-90 h-90 bg-amber-500/5 rounded-full blur-3xl z-0" />
       <div className="absolute bottom-1/10 right-1/10 w-90 h-90 bg-rose-500/5 rounded-full blur-3xl z-0" />
 
-      <div className="max-w-md w-full space-y-8 p-8 rounded-3xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900 shadow-xl relative z-10">
+      <div className="max-w-md w-full space-y-8 p-8 rounded-3xl border border-zinc-200/50 bg-white shadow-xl relative z-10">
         <div className="text-center space-y-2">
           <Link href="/" className="inline-block text-2xl font-bold bg-gradient-to-r from-amber-500 to-rose-600 bg-clip-text text-transparent">
             Agrawal Samaj
           </Link>
-          <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Sign in to your account</h2>
+          <h2 className="text-2xl font-bold text-zinc-900">Sign in to your account</h2>
           <p className="text-xs text-zinc-500">Welcome back! Please enter your details.</p>
         </div>
 
         {/* Method Tabs */}
-        <div className="flex bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-xl">
+        <div className="flex bg-zinc-100 p-1 rounded-xl">
           <button
             onClick={() => setMethod("password")}
             className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
               method === "password"
-                ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm"
-                : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
+                ? "bg-white text-zinc-900 shadow-sm"
+                : "text-zinc-500 hover:text-zinc-900"
             }`}
           >
             Email & Password
@@ -58,8 +58,8 @@ export default function LoginPage() {
             onClick={() => setMethod("otp")}
             className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
               method === "otp"
-                ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm"
-                : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
+                ? "bg-white text-zinc-900 shadow-sm"
+                : "text-zinc-500 hover:text-zinc-900"
             }`}
           >
             Mobile & OTP
@@ -70,7 +70,7 @@ export default function LoginPage() {
           {method === "password" ? (
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <label className="font-semibold text-zinc-700 dark:text-zinc-300">Email Address</label>
+                <label className="font-semibold text-zinc-700">Email Address</label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
@@ -79,14 +79,14 @@ export default function LoginPage() {
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-transparent focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-200 bg-transparent focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                  <label className="font-semibold text-zinc-700 dark:text-zinc-300">Password</label>
+                  <label className="font-semibold text-zinc-700">Password</label>
                   <a href="#" className="text-2xs font-semibold text-amber-600 hover:text-amber-700">Forgot?</a>
                 </div>
                 <div className="relative">
@@ -97,7 +97,7 @@ export default function LoginPage() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-transparent focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
+                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-zinc-200 bg-transparent focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
                   />
                   <button
                     type="button"
@@ -112,7 +112,7 @@ export default function LoginPage() {
           ) : (
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <label className="font-semibold text-zinc-700 dark:text-zinc-300">Mobile Number</label>
+                <label className="font-semibold text-zinc-700">Mobile Number</label>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <Phone className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -122,14 +122,14 @@ export default function LoginPage() {
                       placeholder="10-digit number"
                       value={mobile}
                       onChange={(e) => setMobile(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-transparent focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-200 bg-transparent focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
                     />
                   </div>
                   <button
                     type="button"
                     onClick={handleSendOtp}
                     disabled={mobile.length < 10}
-                    className="px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 text-xs font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                    className="px-4 py-2.5 rounded-xl border border-zinc-200 text-xs font-semibold hover:bg-zinc-50 disabled:opacity-50 disabled:pointer-events-none transition-colors"
                   >
                     {otpSent ? "Resend" : "Send OTP"}
                   </button>
@@ -138,7 +138,7 @@ export default function LoginPage() {
 
               {otpSent && (
                 <div className="space-y-1.5">
-                  <label className="font-semibold text-zinc-700 dark:text-zinc-300">Enter OTP</label>
+                  <label className="font-semibold text-zinc-700">Enter OTP</label>
                   <div className="relative">
                     <ShieldCheck className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
@@ -147,7 +147,7 @@ export default function LoginPage() {
                       placeholder="6-digit code"
                       value={otp}
                       onChange={(e) => setOtp(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-transparent focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-200 bg-transparent focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
                     />
                   </div>
                 </div>
@@ -164,12 +164,12 @@ export default function LoginPage() {
         </form>
 
         <div className="relative flex py-2 items-center text-2xs text-zinc-400">
-          <div className="flex-grow border-t border-zinc-200 dark:border-zinc-800"></div>
+          <div className="flex-grow border-t border-zinc-200"></div>
           <span className="flex-shrink mx-4">or continue with</span>
-          <div className="flex-grow border-t border-zinc-200 dark:border-zinc-800"></div>
+          <div className="flex-grow border-t border-zinc-200"></div>
         </div>
 
-        <button className="flex items-center justify-center gap-2 w-full py-2.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-xs font-semibold transition-colors">
+        <button className="flex items-center justify-center gap-2 w-full py-2.5 rounded-2xl border border-zinc-200 hover:bg-zinc-50 text-xs font-semibold transition-colors">
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12.24 10.285V14.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.866-3.577-7.866-8s3.536-8 7.866-8c2.46 0 4.105 1.025 5.047 1.926l3.227-3.11C18.422 2.106 15.607 1 12.24 1 5.48 1 0 6.48 0 13.24s5.48 12.24 12.24 12.24c7.058 0 11.755-4.965 11.755-11.96 0-.807-.087-1.427-.193-2.023l-11.562-.212z"/>
           </svg>

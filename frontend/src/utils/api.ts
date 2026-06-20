@@ -12,7 +12,9 @@ export const getApiBaseUrl = (): string => {
   // Client-side dynamic hostname checking
   if (typeof window !== "undefined") {
     // Construct the backend URL using the browser's hostname on port 8000
-    return `http://${window.location.hostname}:8000/api/v1`;
+    // If hostname is 0.0.0.0 (which is invalid for client requests), fallback to localhost
+    const hostname = window.location.hostname === "0.0.0.0" ? "localhost" : window.location.hostname;
+    return `http://${hostname}:8000/api/v1`;
   }
 
   // Fallback for Server-Side Rendering (SSR)

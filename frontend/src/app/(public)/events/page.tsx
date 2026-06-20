@@ -68,20 +68,20 @@ export default function EventsPage() {
   });
 
   return (
-    <div className="py-20 px-4 sm:px-6 lg:px-8 bg-zinc-50 dark:bg-zinc-900/20 min-h-screen">
+    <div className="py-20 px-4 sm:px-6 lg:px-8 bg-zinc-50 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-12">
         {/* Header */}
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-500 to-rose-600 bg-clip-text text-transparent">
             Community Events
           </h1>
-          <p className="max-w-xl mx-auto text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="max-w-xl mx-auto text-sm text-zinc-500">
             Participate in cultural celebrations, poojas, tournaments, and directory meetups. Get passes online.
           </p>
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between border-b border-zinc-200/50 dark:border-zinc-800/50 pb-6">
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between border-b border-zinc-200/50 pb-6">
           <div className="relative w-full sm:w-80">
             <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -89,7 +89,7 @@ export default function EventsPage() {
               placeholder="Search events..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-shadow"
+              className="w-full pl-9 pr-4 py-2 text-sm rounded-full border border-zinc-200 bg-white focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-shadow"
             />
           </div>
 
@@ -101,7 +101,7 @@ export default function EventsPage() {
                 className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors ${
                   category === cat
                     ? "bg-amber-500 text-white"
-                    : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                    : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50"
                 }`}
               >
                 {cat}
@@ -118,22 +118,22 @@ export default function EventsPage() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: idx * 0.05 }}
-              className="p-6 rounded-3xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow group"
+              className="p-6 rounded-3xl border border-zinc-200/50 bg-white flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow group"
             >
               <div className="space-y-4">
-                <span className="inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                <span className="inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold uppercase bg-amber-500/10 text-amber-600 border border-amber-500/20">
                   {evt.category}
                 </span>
                 <div className="space-y-2">
-                  <h3 className="text-xl font-bold text-zinc-900 dark:text-white group-hover:text-amber-500 transition-colors">
+                  <h3 className="text-xl font-bold text-zinc-900 group-hover:text-amber-500 transition-colors">
                     {evt.title}
                   </h3>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-3 leading-relaxed">
+                  <p className="text-xs text-zinc-500 line-clamp-3 leading-relaxed">
                     {evt.description}
                   </p>
                 </div>
 
-                <div className="space-y-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/50 text-xs text-zinc-500 dark:text-zinc-400">
+                <div className="space-y-2 pt-2 border-t border-zinc-100 text-xs text-zinc-500">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-zinc-400" />
                     <span>{new Date(evt.start_datetime).toLocaleDateString("en-US", { dateStyle: "medium" })}</span>
@@ -149,13 +149,13 @@ export default function EventsPage() {
                 </div>
               </div>
 
-              <div className="pt-6 flex justify-between items-center border-t border-zinc-100 dark:border-zinc-800/50 mt-6">
-                <span className="font-bold text-zinc-900 dark:text-white">
+              <div className="pt-6 flex justify-between items-center border-t border-zinc-100 mt-6">
+                <span className="font-bold text-zinc-900">
                   {evt.pass_price === 0 ? "Free" : `₹${evt.pass_price}`}
                 </span>
                 <Link
                   href={`/login?next=/events/${evt.event_id}`}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 hover:text-amber-700"
                 >
                   Get Passes <ArrowRight className="w-4 h-4" />
                 </Link>

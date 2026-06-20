@@ -25,37 +25,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
+      style={{ colorScheme: "light" }}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              // Unregister any active service workers
-              if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                  for (var i = 0; i < registrations.length; i++) {
-                    registrations[i].unregister().then(function(success) {
-                      if (success) {
-                        console.log('Unregistered service worker successfully');
-                        window.location.reload();
-                      }
-                    });
-                  }
-                });
-              }
-              // Clear all caches
-              if ('caches' in window) {
-                caches.keys().then(function(names) {
-                  for (var i = 0; i < names.length; i++) {
-                    caches.delete(names[i]);
-                  }
-                });
-              }
-            `
-          }}
-        />
-      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

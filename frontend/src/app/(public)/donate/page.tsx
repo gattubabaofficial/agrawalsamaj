@@ -48,7 +48,7 @@ export default function DonatePage() {
   }, []);
 
   return (
-    <div className="py-20 px-4 sm:px-6 lg:px-8 bg-zinc-50 dark:bg-zinc-900/20 min-h-screen">
+    <div className="py-20 px-4 sm:px-6 lg:px-8 bg-zinc-50 min-h-screen">
       <div className="max-w-5xl mx-auto space-y-16">
         
         {/* Header */}
@@ -56,7 +56,7 @@ export default function DonatePage() {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 bg-clip-text text-transparent">
             Donation & Charity Support
           </h1>
-          <p className="max-w-xl mx-auto text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="max-w-xl mx-auto text-sm text-zinc-500">
             Contribute to Samaj welfare, educational funds, and medical aids. Secure online payment with PDF receipts.
           </p>
         </div>
@@ -70,13 +70,13 @@ export default function DonatePage() {
               className={`p-6 text-left rounded-2xl border transition-all duration-200 ${
                 selectedCat === cat.category_id
                   ? "border-amber-500 bg-amber-500/5 shadow-sm shadow-amber-500/5 ring-1 ring-amber-500"
-                  : "border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                  : "border-zinc-200/50 bg-white hover:bg-zinc-50"
               }`}
             >
-              <h3 className={`font-bold ${selectedCat === cat.category_id ? "text-amber-600 dark:text-amber-400" : "text-zinc-900 dark:text-white"}`}>
+              <h3 className={`font-bold ${selectedCat === cat.category_id ? "text-amber-600" : "text-zinc-900"}`}>
                 {cat.name}
               </h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2 leading-relaxed">
+              <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
                 {cat.description}
               </p>
             </button>
@@ -84,21 +84,21 @@ export default function DonatePage() {
         </div>
 
         {/* Donation Form */}
-        <div className="p-8 rounded-3xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900 max-w-xl mx-auto space-y-6 shadow-sm">
-          <div className="flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800 pb-4">
+        <div className="p-8 rounded-3xl border border-zinc-200/50 bg-white max-w-xl mx-auto space-y-6 shadow-sm">
+          <div className="flex items-center gap-3 border-b border-zinc-100 pb-4">
             <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
-            <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Online Donation Form</h3>
+            <h3 className="text-lg font-bold text-zinc-900">Online Donation Form</h3>
           </div>
 
           <div className="space-y-4 text-sm">
             <div className="space-y-1.5">
-              <label className="font-semibold text-zinc-700 dark:text-zinc-300">Enter Amount (₹)</label>
+              <label className="font-semibold text-zinc-700">Enter Amount (₹)</label>
               <input
                 type="number"
                 placeholder="Enter amount, e.g. 1000"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-transparent focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
+                className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 bg-transparent focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
               />
             </div>
 
@@ -108,7 +108,7 @@ export default function DonatePage() {
                   key={preset}
                   type="button"
                   onClick={() => setAmount(preset.toString())}
-                  className="px-4 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-xs font-semibold"
+                  className="px-4 py-1.5 rounded-lg border border-zinc-200 hover:bg-zinc-50 text-xs font-semibold"
                 >
                   +₹{preset}
                 </button>

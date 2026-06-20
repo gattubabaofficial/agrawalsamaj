@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Heart, Calendar, Building, Info, Home, User, LogIn } from "lucide-react";
+import { Menu, X, Heart, Calendar, Building, Info, Home, LogIn } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
@@ -31,7 +31,7 @@ export default function Navbar() {
     <nav
       className={`sticky top-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md shadow-lg border-b border-zinc-200/50 dark:border-zinc-800/50 py-3"
+          ? "bg-white/80 backdrop-blur-md shadow-lg border-b border-zinc-200/50 py-3"
           : "bg-transparent py-5"
       }`}
     >
@@ -43,7 +43,7 @@ export default function Navbar() {
               <span className="text-2xl font-bold bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 bg-clip-text text-transparent group-hover:opacity-80 transition-opacity">
                 Agrawal Samaj
               </span>
-              <span className="hidden sm:inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+              <span className="hidden sm:inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/20">
                 Portal
               </span>
             </Link>
@@ -59,14 +59,14 @@ export default function Navbar() {
                   href={item.href}
                   className={`relative px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 flex items-center gap-2 ${
                     isActive
-                      ? "text-amber-600 dark:text-amber-400"
-                      : "text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white"
+                      ? "text-amber-600"
+                      : "text-zinc-600 hover:text-zinc-900"
                   }`}
                 >
                   {isActive && (
                     <motion.span
                       layoutId="activeNav"
-                      className="absolute inset-0 bg-amber-500/10 dark:bg-amber-400/10 rounded-full -z-10"
+                      className="absolute inset-0 bg-amber-500/10 rounded-full -z-10"
                       transition={{ type: "spring", stiffness: 380, damping: 30 }}
                     />
                   )}
@@ -81,7 +81,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-3">
             <Link
               href="/login"
-              className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:text-zinc-950 dark:hover:text-white flex items-center gap-1.5 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-zinc-700 hover:text-zinc-950 flex items-center gap-1.5 transition-colors"
             >
               <LogIn className="w-4 h-4" />
               Sign In
@@ -98,7 +98,7 @@ export default function Navbar() {
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-lg text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 focus:outline-none transition-colors"
+              className="inline-flex items-center justify-center p-2 rounded-lg text-zinc-500 hover:bg-zinc-100 focus:outline-none transition-colors"
             >
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -113,7 +113,7 @@ export default function Navbar() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden border-t border-zinc-200/50 dark:border-zinc-800/50 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md"
+            className="md:hidden border-t border-zinc-200/50 bg-white/95 backdrop-blur-md"
           >
             <div className="px-4 pt-2 pb-6 space-y-1">
               {navItems.map((item) => {
@@ -125,8 +125,8 @@ export default function Navbar() {
                     onClick={() => setIsOpen(false)}
                     className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-colors ${
                       isActive
-                        ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                        : "text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                        ? "bg-amber-500/10 text-amber-600"
+                        : "text-zinc-600 hover:bg-zinc-50"
                     }`}
                   >
                     <item.icon className="w-5 h-5" />
@@ -134,11 +134,11 @@ export default function Navbar() {
                   </Link>
                 );
               })}
-              <div className="border-t border-zinc-200/50 dark:border-zinc-800/50 pt-4 flex flex-col gap-2 px-2">
+              <div className="border-t border-zinc-200/50 pt-4 flex flex-col gap-2 px-2">
                 <Link
                   href="/login"
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-200 font-medium text-base hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-200 text-zinc-700 font-medium text-base hover:bg-zinc-50 transition-colors"
                 >
                   <LogIn className="w-4 h-4" />
                   Sign In

@@ -55,7 +55,7 @@ export default function BhavanPage() {
   }, []);
 
   return (
-    <div className="py-20 px-4 sm:px-6 lg:px-8 bg-zinc-50 dark:bg-zinc-900/20 min-h-screen">
+    <div className="py-20 px-4 sm:px-6 lg:px-8 bg-zinc-50 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-16">
         
         {/* Header */}
@@ -63,7 +63,7 @@ export default function BhavanPage() {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 bg-clip-text text-transparent">
             Bhavan Booking & Facilities
           </h1>
-          <p className="max-w-xl mx-auto text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="max-w-xl mx-auto text-sm text-zinc-500">
             Book halls, rooms, and catering facilities at subsidized community rates. Actual booking requires login.
           </p>
         </div>
@@ -76,26 +76,26 @@ export default function BhavanPage() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: idx * 0.05 }}
-              className="p-8 rounded-3xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow group"
+              className="p-8 rounded-3xl border border-zinc-200/50 bg-white flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow group"
             >
               <div className="space-y-6">
                 {/* Icon & Title */}
                 <div className="space-y-4">
-                  <div className="inline-flex p-3 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                  <div className="inline-flex p-3 rounded-2xl bg-amber-500/10 text-amber-600">
                     <Building className="w-6 h-6" />
                   </div>
                   <div className="space-y-1">
-                    <span className="text-3xs uppercase tracking-wider font-semibold text-zinc-400 dark:text-zinc-500">
+                    <span className="text-3xs uppercase tracking-wider font-semibold text-zinc-400">
                       {fac.type}
                     </span>
-                    <h3 className="text-xl font-bold text-zinc-900 dark:text-white group-hover:text-amber-500 transition-colors">
+                    <h3 className="text-xl font-bold text-zinc-900 group-hover:text-amber-500 transition-colors">
                       {fac.name}
                     </h3>
                   </div>
                 </div>
 
                 {/* Info List */}
-                <div className="space-y-2.5 text-sm text-zinc-500 dark:text-zinc-400">
+                <div className="space-y-2.5 text-sm text-zinc-500">
                   <p className="text-xs leading-relaxed line-clamp-3">{fac.description}</p>
                   <div className="flex items-center gap-2 text-xs">
                     <Users className="w-4 h-4 text-zinc-400 flex-shrink-0" />
@@ -108,13 +108,13 @@ export default function BhavanPage() {
                 </div>
 
                 {/* Amenities Tags */}
-                <div className="space-y-2 pt-4 border-t border-zinc-100 dark:border-zinc-800/50">
-                  <h4 className="text-2xs uppercase tracking-wider font-semibold text-zinc-400 dark:text-zinc-500">Amenities</h4>
+                <div className="space-y-2 pt-4 border-t border-zinc-100">
+                  <h4 className="text-2xs uppercase tracking-wider font-semibold text-zinc-400">Amenities</h4>
                   <div className="flex flex-wrap gap-1.5">
                     {fac.amenities?.map((amenity: string) => (
                       <span
                         key={amenity}
-                        className="px-2 py-0.5 rounded-lg text-3xs font-medium bg-zinc-50 dark:bg-zinc-850 border border-zinc-100 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400"
+                        className="px-2 py-0.5 rounded-lg text-3xs font-medium bg-zinc-50 border border-zinc-100 text-zinc-500"
                       >
                         {amenity}
                       </span>
@@ -124,7 +124,7 @@ export default function BhavanPage() {
               </div>
 
               {/* Action */}
-              <div className="pt-8 mt-8 border-t border-zinc-100 dark:border-zinc-800/50">
+              <div className="pt-8 mt-8 border-t border-zinc-100">
                 <Link
                   href={`/login?next=/bhavan`}
                   className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold shadow-md shadow-amber-500/10 hover:shadow-amber-500/20 transition-all hover:scale-[1.01]"

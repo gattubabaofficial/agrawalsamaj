@@ -3,7 +3,7 @@ import { Heart, Mail, Phone, MapPin } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="bg-zinc-50 dark:bg-zinc-950 border-t border-zinc-200/50 dark:border-zinc-800/50 text-zinc-600 dark:text-zinc-400">
+    <footer className="bg-zinc-50 border-t border-zinc-200/50 text-zinc-600">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand/About */}
@@ -43,55 +43,35 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4">
+            <h3 className="text-sm font-semibold text-zinc-900 uppercase tracking-wider mb-4">
               Quick Links
             </h3>
             <ul className="space-y-2 text-sm">
-              <li>
-                <Link href="/about" className="hover:text-amber-500 transition-colors">Vision & Mission</Link>
-              </li>
-              <li>
-                <Link href="/about" className="hover:text-amber-500 transition-colors">Board Members</Link>
-              </li>
-              <li>
-                <Link href="/events" className="hover:text-amber-500 transition-colors">Upcoming Events</Link>
-              </li>
-              <li>
-                <Link href="/bhavan" className="hover:text-amber-500 transition-colors">Bhavan Facilities</Link>
-              </li>
-              <li>
-                <Link href="/donate" className="hover:text-amber-500 transition-colors">Donation Schemes</Link>
-              </li>
+              <li><Link href="/about" className="hover:text-amber-500 transition-colors">Vision & Mission</Link></li>
+              <li><Link href="/about" className="hover:text-amber-500 transition-colors">Board Members</Link></li>
+              <li><Link href="/events" className="hover:text-amber-500 transition-colors">Upcoming Events</Link></li>
+              <li><Link href="/bhavan" className="hover:text-amber-500 transition-colors">Bhavan Facilities</Link></li>
+              <li><Link href="/donate" className="hover:text-amber-500 transition-colors">Donation Schemes</Link></li>
             </ul>
           </div>
 
           {/* Support */}
           <div>
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4">
+            <h3 className="text-sm font-semibold text-zinc-900 uppercase tracking-wider mb-4">
               Resources
             </h3>
             <ul className="space-y-2 text-sm">
-              <li>
-                <Link href="/login" className="hover:text-amber-500 transition-colors">Member Directory</Link>
-              </li>
-              <li>
-                <Link href="/register" className="hover:text-amber-500 transition-colors">Join Samaj</Link>
-              </li>
-              <li>
-                <Link href="/login" className="hover:text-amber-500 transition-colors">Bookings Dashboard</Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-amber-500 transition-colors">Terms of Service</Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-amber-500 transition-colors">Privacy Policy</Link>
-              </li>
+              <li><Link href="/login" className="hover:text-amber-500 transition-colors">Member Directory</Link></li>
+              <li><Link href="/register" className="hover:text-amber-500 transition-colors">Join Samaj</Link></li>
+              <li><Link href="/login" className="hover:text-amber-500 transition-colors">Bookings Dashboard</Link></li>
+              <li><Link href="#" className="hover:text-amber-500 transition-colors">Terms of Service</Link></li>
+              <li><Link href="#" className="hover:text-amber-500 transition-colors">Privacy Policy</Link></li>
             </ul>
           </div>
 
           {/* Contact */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4">
+            <h3 className="text-sm font-semibold text-zinc-900 uppercase tracking-wider mb-4">
               Contact Us
             </h3>
             <ul className="space-y-3 text-sm">
@@ -111,7 +91,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-zinc-200/50 dark:border-zinc-800/50 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs">
+        <div className="border-t border-zinc-200/50 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs">
           <p>&copy; {new Date().getFullYear()} Agrawal Samaj Jaipur. All rights reserved.</p>
           <p className="flex items-center gap-1">
             Made with <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" /> for the community.
