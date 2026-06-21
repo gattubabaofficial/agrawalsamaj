@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, MapPin, Clock, Ticket, Loader2 } from "lucide-react";
+import { Calendar, MapPin, Clock, Ticket, Loader2, ShieldAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
@@ -87,9 +87,16 @@ export default function UserEventsPage() {
             events.map((event) => (
               <div key={event.event_id} className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden flex flex-col">
                 <div className="bg-gradient-to-br from-amber-100 to-rose-100 p-6 flex flex-col items-center justify-center min-h-[120px] text-center relative">
-                  <span className="absolute top-3 right-3 px-2 py-1 bg-white/60 text-zinc-800 text-xs font-bold rounded-lg uppercase tracking-wider">
-                    {event.category}
-                  </span>
+                  <div className="absolute top-3 right-3 flex gap-2">
+                    {event.is_members_only && (
+                      <span className="px-2 py-1 bg-rose-500 text-white text-xs font-bold rounded-lg uppercase tracking-wider flex items-center gap-1">
+                        <ShieldAlert className="w-3 h-3" /> Members Only
+                      </span>
+                    )}
+                    <span className="px-2 py-1 bg-white/60 text-zinc-800 text-xs font-bold rounded-lg uppercase tracking-wider">
+                      {event.category}
+                    </span>
+                  </div>
                   <h3 className="text-xl font-bold text-zinc-900 leading-tight">{event.title}</h3>
                 </div>
                 
@@ -107,6 +114,21 @@ export default function UserEventsPage() {
                       </div>
                     )}
                   </div>
+
+                  {event.timeline && event.timeline.length > 0 && (
+                    <div className="pt-3 border-t border-zinc-100 space-y-1.5">
+                      <p className="text-xs font-semibold text-zinc-700">Schedule:</p>
+                      {event.timeline.slice(0, 3).map((item: any, i: number) => (
+                        <div key={i} className="flex gap-2 text-xs text-zinc-600">
+                          <span className="font-semibold text-amber-600 w-12 flex-shrink-0">{item.time}</span>
+                          <span className="truncate">{item.title}</span>
+                        </div>
+                      ))}
+                      {event.timeline.length > 3 && (
+                        <p className="text-xs text-zinc-400 italic">+{event.timeline.length - 3} more activities</p>
+                      )}
+                    </div>
+                  )}
 
                   <div className="pt-4 border-t border-zinc-100 flex items-center justify-between">
                     <div className="text-sm font-bold text-zinc-900">

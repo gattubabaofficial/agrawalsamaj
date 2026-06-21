@@ -76,6 +76,8 @@ class Event(Base, TimestampMixin):
         nullable=False
     )
     is_featured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_members_only: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    timeline: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
 
     # Relationships
     schedule: Mapped[Optional["EventSchedule"]] = relationship(

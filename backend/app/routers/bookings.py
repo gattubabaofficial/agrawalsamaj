@@ -19,11 +19,24 @@ class RoomResponse(BaseModel):
     type: str
     capacity: Optional[int]
     price_per_day: float
+    room_number: Optional[str]
+    floor: Optional[str]
     description: Optional[str]
+    amenities: Optional[dict]
     is_available: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+class RoomCreate(BaseModel):
+    name: str
+    type: str = "room"
+    capacity: Optional[int] = None
+    price_per_day: float
+    room_number: Optional[str] = None
+    floor: Optional[str] = None
+    description: Optional[str] = None
+    amenities: Optional[dict] = None
 
 class BookingCreate(BaseModel):
     room_id: uuid.UUID
@@ -44,13 +57,34 @@ class BookingResponse(BaseModel):
     notes: Optional[str]
     
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+class AdminBookingResponse(BookingResponse):
+    user_id: uuid.UUID
+    user_name: str
+    user_mobile: Optional[str]
+    room_name: str
 
 # Routes
 @router.get("/rooms", response_model=List[RoomResponse])
 async def list_rooms(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Room).filter(Room.is_available == True))
     return result.scalars().all()
+
+@router.post("/rooms", response_model=RoomResponse, status_code=status.HTTP_201_CREATED)
+async def create_room(
+    room_data: RoomCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    new_room = Room(**room_data.dict())
+    db.add(new_room)
+    await db.commit()
+    await db.refresh(new_room)
+    return new_room
 
 @router.post("/", response_model=BookingResponse, status_code=status.HTTP_201_CREATED)
 async def create_booking(
@@ -100,6 +134,42 @@ async def list_my_bookings(
         .order_by(Booking.start_date.desc())
     )
     return result.scalars().all()
+
+@router.get("/all", response_model=List[AdminBookingResponse])
+async def list_all_bookings(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    result = await db.execute(
+        select(Booking, User, Room)
+        .join(User, Booking.user_id == User.user_id)
+        .join(Room, Booking.room_id == Room.room_id)
+        .order_by(Booking.start_date.desc())
+    )
+    
+    bookings_data = []
+    for booking, user, room in result.all():
+        data = {
+            "booking_id": booking.booking_id,
+            "room_id": booking.room_id,
+            "start_date": booking.start_date,
+            "end_date": booking.end_date,
+            "total_amount": booking.total_amount,
+            "payment_mode": booking.payment_mode,
+            "payment_status": booking.payment_status,
+            "booking_status": booking.booking_status,
+            "notes": booking.notes,
+            "user_id": user.user_id,
+            "user_name": f"{user.first_name} {user.surname}",
+            "user_mobile": user.mobile,
+            "room_name": room.name
+        }
+        bookings_data.append(data)
+        
+    return bookings_data
 
 @router.put("/{booking_id}/cancel")
 async def cancel_booking(

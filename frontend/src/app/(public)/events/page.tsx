@@ -42,7 +42,7 @@ const mockEvents = [
 ];
 
 export default function EventsPage() {
-  const [events, setEvents] = useState(mockEvents);
+  const [events, setEvents] = useState<any[]>(mockEvents);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
 
@@ -121,9 +121,16 @@ export default function EventsPage() {
               className="p-6 rounded-3xl border border-zinc-200/50 bg-white flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow group"
             >
               <div className="space-y-4">
-                <span className="inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold uppercase bg-amber-500/10 text-amber-600 border border-amber-500/20">
-                  {evt.category}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold uppercase bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                    {evt.category}
+                  </span>
+                  {evt.is_members_only && (
+                    <span className="inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold uppercase bg-rose-500/10 text-rose-600 border border-rose-500/20">
+                      Members Only
+                    </span>
+                  )}
+                </div>
                 <div className="space-y-2">
                   <h3 className="text-xl font-bold text-zinc-900 group-hover:text-amber-500 transition-colors">
                     {evt.title}
@@ -147,6 +154,21 @@ export default function EventsPage() {
                     <span className="truncate">{evt.venue}</span>
                   </div>
                 </div>
+
+                {evt.timeline && evt.timeline.length > 0 && (
+                  <div className="pt-3 border-t border-zinc-100 space-y-1.5">
+                    <p className="text-xs font-semibold text-zinc-700">Schedule:</p>
+                    {evt.timeline.slice(0, 3).map((item: any, i: number) => (
+                      <div key={i} className="flex gap-2 text-xs text-zinc-600">
+                        <span className="font-semibold text-amber-600 w-12 flex-shrink-0">{item.time}</span>
+                        <span className="truncate">{item.title}</span>
+                      </div>
+                    ))}
+                    {evt.timeline.length > 3 && (
+                      <p className="text-xs text-zinc-400 italic">+{evt.timeline.length - 3} more activities</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="pt-6 flex justify-between items-center border-t border-zinc-100 mt-6">

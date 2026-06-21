@@ -47,7 +47,10 @@ export default function LoginPage() {
         localStorage.setItem("userRole", response.data.role);
         
         const params = new URLSearchParams(window.location.search);
-        const redirectUrl = params.get("next") || "/dashboard";
+        let redirectUrl = params.get("next");
+        if (!redirectUrl) {
+          redirectUrl = response.data.role === "admin" ? "/admin/dashboard" : "/dashboard";
+        }
         window.location.href = redirectUrl;
       }
     } catch (error: any) {

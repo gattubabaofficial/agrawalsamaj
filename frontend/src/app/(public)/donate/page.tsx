@@ -1,51 +1,103 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Heart, Landmark, ShieldAlert, Award, FileText, ArrowRight } from "lucide-react";
-import { motion } from "framer-motion";
+import { Heart, ArrowRight, Loader2 } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
-
-const mockCategories = [
-  {
-    category_id: "1",
-    name: "Education Support Fund",
-    description: "Providing scholarships, books, uniforms, and digital devices to deserving students of the Samaj.",
-  },
-  {
-    category_id: "2",
-    name: "Medical Welfare & Healthcare",
-    description: "Financing surgeries, health checkup camps, ambulance services, and medicines for families in need.",
-  },
-  {
-    category_id: "3",
-    name: "Bhavan Maintenance & Expansion",
-    description: "Supporting structural upgrades, temple renovations, and facility expansions of Agrawal Bhavans.",
-  }
-];
+import PaymentGateway from "@/components/PaymentGateway";
 
 export default function DonatePage() {
-  const [categories, setCategories] = useState(mockCategories);
+  const [categories, setCategories] = useState<any[]>([]);
   const [selectedCat, setSelectedCat] = useState("");
   const [amount, setAmount] = useState("");
+  
+  // Guest fields
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestMobile, setGuestMobile] = useState("");
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showPaymentGateway, setShowPaymentGateway] = useState(false);
 
   useEffect(() => {
-    const fetchCategories = async () => {
+    const init = async () => {
       try {
-        const response = await axios.get(`${getApiBaseUrl()}/donations/categories`);
-        if (response.data && response.data.length > 0) {
-          setCategories(response.data);
-          setSelectedCat(response.data[0].category_id);
-        } else {
-          setSelectedCat(mockCategories[0].category_id);
+        const catRes = await axios.get(`${getApiBaseUrl()}/donations/categories`);
+        if (catRes.data && catRes.data.length > 0) {
+          setCategories(catRes.data);
+          setSelectedCat(catRes.data[0].category_id);
         }
       } catch (err) {
-        console.log("Could not fetch donation categories, using fallback.");
-        setSelectedCat(mockCategories[0].category_id);
+        console.error("Failed to load categories.");
       }
+
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          await axios.get(`${getApiBaseUrl()}/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setIsLoggedIn(true);
+        } catch (err) {
+          setIsLoggedIn(false);
+        }
+      }
+      setIsLoading(false);
     };
-    fetchCategories();
+    init();
   }, []);
+
+  const handleProceed = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!amount || parseFloat(amount) <= 0) {
+      alert("Please enter a valid amount.");
+      return;
+    }
+    if (!isLoggedIn && (!guestName || !guestMobile || !guestEmail)) {
+      alert("Please fill in your name, email, and mobile number.");
+      return;
+    }
+    setShowPaymentGateway(true);
+  };
+
+  const handlePaymentSuccess = async () => {
+    setShowPaymentGateway(false);
+    try {
+      if (isLoggedIn) {
+        const token = localStorage.getItem("token");
+        await axios.post(
+          `${getApiBaseUrl()}/donations/`,
+          { category_id: selectedCat, amount: parseFloat(amount), message: "Public Website Donation" },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } else {
+        await axios.post(`${getApiBaseUrl()}/donations/guest`, {
+          category_id: selectedCat,
+          amount: parseFloat(amount),
+          message: "Public Guest Donation",
+          guest_name: guestName,
+          guest_email: guestEmail,
+          guest_mobile: guestMobile
+        });
+      }
+      alert("Thank you! Your donation was successful.");
+      setAmount("");
+      setGuestName("");
+      setGuestEmail("");
+      setGuestMobile("");
+    } catch (error: any) {
+      alert(error.response?.data?.detail || "Donation failed");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50">
+        <Loader2 className="w-10 h-10 animate-spin text-amber-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="py-20 px-4 sm:px-6 lg:px-8 bg-zinc-50 min-h-screen">
@@ -84,16 +136,30 @@ export default function DonatePage() {
         </div>
 
         {/* Donation Form */}
-        <div className="p-8 rounded-3xl border border-zinc-200/50 bg-white max-w-xl mx-auto space-y-6 shadow-sm">
+        <form onSubmit={handleProceed} className="p-8 rounded-3xl border border-zinc-200/50 bg-white max-w-xl mx-auto space-y-6 shadow-sm">
           <div className="flex items-center gap-3 border-b border-zinc-100 pb-4">
             <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
             <h3 className="text-lg font-bold text-zinc-900">Online Donation Form</h3>
           </div>
 
+          {!isLoggedIn && (
+            <div className="space-y-4 bg-zinc-50 p-4 rounded-xl border border-zinc-200">
+              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Guest Details</p>
+              <div className="space-y-3">
+                <input required type="text" placeholder="Full Name" value={guestName} onChange={(e) => setGuestName(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <input required type="email" placeholder="Email Address" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500" />
+                  <input required type="tel" placeholder="Mobile Number" value={guestMobile} onChange={(e) => setGuestMobile(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500" />
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4 text-sm">
             <div className="space-y-1.5">
               <label className="font-semibold text-zinc-700">Enter Amount (₹)</label>
               <input
+                required
                 type="number"
                 placeholder="Enter amount, e.g. 1000"
                 value={amount}
@@ -117,19 +183,23 @@ export default function DonatePage() {
           </div>
 
           <div className="pt-4">
-            <button
-              onClick={() => {
-                window.location.href = `/login?next=/donate&amount=${amount}&category=${selectedCat}`;
-              }}
-              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-base shadow-md shadow-amber-500/10 hover:shadow-amber-500/20 transition-all hover:scale-[1.01]"
-            >
+            <button type="submit" className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-base shadow-md shadow-amber-500/10 hover:shadow-amber-500/20 transition-all hover:scale-[1.01]">
               Proceed to Donate
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-        </div>
+        </form>
 
       </div>
+
+      {showPaymentGateway && (
+        <PaymentGateway
+          amount={parseFloat(amount)}
+          purpose={`Donation - ${categories.find(c => c.category_id === selectedCat)?.name || 'General'}`}
+          onSuccess={handlePaymentSuccess}
+          onCancel={() => setShowPaymentGateway(false)}
+        />
+      )}
     </div>
   );
 }

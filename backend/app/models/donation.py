@@ -42,6 +42,9 @@ class Donation(Base):
         ForeignKey("donation_categories.category_id", ondelete="RESTRICT"),
         nullable=False
     )
+    guest_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    guest_email: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    guest_mobile: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     payment_status: Mapped[PaymentStatus] = mapped_column(
         Enum(PaymentStatus, name="payment_status"),

@@ -32,6 +32,8 @@ class Room(Base, TimestampMixin):
         default=uuid.uuid4
     )
     name: Mapped[str] = mapped_column(String(200), nullable=False)
+    room_number: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    floor: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     type: Mapped[str] = mapped_column(String(50), default="room")  # 'hall', 'room', 'facility'
     capacity: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     price_per_day: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)

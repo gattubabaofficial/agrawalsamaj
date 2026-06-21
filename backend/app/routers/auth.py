@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.dependencies import get_db
+from app.dependencies import get_db, get_current_user
 from app.models.user import User, OtpLog, OtpType, UserRole
 from app.utils.security import hash_password, verify_password, create_access_token
 
@@ -312,3 +312,48 @@ async def register_oauth(
         "message": "User registered successfully through social sign-in.",
         "user_id": str(new_user.user_id)
     }
+
+class ProfileUpdate(BaseModel):
+    first_name: Optional[str] = None
+    surname: Optional[str] = None
+    email: Optional[str] = None
+    mobile: Optional[str] = None
+    profession: Optional[str] = None
+    address: Optional[str] = None
+    email_private: Optional[bool] = None
+    mobile_private: Optional[bool] = None
+    address_private: Optional[bool] = None
+
+class ProfileResponse(BaseModel):
+    first_name: str
+    surname: str
+    email: Optional[str]
+    mobile: Optional[str]
+    profession: Optional[str]
+    address: Optional[str]
+    email_private: bool
+    mobile_private: bool
+    address_private: bool
+    family_id: Optional[str] = None
+    is_member: bool
+    
+    class Config:
+        from_attributes = True
+
+@router.get("/me", response_model=ProfileResponse)
+async def get_my_profile(current_user: User = Depends(get_current_user)):
+    return current_user
+
+@router.put("/profile", response_model=ProfileResponse)
+async def update_my_profile(
+    payload: ProfileUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    update_data = payload.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(current_user, key, value)
+        
+    await db.commit()
+    await db.refresh(current_user)
+    return current_user

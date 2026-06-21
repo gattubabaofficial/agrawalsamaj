@@ -24,7 +24,7 @@ export default function AdminMembershipRequestsPage() {
     }
   };
 
-  const handleAction = async (id: str, action: "approve" | "reject") => {
+  const handleAction = async (id: string, action: "approve" | "reject") => {
     try {
       const token = localStorage.getItem("token");
       await axios.post(`${getApiBaseUrl()}/membership/requests/${id}/${action}`, {}, {
