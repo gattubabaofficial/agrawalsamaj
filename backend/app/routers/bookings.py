@@ -71,6 +71,14 @@ async def list_rooms(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Room).filter(Room.is_available == True))
     return result.scalars().all()
 
+@router.get("/rooms/{room_id}", response_model=RoomResponse)
+async def get_room(room_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Room).filter(Room.room_id == room_id))
+    room = result.scalar_one_or_none()
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+    return room
+
 @router.post("/rooms", response_model=RoomResponse, status_code=status.HTTP_201_CREATED)
 async def create_room(
     room_data: RoomCreate,
@@ -105,7 +113,8 @@ async def create_booking(
         
     total_amount = float(room.price_per_day) * days
 
-    # Creating booking with SUCCESSFUL mock payment automatically based on user instruction
+    payment_status = PaymentStatus.PENDING
+    
     new_booking = Booking(
         user_id=current_user.user_id,
         room_id=room.room_id,
@@ -113,15 +122,25 @@ async def create_booking(
         end_date=booking_data.end_date,
         total_amount=total_amount,
         payment_mode=booking_data.payment_mode,
-        payment_status=PaymentStatus.PAID,
-        booking_status=BookingStatus.APPROVED,
+        payment_status=payment_status,
+        booking_status=BookingStatus.PENDING,
         notes=booking_data.notes
     )
     
     db.add(new_booking)
     await db.commit()
     await db.refresh(new_booking)
-    return new_booking
+    
+    response = BookingResponse.from_orm(new_booking).dict()
+    
+    if booking_data.payment_mode != PaymentMode.CASH:
+        # Simulate razorpay online payment
+        order_id = f"order_room_{uuid.uuid4().hex[:8]}"
+        new_booking.razorpay_order_id = order_id
+        await db.commit()
+        response["razorpay_order_id"] = order_id
+        
+    return response
 
 @router.get("/", response_model=List[BookingResponse])
 async def list_my_bookings(
@@ -192,3 +211,23 @@ async def cancel_booking(
     booking.booking_status = BookingStatus.CANCELLED
     await db.commit()
     return {"message": "Booking cancelled successfully"}
+
+@router.post("/{booking_id}/approve")
+async def approve_booking(
+    booking_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    result = await db.execute(select(Booking).filter(Booking.booking_id == booking_id))
+    booking = result.scalar_one_or_none()
+    
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+        
+    booking.booking_status = BookingStatus.APPROVED
+    booking.payment_status = PaymentStatus.PAID
+    await db.commit()
+    return {"message": "Booking approved and marked as paid"}

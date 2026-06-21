@@ -161,15 +161,36 @@ export default function AdminBookingsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full uppercase ${
-                          b.booking_status === 'approved' ? 'bg-emerald-50 text-emerald-700' :
-                          b.booking_status === 'cancelled' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'
-                        }`}>
-                          {b.booking_status === 'pending' && <Clock className="w-3.5 h-3.5" />}
-                          {b.booking_status === 'approved' && <CheckCircle className="w-3.5 h-3.5" />}
-                          {b.booking_status === 'cancelled' && <XCircle className="w-3.5 h-3.5" />}
-                          {b.booking_status}
-                        </span>
+                        <div className="flex flex-col gap-2">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full uppercase w-fit ${
+                            b.booking_status === 'approved' ? 'bg-emerald-50 text-emerald-700' :
+                            b.booking_status === 'cancelled' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'
+                          }`}>
+                            {b.booking_status === 'pending' && <Clock className="w-3.5 h-3.5" />}
+                            {b.booking_status === 'approved' && <CheckCircle className="w-3.5 h-3.5" />}
+                            {b.booking_status === 'cancelled' && <XCircle className="w-3.5 h-3.5" />}
+                            {b.booking_status}
+                          </span>
+                          
+                          {b.booking_status === 'pending' && (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const token = localStorage.getItem("token");
+                                  await axios.post(`${getApiBaseUrl()}/bookings/${b.booking_id}/approve`, {}, {
+                                    headers: { Authorization: `Bearer ${token}` }
+                                  });
+                                  fetchData();
+                                } catch (error) {
+                                  alert("Failed to approve booking");
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 text-xs font-bold rounded-lg transition-colors border border-emerald-200"
+                            >
+                              Approve & Mark Paid
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))

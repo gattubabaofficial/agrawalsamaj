@@ -123,10 +123,9 @@ export default function BhavanPage() {
                 </div>
               </div>
 
-              {/* Action */}
               <div className="pt-8 mt-8 border-t border-zinc-100">
                 <Link
-                  href={`/login?next=/bhavan`}
+                  href={`/bhavan/${fac.room_id}`}
                   className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold shadow-md shadow-amber-500/10 hover:shadow-amber-500/20 transition-all hover:scale-[1.01]"
                 >
                   Request Booking
