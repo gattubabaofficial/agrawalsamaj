@@ -18,15 +18,19 @@ class Settings(BaseSettings):
     # Redis
     REDIS_URL: Optional[str] = None
 
-    # Razorpay
-    RAZORPAY_KEY_ID: Optional[str] = None
-    RAZORPAY_KEY_SECRET: Optional[str] = None
+    # Razorpay Settings
+    RAZORPAY_KEY_ID: str = "rzp_test_123"
+    RAZORPAY_KEY_SECRET: str = "rzp_test_secret"
 
-    # Twilio (SMS / WhatsApp)
-    TWILIO_ACCOUNT_SID: Optional[str] = None
-    TWILIO_AUTH_TOKEN: Optional[str] = None
+    # Twilio Settings
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = ""
     TWILIO_PHONE_NUMBER: Optional[str] = None
     TWILIO_WHATSAPP_NUMBER: Optional[str] = None
+    TWILIO_WHATSAPP_FROM: str = ""
+    TWILIO_CONTENT_SID: str = ""
+    TWILIO_STATUS_CALLBACK_URL: str = ""
+    DOMAIN_URL: str = "http://localhost:8000"
 
     # Email
     FROM_EMAIL: str = "noreply@agrawalsamaj.org"

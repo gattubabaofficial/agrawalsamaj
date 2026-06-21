@@ -50,6 +50,11 @@ class PaymentStatus(str, PyEnum):
     REFUNDED = "refunded"
 
 
+class PassStatus(str, PyEnum):
+    UNUSED = "unused"
+    USED = "used"
+
+
 class MediaType(str, PyEnum):
     PHOTO = "photo"
     VIDEO = "video"
@@ -253,3 +258,37 @@ class EventRegistration(Base, TimestampMixin):
     # Relationships
     event: Mapped[Event] = relationship("Event", back_populates="registrations")
     user: Mapped["User"] = relationship("User", back_populates="event_registrations", foreign_keys=[user_id])
+    passes: Mapped[List["EventPass"]] = relationship(
+        "EventPass",
+        back_populates="registration",
+        cascade="all, delete-orphan"
+    )
+
+class EventPass(Base, TimestampMixin):
+    __tablename__ = "event_passes"
+
+    pass_id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    registration_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("event_registrations.registration_id", ondelete="CASCADE"),
+        nullable=False
+    )
+    event_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("events.event_id", ondelete="CASCADE"),
+        nullable=False
+    )
+    qr_image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    status: Mapped[PassStatus] = mapped_column(
+        Enum(PassStatus, name="pass_status"),
+        default=PassStatus.UNUSED,
+        nullable=False
+    )
+    whatsapp_message_sid: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    delivery_status: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    scanned_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Relationships
+    registration: Mapped[EventRegistration] = relationship("EventRegistration", back_populates="passes")
+    event: Mapped[Event] = relationship("Event")

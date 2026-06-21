@@ -8,6 +8,7 @@ from app.routers.events import router as events_router
 from app.routers.bookings import router as bookings_router
 from app.routers.donations import router as donations_router
 from app.routers.dashboard import router as dashboard_router
+from app.routers.passes import router as passes_router
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -18,6 +19,8 @@ app = FastAPI(
 # CORS middleware configuration
 local_origin_regex = r"https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?"
 
+from fastapi.staticfiles import StaticFiles
+
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=local_origin_regex,
@@ -26,6 +29,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 app.include_router(auth_router)
 app.include_router(membership_router)
 app.include_router(family_router)
@@ -33,6 +38,7 @@ app.include_router(events_router)
 app.include_router(bookings_router)
 app.include_router(donations_router)
 app.include_router(dashboard_router)
+app.include_router(passes_router)
 
 
 @app.get("/")

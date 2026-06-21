@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import List, Optional
@@ -12,6 +12,7 @@ from app.models.event import (
     Event, EventRegistration, EventCategory, EventStatus, PaymentStatus,
     EventVisibility, EventPricingType, EventPaymentMode
 )
+from app.services.whatsapp_service import generate_and_send_passes
 
 router = APIRouter(prefix="/api/v1/events", tags=["Events"])
 
@@ -118,6 +119,7 @@ async def get_event(event_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 async def register_event(
     event_id: uuid.UUID,
     reg_data: EventRegistrationRequest,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_current_user)
 ):
@@ -177,7 +179,7 @@ async def register_event(
         total_amount=total_amount,
         payment_mode=payment_mode,
         payment_status=payment_status,
-        qr_delivered=True if payment_status in [PaymentStatus.NOT_APPLICABLE, PaymentStatus.VERIFIED] else False
+        qr_delivered=False
     )
     
     event.passes_sold += reg_data.pass_count
@@ -185,6 +187,9 @@ async def register_event(
     db.add(registration)
     await db.commit()
     await db.refresh(registration)
+    
+    if payment_status == PaymentStatus.NOT_APPLICABLE:
+        background_tasks.add_task(generate_and_send_passes, registration.registration_id)
     
     response = {
         "status": "success", 
@@ -336,6 +341,7 @@ async def get_event_bookings(
 @router.post("/admin/bookings/{booking_id}/mark-paid")
 async def mark_booking_paid(
     booking_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -354,8 +360,8 @@ async def mark_booking_paid(
         return {"status": "success", "message": "Already verified"}
 
     registration.payment_status = PaymentStatus.VERIFIED
-    registration.qr_delivered = True
-    # In a real app, trigger ticket generation webhook here
-    
     await db.commit()
+    
+    background_tasks.add_task(generate_and_send_passes, registration.registration_id)
+    
     return {"status": "success", "message": "Booking marked as paid and ticket generated"}

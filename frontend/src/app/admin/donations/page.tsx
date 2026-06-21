@@ -8,6 +8,7 @@ import { getApiBaseUrl } from "@/utils/api";
 export default function AdminDonationsPage() {
   const [donations, setDonations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetchDonations();
@@ -28,6 +29,44 @@ export default function AdminDonationsPage() {
   };
 
   const totalAmount = donations.reduce((sum, d) => sum + d.amount, 0);
+
+  const filteredDonations = donations.filter((d) => {
+    const q = searchQuery.toLowerCase();
+    const name = d.user_id ? d.user_name : d.guest_name;
+    const email = d.user_id ? d.user_email : d.guest_email;
+    return (name?.toLowerCase() || "").includes(q) || (email?.toLowerCase() || "").includes(q);
+  });
+
+  const handleExportCSV = () => {
+    const headers = ["Donor Name", "Donor Type", "Email", "Mobile", "Category", "Amount", "Status", "Date", "Message"];
+    const rows = filteredDonations.map(d => {
+      const type = d.user_id ? "Member" : "Guest";
+      const name = d.user_id ? d.user_name : d.guest_name;
+      const email = d.user_id ? d.user_email : d.guest_email;
+      const mobile = d.user_id ? d.user_mobile : d.guest_mobile;
+      return [
+        `"${name || ''}"`,
+        type,
+        `"${email || ''}"`,
+        `"${mobile || ''}"`,
+        `"${d.category_name || ''}"`,
+        d.amount,
+        d.payment_status,
+        `"${new Date(d.donated_at).toLocaleString()}"`,
+        `"${d.message || ''}"`
+      ].join(",");
+    });
+    
+    const csvContent = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `donations_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   if (isLoading) {
     return (
@@ -59,11 +98,16 @@ export default function AdminDonationsPage() {
             <input 
               type="text" 
               placeholder="Search by Donor Name or Email..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500"
             />
           </div>
           <div className="flex gap-2">
-            <button className="px-4 py-2 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+            <button 
+              onClick={handleExportCSV}
+              className="px-4 py-2 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2"
+            >
               <FileText className="w-4 h-4" /> Export CSV
             </button>
           </div>
@@ -81,14 +125,14 @@ export default function AdminDonationsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100 text-sm">
-              {donations.length === 0 ? (
+              {filteredDonations.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-8 text-center text-zinc-500">
-                    No donations found yet.
+                    No donations found matching your search.
                   </td>
                 </tr>
               ) : (
-                donations.map((d) => (
+                filteredDonations.map((d) => (
                   <tr key={d.donation_id} className="hover:bg-zinc-50 transition-colors">
                     <td className="px-6 py-4">
                       {d.user_id ? (

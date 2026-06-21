@@ -21,7 +21,7 @@ class DonationCategoryResponse(BaseModel):
     is_active: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class DonationCreate(BaseModel):
     category_id: uuid.UUID

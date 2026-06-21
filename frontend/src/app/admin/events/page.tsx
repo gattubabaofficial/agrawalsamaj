@@ -116,6 +116,7 @@ export default function AdminEventsPage() {
     }
   };
 
+  const handleOpenEdit = (evt: any) => {
     setFormData({
       title: evt.title,
       description: evt.description || "",
