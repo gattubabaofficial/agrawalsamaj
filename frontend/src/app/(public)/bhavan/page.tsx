@@ -43,7 +43,7 @@ export default function BhavanPage() {
   useEffect(() => {
     const fetchFacilities = async () => {
       try {
-        const response = await axios.get(`${getApiBaseUrl()}/rooms`);
+        const response = await axios.get(`${getApiBaseUrl()}/bookings/rooms`);
         if (response.data && response.data.length > 0) {
           setFacilities(response.data);
         }

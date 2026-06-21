@@ -7,6 +7,8 @@ from app.models.donation import DonationCategory, Donation
 from app.models.chat import Group, GroupMember, Message, GroupType
 from app.models.audit import AuditLog, Notification, NotificationType
 
+from app.models.requests import MembershipRequest, FamilyJoinRequest, RequestStatus
+
 # Ensure all models are exported
 __all__ = [
     "Base",
@@ -40,4 +42,7 @@ __all__ = [
     "AuditLog",
     "Notification",
     "NotificationType",
+    "MembershipRequest",
+    "FamilyJoinRequest",
+    "RequestStatus",
 ]

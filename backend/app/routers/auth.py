@@ -8,9 +8,11 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from fastapi.security import OAuth2PasswordRequestForm
+
 from app.dependencies import get_db
 from app.models.user import User, OtpLog, OtpType, UserRole
-from app.utils.security import hash_password
+from app.utils.security import hash_password, verify_password, create_access_token
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
@@ -61,6 +63,57 @@ def parse_identifier(identifier: str):
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="Please enter a valid email address or 10-15 digit mobile number."
     )
+
+
+@router.post("/login")
+async def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    OAuth2 compatible token login, get an access token for future requests.
+    username field should contain email or mobile.
+    """
+    id_type, normalized_val = parse_identifier(form_data.username)
+
+    if id_type == "email":
+        user_result = await db.execute(select(User).where(User.email == normalized_val))
+    else:
+        user_result = await db.execute(select(User).where(User.mobile == normalized_val))
+        
+    user = user_result.scalars().first()
+    
+    if not user or not user.password_hash:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
+    if not verify_password(form_data.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Inactive user",
+        )
+
+    access_token = create_access_token(data={"sub": str(user.user_id), "role": user.role.value})
+    
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer",
+        "user_id": str(user.user_id),
+        "role": user.role.value,
+        "first_name": user.first_name,
+        "surname": user.surname,
+    }
+
 
 
 @router.post("/register/send-otp")

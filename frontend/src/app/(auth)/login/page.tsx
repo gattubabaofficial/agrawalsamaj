@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Mail, Phone, Lock, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { Mail, Phone, Lock, Eye, EyeOff, ShieldCheck, Loader2 } from "lucide-react";
+import axios from "axios";
+import { getApiBaseUrl } from "@/utils/api";
 
 export default function LoginPage() {
   const [method, setMethod] = useState("password"); // 'password' or 'otp'
@@ -12,6 +14,8 @@ export default function LoginPage() {
   const [mobile, setMobile] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const handleSendOtp = () => {
     if (mobile.length >= 10) {
@@ -19,12 +23,39 @@ export default function LoginPage() {
     }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Proceed to redirect or mock token set
-    const params = new URLSearchParams(window.location.search);
-    const redirectUrl = params.get("next") || "/dashboard";
-    window.location.href = redirectUrl;
+    setIsLoading(true);
+    setErrorMsg("");
+
+    try {
+      const username = method === "password" ? email : mobile;
+      const pwd = method === "password" ? password : otp;
+
+      const formData = new URLSearchParams();
+      formData.append('username', username);
+      formData.append('password', pwd);
+
+      const response = await axios.post(`${getApiBaseUrl()}/auth/login`, formData, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      });
+
+      if (response.data.access_token) {
+        localStorage.setItem("token", response.data.access_token);
+        localStorage.setItem("userRole", response.data.role);
+        
+        const params = new URLSearchParams(window.location.search);
+        const redirectUrl = params.get("next") || "/dashboard";
+        window.location.href = redirectUrl;
+      }
+    } catch (error: any) {
+      console.error("Login Error:", error);
+      setErrorMsg(error.response?.data?.detail || "Invalid credentials. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -65,6 +96,12 @@ export default function LoginPage() {
             Mobile & OTP
           </button>
         </div>
+
+        {errorMsg && (
+          <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm font-medium border border-red-100">
+            {errorMsg}
+          </div>
+        )}
 
         <form onSubmit={handleLogin} className="space-y-5 text-sm">
           {method === "password" ? (
@@ -157,9 +194,11 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-semibold shadow-md shadow-amber-500/10 hover:shadow-amber-500/20 transition-all hover:scale-[1.01]"
+            disabled={isLoading}
+            className="w-full py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-semibold shadow-md shadow-amber-500/10 hover:shadow-amber-500/20 transition-all hover:scale-[1.01] flex justify-center items-center gap-2"
           >
-            {method === "otp" && !otpSent ? "Send OTP First" : "Sign In"}
+            {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+            {method === "otp" && !otpSent ? "Send OTP First" : (isLoading ? "Signing In..." : "Sign In")}
           </button>
         </form>
 

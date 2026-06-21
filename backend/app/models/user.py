@@ -12,7 +12,7 @@ from app.models.base import TimestampMixin
 class UserRole(str, PyEnum):
     ADMIN = "admin"
     MEMBER = "member"
-    USER = "user"
+    GUEST = "guest"
 
 
 class OtpType(str, PyEnum):
@@ -29,6 +29,7 @@ class Family(Base, TimestampMixin):
         default=uuid.uuid4
     )
     family_code: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=False)
+    family_name: Mapped[str] = mapped_column(String(200), nullable=False)
     head_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(nullable=True)
 
     # Relationships
@@ -51,6 +52,7 @@ class User(Base, TimestampMixin):
         nullable=True
     )
     samaj_id: Mapped[Optional[str]] = mapped_column(String(50), unique=True, index=True, nullable=True) # Samaj ID for members
+    family_relation: Mapped[Optional[str]] = mapped_column(String(50), nullable=True) # Relation to head
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     surname: Mapped[str] = mapped_column(String(100), nullable=False)
     mobile: Mapped[Optional[str]] = mapped_column(String(15), unique=True, index=True, nullable=True)
@@ -58,7 +60,7 @@ class User(Base, TimestampMixin):
     password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     role: Mapped[UserRole] = mapped_column(
         Enum(UserRole, name="user_role"),
-        default=UserRole.USER,
+        default=UserRole.GUEST,
         nullable=False
     )
     is_member: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

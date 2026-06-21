@@ -47,8 +47,17 @@ async def get_current_user(
     # Import locally to avoid circular dependency
     from app.models.user import User
     from sqlalchemy import select
+    import uuid
     
-    result = await db.execute(select(User).where(User.user_id == user_id))
+    try:
+        user_uuid = uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid user ID format",
+        )
+    
+    result = await db.execute(select(User).where(User.user_id == user_uuid))
     user = result.scalars().first()
     if user is None:
         raise HTTPException(

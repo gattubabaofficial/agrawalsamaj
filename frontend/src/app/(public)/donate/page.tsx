@@ -32,7 +32,7 @@ export default function DonatePage() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get(`${getApiBaseUrl()}/donation-categories`);
+        const response = await axios.get(`${getApiBaseUrl()}/donations/categories`);
         if (response.data && response.data.length > 0) {
           setCategories(response.data);
           setSelectedCat(response.data[0].category_id);

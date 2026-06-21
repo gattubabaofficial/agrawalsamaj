@@ -2,6 +2,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.routers.auth import router as auth_router
+from app.routers.membership import router as membership_router
+from app.routers.family import router as family_router
+from app.routers.events import router as events_router
+from app.routers.bookings import router as bookings_router
+from app.routers.donations import router as donations_router
+from app.routers.dashboard import router as dashboard_router
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -21,6 +27,12 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(membership_router)
+app.include_router(family_router)
+app.include_router(events_router)
+app.include_router(bookings_router)
+app.include_router(donations_router)
+app.include_router(dashboard_router)
 
 
 @app.get("/")
