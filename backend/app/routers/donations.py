@@ -6,7 +6,7 @@ from datetime import datetime
 import uuid
 from pydantic import BaseModel, Field
 
-from app.dependencies import get_db, get_current_user, get_optional_current_user
+from app.dependencies import get_db, get_current_user
 from app.models.user import User, UserRole
 from app.models.event import PaymentStatus
 from app.models.donation import Donation, DonationCategory

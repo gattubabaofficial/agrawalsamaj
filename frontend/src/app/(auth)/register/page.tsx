@@ -13,6 +13,7 @@ export default function RegisterPage() {
   const [identifier, setIdentifier] = useState(""); // Email or Mobile
   const [password, setPassword] = useState("");
   const [otpCode, setOtpCode] = useState("");
+  const [verificationToken, setVerificationToken] = useState("");
 
   // UI / Flow States
   const [isLoading, setIsLoading] = useState(false);
@@ -22,6 +23,7 @@ export default function RegisterPage() {
 
   // OTP Sending States
   const [otpSent, setOtpSent] = useState(false);
+  const [identifierVerified, setIdentifierVerified] = useState(false);
   const [devOtp, setDevOtp] = useState<string | null>(null); // For developer convenience in dev mode
 
   // OAuth Simulation States
@@ -54,33 +56,30 @@ export default function RegisterPage() {
     setError(null);
     setDevOtp(null);
 
+    const isEmail = identifier.includes("@");
+    const endpoint = isEmail ? "/auth/email/send-otp" : "/auth/register/send-otp";
+    const payload = isEmail ? { email: identifier.trim() } : { identifier: identifier.trim() };
+
     try {
-      const response = await axios.post(`${getApiBaseUrl()}/auth/register/send-otp`, {
-        identifier: identifier.trim(),
-      });
+      const response = await axios.post(`${getApiBaseUrl()}${endpoint}`, payload);
 
       if (response.data.status === "success") {
         setOtpSent(true);
-        // Expose generated OTP in response for development convenience
-        if (response.data.otp) {
-          setDevOtp(response.data.otp);
-        }
+        if (response.data.otp) setDevOtp(response.data.otp);
       }
     } catch (err: any) {
       console.error("OTP send error:", err);
-      const errorMsg =
-        err.response?.data?.detail ||
-        "Failed to send OTP. Please check your connection.";
-      setError(errorMsg);
+      setError(err.response?.data?.detail || "Failed to send OTP.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otpSent) {
-      setError("Please send and verify the OTP code first.");
+  const handleVerifyOtp = async () => {
+    const isEmail = identifier.includes("@");
+    if (!isEmail) {
+      // For mobile, verification happens at final registration in current backend setup
+      setIdentifierVerified(true);
       return;
     }
 
@@ -88,23 +87,54 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      const response = await axios.post(`${getApiBaseUrl()}/auth/register`, {
+      const response = await axios.post(`${getApiBaseUrl()}/auth/email/verify-otp`, {
+        email: identifier.trim(),
+        otp: otpCode,
+      });
+
+      if (response.data.status === "success") {
+        setVerificationToken(response.data.email_verification_token);
+        setIdentifierVerified(true);
+        setError(null);
+      }
+    } catch (err: any) {
+      console.error("OTP verify error:", err);
+      setError(err.response?.data?.detail || "Invalid OTP code.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!identifierVerified) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const isEmail = identifier.includes("@");
+      const payload: any = {
         first_name: firstName,
         surname: surname,
         identifier: identifier.trim(),
         password: password,
-        otp_code: otpCode,
-      });
+      };
+
+      if (isEmail) {
+        payload.verification_token = verificationToken;
+      } else {
+        payload.otp_code = otpCode;
+      }
+
+      const response = await axios.post(`${getApiBaseUrl()}/auth/register`, payload);
 
       if (response.data.status === "success" || response.status === 201) {
         setSuccess(true);
       }
     } catch (err: any) {
-      console.error("Register verification error:", err);
-      const errorMsg =
-        err.response?.data?.detail ||
-        "Registration failed. Please double-check details or code.";
-      setError(errorMsg);
+      console.error("Register error:", err);
+      setError(err.response?.data?.detail || "Registration failed.");
     } finally {
       setIsLoading(false);
     }
@@ -216,114 +246,126 @@ export default function RegisterPage() {
             )}
 
             <form onSubmit={handleRegister} className="space-y-4 text-sm">
-              {/* Name Row */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="font-semibold text-zinc-700">First Name</label>
-                  <div className="relative">
-                    <User className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      required
-                      placeholder="Rahul"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 rounded-xl border border-zinc-200 bg-transparent text-zinc-950 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
-                    />
+              {/* Step 1: Identifier & OTP */}
+              {!identifierVerified ? (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="font-semibold text-zinc-700">Email Address or Mobile Number</label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Mail className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          required
+                          disabled={otpSent}
+                          placeholder="rahul@example.com or 9876543210"
+                          value={identifier}
+                          onChange={(e) => setIdentifier(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-200 bg-transparent text-zinc-950 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 disabled:opacity-50 disabled:bg-zinc-100"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleSendOtp}
+                        disabled={isLoading || !identifier.trim() || (otpSent && !devOtp)}
+                        className="px-4 py-2.5 rounded-xl bg-zinc-900 text-white hover:bg-zinc-800 text-xs font-semibold disabled:opacity-50 disabled:pointer-events-none transition-colors border border-zinc-200/20"
+                      >
+                        {otpSent ? "Sent" : "Verify"}
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="font-semibold text-zinc-700">Surname</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Garg"
-                    value={surname}
-                    onChange={(e) => setSurname(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-zinc-200 bg-transparent text-zinc-950 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
-                  />
-                </div>
-              </div>
 
-              {/* Email or Mobile Field */}
-              <div className="space-y-1.5">
-                <label className="font-semibold text-zinc-700">Email Address or Mobile Number</label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Mail className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      required
-                      disabled={otpSent}
-                      placeholder="rahul@example.com or 9876543210"
-                      value={identifier}
-                      onChange={(e) => setIdentifier(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-200 bg-transparent text-zinc-950 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 disabled:opacity-50 disabled:bg-zinc-100"
-                    />
+                  {otpSent && (
+                    <div className="space-y-1.5 animate-fade-in">
+                      <label className="font-semibold text-zinc-700">Enter OTP Verification Code</label>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <ShieldCheck className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            required
+                            maxLength={6}
+                            placeholder="6-digit verification code"
+                            value={otpCode}
+                            onChange={(e) => setOtpCode(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-200 bg-transparent text-zinc-950 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 font-mono tracking-widest text-center"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleVerifyOtp}
+                          disabled={isLoading || otpCode.length < 6}
+                          className="px-4 py-2.5 rounded-xl bg-amber-500 text-white hover:bg-amber-600 text-xs font-semibold disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                        >
+                          Confirm
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* Step 2: Details */
+                <div className="space-y-4 animate-fade-in">
+                  <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span className="font-medium">{identifier} verified.</span>
+                    </div>
+                    <button type="button" onClick={() => { setIdentifierVerified(false); setOtpSent(false); setOtpCode(""); }} className="text-emerald-600 font-semibold hover:underline">Change</button>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="font-semibold text-zinc-700">First Name</label>
+                      <div className="relative">
+                        <User className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          required
+                          placeholder="Rahul"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 rounded-xl border border-zinc-200 bg-transparent text-zinc-950 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="font-semibold text-zinc-700">Surname</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Garg"
+                        value={surname}
+                        onChange={(e) => setSurname(e.target.value)}
+                        className="w-full px-4 py-2 rounded-xl border border-zinc-200 bg-transparent text-zinc-950 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="font-semibold text-zinc-700">Create Password</label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="password"
+                        required
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 rounded-xl border border-zinc-200 bg-transparent text-zinc-950 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
+
                   <button
-                    type="button"
-                    onClick={handleSendOtp}
-                    disabled={isLoading || !identifier.trim()}
-                    className="px-4 py-2.5 rounded-xl bg-zinc-900 text-white hover:bg-zinc-800 text-xs font-semibold disabled:opacity-50 disabled:pointer-events-none transition-colors border border-zinc-200/20"
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:pointer-events-none text-white font-semibold shadow-md shadow-amber-500/10 hover:shadow-amber-500/20 transition-all hover:scale-[1.01] mt-4 flex items-center justify-center gap-2"
                   >
-                    {otpSent ? "Resend" : "Send OTP"}
+                    {isLoading ? "Registering..." : "Complete Registration"}
                   </button>
                 </div>
-              </div>
-
-              {/* Password */}
-              <div className="space-y-1.5">
-                <label className="font-semibold text-zinc-700">Password</label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="password"
-                    required
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 rounded-xl border border-zinc-200 bg-transparent text-zinc-950 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
-                  />
-                </div>
-              </div>
-
-              {/* OTP Code */}
-              {otpSent && (
-                <div className="space-y-1.5 animate-fade-in">
-                  <label className="font-semibold text-zinc-700">Enter OTP Verification Code</label>
-                  <div className="relative">
-                    <ShieldCheck className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      required
-                      maxLength={6}
-                      placeholder="6-digit verification code"
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-200 bg-transparent text-zinc-950 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 font-mono tracking-widest text-center"
-                    />
-                  </div>
-                </div>
               )}
-
-              <button
-                type="submit"
-                disabled={isLoading || !otpSent}
-                className="w-full py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:pointer-events-none text-white font-semibold shadow-md shadow-amber-500/10 hover:shadow-amber-500/20 transition-all hover:scale-[1.01] mt-4 flex items-center justify-center gap-2"
-              >
-                {isLoading ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    <span>Registering...</span>
-                  </>
-                ) : (
-                  "Register Account"
-                )}
-              </button>
             </form>
 
             <div className="relative flex py-2 items-center text-2xs text-zinc-400">

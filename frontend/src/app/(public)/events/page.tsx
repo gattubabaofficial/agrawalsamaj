@@ -176,10 +176,10 @@ export default function EventsPage() {
                   {evt.pass_price === 0 ? "Free" : `₹${evt.pass_price}`}
                 </span>
                 <Link
-                  href={`/login?next=/events/${evt.event_id}`}
+                  href={`/events/${evt.event_id}`}
                   className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 hover:text-amber-700"
                 >
-                  Get Passes <ArrowRight className="w-4 h-4" />
+                  View Details & Book <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
             </motion.div>

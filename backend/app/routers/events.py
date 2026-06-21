@@ -6,9 +6,12 @@ from datetime import datetime
 import uuid
 from pydantic import BaseModel, Field
 
-from app.dependencies import get_db, get_current_user
+from app.dependencies import get_db, get_current_user, get_optional_current_user
 from app.models.user import User, UserRole
-from app.models.event import Event, EventRegistration, EventCategory, EventStatus, PaymentStatus
+from app.models.event import (
+    Event, EventRegistration, EventCategory, EventStatus, PaymentStatus,
+    EventVisibility, EventPricingType, EventPaymentMode
+)
 
 router = APIRouter(prefix="/api/v1/events", tags=["Events"])
 
@@ -23,7 +26,8 @@ class EventCreate(BaseModel):
     pass_price: float = 0.0
     total_passes: Optional[int] = None
     max_per_user: int = 5
-    is_members_only: bool = False
+    visibility: EventVisibility = EventVisibility.OPEN_TO_ALL
+    pricing_type: EventPricingType = EventPricingType.FREE
     timeline: Optional[list] = None
 
 class EventUpdate(BaseModel):
@@ -36,7 +40,8 @@ class EventUpdate(BaseModel):
     pass_price: Optional[float] = None
     total_passes: Optional[int] = None
     max_per_user: Optional[int] = None
-    is_members_only: Optional[bool] = None
+    visibility: Optional[EventVisibility] = None
+    pricing_type: Optional[EventPricingType] = None
     timeline: Optional[list] = None
 
 class EventResponse(BaseModel):
@@ -51,7 +56,8 @@ class EventResponse(BaseModel):
     total_passes: Optional[int]
     passes_sold: int
     status: EventStatus
-    is_members_only: bool
+    visibility: EventVisibility
+    pricing_type: EventPricingType
     timeline: Optional[list]
 
     class Config:
@@ -59,6 +65,10 @@ class EventResponse(BaseModel):
 
 class EventRegistrationRequest(BaseModel):
     pass_count: int = Field(default=1, gt=0)
+    guest_name: Optional[str] = None
+    guest_phone: Optional[str] = None
+    guest_email: Optional[str] = None
+    payment_mode: Optional[EventPaymentMode] = None
 
 # Routes
 @router.post("/", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
@@ -81,7 +91,8 @@ async def create_event(
         pass_price=event_data.pass_price,
         total_passes=event_data.total_passes,
         max_per_user=event_data.max_per_user,
-        is_members_only=event_data.is_members_only,
+        visibility=event_data.visibility,
+        pricing_type=event_data.pricing_type,
         timeline=event_data.timeline,
         status=EventStatus.UPCOMING
     )
@@ -95,12 +106,20 @@ async def list_events(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Event).order_by(Event.start_datetime))
     return result.scalars().all()
 
+@router.get("/{event_id}", response_model=EventResponse)
+async def get_event(event_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Event).filter(Event.event_id == event_id))
+    event = result.scalar_one_or_none()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return event
+
 @router.post("/{event_id}/register", status_code=status.HTTP_201_CREATED)
 async def register_event(
     event_id: uuid.UUID,
     reg_data: EventRegistrationRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_optional_current_user)
 ):
     # Fetch event
     result = await db.execute(select(Event).filter(Event.event_id == event_id))
@@ -114,16 +133,51 @@ async def register_event(
     if event.total_passes and (event.passes_sold + reg_data.pass_count > event.total_passes):
         raise HTTPException(status_code=400, detail="Not enough passes available")
 
-    # Mock payment - directly setting to paid for demonstration based on user request
+    # 1. Visibility Check
+    if event.visibility == EventVisibility.MEMBERS_ONLY:
+        if not current_user:
+            raise HTTPException(status_code=401, detail="This event is for members only. Please log in.")
+        # Optionally, check if user is an approved member (omitted for brevity, assuming login is enough)
+    else:
+        if not current_user and not (reg_data.guest_name and reg_data.guest_phone and reg_data.guest_email):
+            raise HTTPException(status_code=400, detail="Guest name, phone, and email are required for non-logged in users")
+
+    user_id = current_user.user_id if current_user else None
+
+    # 2. Pricing & Payment Logic
+    payment_status = PaymentStatus.PENDING
+    payment_mode = None
     total_amount = float(event.pass_price) * reg_data.pass_count
-    
+
+    if event.pricing_type == EventPricingType.FREE:
+        payment_status = PaymentStatus.NOT_APPLICABLE
+        payment_mode = None
+        total_amount = 0.0
+    else:
+        if not reg_data.payment_mode:
+            raise HTTPException(status_code=400, detail="Payment mode is required for paid events")
+            
+        payment_mode = reg_data.payment_mode
+        
+        if payment_mode == EventPaymentMode.PAY_AT_VENUE:
+            payment_status = PaymentStatus.PENDING
+        elif payment_mode == EventPaymentMode.PAY_ONLINE:
+            # We set it to PENDING initially. The frontend redirect triggers actual payment
+            # A webhook or verification endpoint would mark it VERIFIED.
+            # Returning a dummy razorpay order ID for now.
+            payment_status = PaymentStatus.PENDING
+
     registration = EventRegistration(
-        user_id=current_user.user_id,
+        user_id=user_id,
+        guest_name=reg_data.guest_name if not current_user else None,
+        guest_phone=reg_data.guest_phone if not current_user else None,
+        guest_email=reg_data.guest_email if not current_user else None,
         event_id=event.event_id,
         pass_count=reg_data.pass_count,
         total_amount=total_amount,
-        payment_status=PaymentStatus.PAID,
-        qr_delivered=True
+        payment_mode=payment_mode,
+        payment_status=payment_status,
+        qr_delivered=True if payment_status in [PaymentStatus.NOT_APPLICABLE, PaymentStatus.VERIFIED] else False
     )
     
     event.passes_sold += reg_data.pass_count
@@ -132,7 +186,21 @@ async def register_event(
     await db.commit()
     await db.refresh(registration)
     
-    return {"message": "Successfully registered", "registration_id": registration.registration_id}
+    response = {
+        "status": "success", 
+        "message": "Successfully registered", 
+        "registration_id": registration.registration_id,
+        "payment_status": payment_status,
+        "payment_mode": payment_mode
+    }
+    
+    # Simulate Razorpay order if online
+    if payment_mode == EventPaymentMode.PAY_ONLINE:
+        response["razorpay_order_id"] = f"order_dummy_{uuid.uuid4().hex[:8]}"
+        registration.razorpay_order_id = response["razorpay_order_id"]
+        await db.commit()
+
+    return response
 
 @router.get("/my-registrations")
 async def get_my_registrations(
@@ -212,7 +280,7 @@ async def get_all_registrations(
     result = await db.execute(
         select(EventRegistration, Event, User)
         .join(Event, EventRegistration.event_id == Event.event_id)
-        .join(User, EventRegistration.user_id == User.user_id)
+        .outerjoin(User, EventRegistration.user_id == User.user_id)
         .order_by(EventRegistration.created_at.desc())
     )
     
@@ -223,12 +291,71 @@ async def get_all_registrations(
             "pass_count": reg.pass_count,
             "total_amount": reg.total_amount,
             "payment_status": reg.payment_status,
+            "payment_mode": reg.payment_mode,
             "event_title": event.title,
             "event_start": event.start_datetime,
-            "user_name": f"{user.first_name} {user.surname}",
-            "user_email": user.email,
-            "user_mobile": user.mobile,
+            "user_name": f"{user.first_name} {user.surname}" if user else reg.guest_name,
+            "user_email": user.email if user else reg.guest_email,
+            "user_mobile": user.mobile if user else reg.guest_phone,
             "created_at": reg.created_at
         })
         
     return registrations
+
+@router.get("/admin/events/{event_id}/bookings")
+async def get_event_bookings(
+    event_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Only admins can view bookings")
+
+    result = await db.execute(
+        select(EventRegistration, User)
+        .outerjoin(User, EventRegistration.user_id == User.user_id)
+        .filter(EventRegistration.event_id == event_id)
+        .order_by(EventRegistration.created_at.desc())
+    )
+    
+    bookings = []
+    for reg, user in result.all():
+        bookings.append({
+            "registration_id": reg.registration_id,
+            "name": f"{user.first_name} {user.surname}" if user else reg.guest_name,
+            "phone": user.mobile if user else reg.guest_phone,
+            "email": user.email if user else reg.guest_email,
+            "pass_count": reg.pass_count,
+            "payment_mode": reg.payment_mode,
+            "payment_status": reg.payment_status,
+            "amount": reg.total_amount,
+            "created_at": reg.created_at
+        })
+    return bookings
+
+@router.post("/admin/bookings/{booking_id}/mark-paid")
+async def mark_booking_paid(
+    booking_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Only admins can modify bookings")
+
+    result = await db.execute(select(EventRegistration).filter(EventRegistration.registration_id == booking_id))
+    registration = result.scalar_one_or_none()
+    if not registration:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    if registration.payment_mode != EventPaymentMode.PAY_AT_VENUE:
+        raise HTTPException(status_code=400, detail="Only PAY_AT_VENUE bookings can be manually marked as paid")
+        
+    if registration.payment_status == PaymentStatus.VERIFIED:
+        return {"status": "success", "message": "Already verified"}
+
+    registration.payment_status = PaymentStatus.VERIFIED
+    registration.qr_delivered = True
+    # In a real app, trigger ticket generation webhook here
+    
+    await db.commit()
+    return {"status": "success", "message": "Booking marked as paid and ticket generated"}

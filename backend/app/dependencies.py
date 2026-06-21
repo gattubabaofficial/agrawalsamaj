@@ -74,6 +74,23 @@ async def get_current_user(
     return user
 
 
+async def get_optional_current_user(
+    db: AsyncSession = Depends(get_db),
+    token: str = Depends(oauth2_scheme)
+):
+    """
+    Get the user if logged in, but return None if not instead of throwing an error.
+    """
+    if not token:
+        return None
+        
+    try:
+        user = await get_current_user(db=db, token=token)
+        return user
+    except HTTPException:
+        return None
+
+
 async def get_current_admin(current_user=Depends(get_current_user)):
     """Enforce that the logged-in user is an admin."""
     if current_user.role != "admin":

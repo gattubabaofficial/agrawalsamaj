@@ -11,8 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.dependencies import get_db, get_current_user
-from app.models.user import User, OtpLog, OtpType, UserRole
+from app.models.user import User, OtpLog, OtpType, UserRole, PhoneOTPRequest, EmailOTPRequest
 from app.utils.security import hash_password, verify_password, create_access_token
+from app.services.sms_service import send_sms
+from app.services.email_service import send_email
+import hashlib
+import os
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
@@ -20,13 +24,28 @@ router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 class SendOtpRequest(BaseModel):
     identifier: str = Field(..., description="Email address or Mobile number")
 
+class PhoneOtpSendRequest(BaseModel):
+    phone: str = Field(..., min_length=10, max_length=15, description="10-15 digit mobile number")
+
+class PhoneOtpVerifyRequest(BaseModel):
+    phone: str = Field(..., min_length=10, max_length=15)
+    otp: str = Field(..., min_length=6, max_length=6)
+
+
+class EmailOtpSendRequest(BaseModel):
+    email: EmailStr = Field(..., description="Email address")
+
+class EmailOtpVerifyRequest(BaseModel):
+    email: EmailStr = Field(...)
+    otp: str = Field(..., min_length=6, max_length=6)
 
 class RegisterVerifyRequest(BaseModel):
     first_name: str = Field(..., min_length=1, max_length=100)
     surname: str = Field(..., min_length=1, max_length=100)
     identifier: str = Field(...)
     password: str = Field(..., min_length=6)
-    otp_code: str = Field(..., min_length=6, max_length=6)
+    verification_token: Optional[str] = Field(None, description="Returned by /email/verify-otp")
+    otp_code: Optional[str] = Field(None, description="For legacy/mobile registration if applicable")
 
 
 class OAuthRegisterRequest(BaseModel):
@@ -114,37 +133,262 @@ async def login(
         "surname": user.surname,
     }
 
+def hash_otp(otp: str) -> str:
+    return hashlib.sha256(otp.encode()).hexdigest()
 
+@router.post("/phone/send-otp")
+async def phone_send_otp(payload: PhoneOtpSendRequest, db: AsyncSession = Depends(get_db)):
+    id_type, normalized_mobile = parse_identifier(payload.phone)
+    if id_type != "mobile":
+        raise HTTPException(status_code=400, detail="Invalid mobile number format.")
+
+    # 1. Rate limiting
+    now = datetime.utcnow()
+    one_hour_ago = now - timedelta(hours=1)
+    
+    recent_requests_query = await db.execute(
+        select(PhoneOTPRequest)
+        .where(PhoneOTPRequest.phone == normalized_mobile)
+        .where(PhoneOTPRequest.created_at >= one_hour_ago)
+        .order_by(PhoneOTPRequest.created_at.desc())
+    )
+    recent_requests = recent_requests_query.scalars().all()
+    
+    max_attempts = int(os.getenv("OTP_MAX_ATTEMPTS", "5"))
+    if len(recent_requests) >= max_attempts:
+        raise HTTPException(status_code=429, detail="Too many OTP requests. Please try again later.")
+        
+    cooldown = int(os.getenv("OTP_RESEND_COOLDOWN_SECONDS", "30"))
+    if recent_requests and (now - recent_requests[0].created_at).total_seconds() < cooldown:
+        raise HTTPException(status_code=429, detail=f"Please wait {cooldown} seconds before requesting a new OTP.")
+
+    # 2. Generate and store OTP
+    otp_code = "".join(random.choices(string.digits, k=6))
+    otp_hash = hash_otp(otp_code)
+    expiry_minutes = int(os.getenv("OTP_EXPIRY_MINUTES", "5"))
+    expires_at = now + timedelta(minutes=expiry_minutes)
+
+    # Invalidate previous unverified OTPs
+    for req in recent_requests:
+        if not req.verified:
+            req.expires_at = now
+            
+    otp_request = PhoneOTPRequest(
+        phone=normalized_mobile,
+        otp_hash=otp_hash,
+        expires_at=expires_at,
+        attempts=0,
+        verified=False
+    )
+    db.add(otp_request)
+    await db.commit()
+
+    # 3. Send SMS
+    message = f"Your Agrawal Samaj verification code is {otp_code}. Valid for {expiry_minutes} minutes. Do not share this with anyone."
+    sms_sent = await send_sms(normalized_mobile, message)
+    
+    if not sms_sent:
+        # We don't necessarily fail the API if dummy mode is on, but in prod we might.
+        pass
+
+    return {
+        "status": "success",
+        "message": "OTP sent successfully."
+    }
+
+@router.post("/phone/verify-otp")
+async def phone_verify_otp(payload: PhoneOtpVerifyRequest, db: AsyncSession = Depends(get_db)):
+    id_type, normalized_mobile = parse_identifier(payload.phone)
+    if id_type != "mobile":
+        raise HTTPException(status_code=400, detail="Invalid mobile number.")
+
+    # 1. Get the most recent active OTP request
+    otp_query = await db.execute(
+        select(PhoneOTPRequest)
+        .where(PhoneOTPRequest.phone == normalized_mobile)
+        .where(PhoneOTPRequest.verified == False)
+        .order_by(PhoneOTPRequest.created_at.desc())
+        .limit(1)
+    )
+    otp_req = otp_query.scalars().first()
+
+    if not otp_req:
+        raise HTTPException(status_code=400, detail="No pending OTP request found.")
+
+    if otp_req.attempts >= 5:
+        raise HTTPException(status_code=400, detail="Maximum verification attempts exceeded. Request a new OTP.")
+
+    now = datetime.utcnow()
+    expires_naive = otp_req.expires_at.replace(tzinfo=None) if otp_req.expires_at.tzinfo else otp_req.expires_at
+    if expires_naive < now:
+        raise HTTPException(status_code=400, detail="OTP has expired. Request a new one.")
+
+    # 2. Verify hash
+    if hash_otp(payload.otp) != otp_req.otp_hash:
+        otp_req.attempts += 1
+        await db.commit()
+        raise HTTPException(status_code=400, detail="Invalid OTP code.")
+
+    # Mark as verified
+    otp_req.verified = True
+    await db.commit()
+
+    # 3. Handle User Session (Auto-register if not found)
+    user_query = await db.execute(select(User).where(User.mobile == normalized_mobile))
+    user = user_query.scalars().first()
+
+    if not user:
+        user = User(
+            first_name="User",
+            surname="",
+            mobile=normalized_mobile,
+            role=UserRole.USER,
+            is_active=True,
+            is_member=False
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user account.")
+
+    # 4. Generate Token
+    access_token = create_access_token(data={"sub": str(user.user_id), "role": user.role.value})
+    
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer",
+        "user_id": str(user.user_id),
+        "role": user.role.value,
+        "first_name": user.first_name,
+        "surname": user.surname,
+    }
+
+
+
+@router.post("/email/send-otp")
+async def email_send_otp(payload: EmailOtpSendRequest, db: AsyncSession = Depends(get_db)):
+    normalized_email = payload.email.lower()
+
+    # 1. Check uniqueness in users table
+    user_result = await db.execute(select(User).where(User.email == normalized_email))
+    if user_result.scalars().first() is not None:
+        raise HTTPException(status_code=400, detail="This email address is already registered.")
+
+    # 2. Rate limiting
+    now = datetime.utcnow()
+    one_hour_ago = now - timedelta(hours=1)
+    
+    recent_requests_query = await db.execute(
+        select(EmailOTPRequest)
+        .where(EmailOTPRequest.email == normalized_email)
+        .where(EmailOTPRequest.created_at >= one_hour_ago)
+        .order_by(EmailOTPRequest.created_at.desc())
+    )
+    recent_requests = recent_requests_query.scalars().all()
+    
+    max_attempts = int(os.getenv("OTP_MAX_ATTEMPTS", "5"))
+    if len(recent_requests) >= max_attempts:
+        raise HTTPException(status_code=429, detail="Too many OTP requests. Please try again later.")
+        
+    cooldown = int(os.getenv("OTP_RESEND_COOLDOWN_SECONDS", "30"))
+    if recent_requests and (now - recent_requests[0].created_at).total_seconds() < cooldown:
+        raise HTTPException(status_code=429, detail=f"Please wait {cooldown} seconds before requesting a new OTP.")
+
+    # 3. Generate and store OTP
+    otp_code = "".join(random.choices(string.digits, k=6))
+    otp_hash = hash_otp(otp_code)
+    expiry_minutes = int(os.getenv("OTP_EXPIRY_MINUTES", "5"))
+    expires_at = now + timedelta(minutes=expiry_minutes)
+
+    # Invalidate previous unverified OTPs
+    for req in recent_requests:
+        if not req.verified:
+            req.expires_at = now
+            
+    otp_request = EmailOTPRequest(
+        email=normalized_email,
+        otp_hash=otp_hash,
+        expires_at=expires_at,
+        attempts=0,
+        verified=False
+    )
+    db.add(otp_request)
+    await db.commit()
+
+    # 4. Send Email
+    subject = "Agrawal Samaj - Verify your Email Address"
+    message = f"Your verification code is {otp_code}. It expires in {expiry_minutes} minutes."
+    send_email(normalized_email, subject, message)
+
+    return {
+        "status": "success",
+        "message": "OTP sent successfully to your email."
+    }
+
+@router.post("/email/verify-otp")
+async def email_verify_otp(payload: EmailOtpVerifyRequest, db: AsyncSession = Depends(get_db)):
+    normalized_email = payload.email.lower()
+
+    # 1. Get the most recent active OTP request
+    otp_query = await db.execute(
+        select(EmailOTPRequest)
+        .where(EmailOTPRequest.email == normalized_email)
+        .where(EmailOTPRequest.verified == False)
+        .order_by(EmailOTPRequest.created_at.desc())
+        .limit(1)
+    )
+    otp_req = otp_query.scalars().first()
+
+    if not otp_req:
+        raise HTTPException(status_code=400, detail="No pending OTP request found.")
+
+    if otp_req.attempts >= 5:
+        raise HTTPException(status_code=400, detail="Maximum verification attempts exceeded. Request a new OTP.")
+
+    now = datetime.utcnow()
+    expires_naive = otp_req.expires_at.replace(tzinfo=None) if otp_req.expires_at.tzinfo else otp_req.expires_at
+    if expires_naive < now:
+        raise HTTPException(status_code=400, detail="OTP has expired. Request a new one.")
+
+    # 2. Verify hash
+    if hash_otp(payload.otp) != otp_req.otp_hash:
+        otp_req.attempts += 1
+        await db.commit()
+        raise HTTPException(status_code=400, detail="Invalid OTP code.")
+
+    # Mark as verified
+    otp_req.verified = True
+    await db.commit()
+
+    return {
+        "status": "success",
+        "message": "Email verified successfully.",
+        "email_verification_token": str(otp_req.id)
+    }
 
 @router.post("/register/send-otp")
 async def send_otp(
     payload: SendOtpRequest,
     db: AsyncSession = Depends(get_db)
 ):
-    # 1. Parse and identify Email vs. Mobile
+    # This is retained for Mobile registration fallback if needed
     id_type, normalized_val = parse_identifier(payload.identifier)
 
-    # 2. Check uniqueness in users table
     if id_type == "email":
-        user_result = await db.execute(select(User).where(User.email == normalized_val))
-        if user_result.scalars().first() is not None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="This email address is already registered."
-            )
-    else:
-        user_result = await db.execute(select(User).where(User.mobile == normalized_val))
-        if user_result.scalars().first() is not None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="This mobile number is already registered."
-            )
+        raise HTTPException(status_code=400, detail="Use /email/send-otp for email verification.")
 
-    # 3. Generate a 6-digit OTP code
+    user_result = await db.execute(select(User).where(User.mobile == normalized_val))
+    if user_result.scalars().first() is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This mobile number is already registered."
+        )
+
     otp_code = "".join(random.choices(string.digits, k=6))
     expires_at = datetime.utcnow() + timedelta(minutes=10)
 
-    # 4. Save to otp_logs
     otp_log = OtpLog(
         target=normalized_val,
         otp_code=otp_code,
@@ -155,52 +399,59 @@ async def send_otp(
     db.add(otp_log)
     await db.commit()
 
-    # Log to terminal for debugging
     print(f"\n--- [OTP SENT] Target: {normalized_val} | OTP Code: {otp_code} ---\n")
 
-    # In development, we return the OTP code in response for testing convenience
     return {
         "status": "success",
         "message": f"OTP sent successfully to your {id_type}.",
-        "otp": otp_code  # Expose in dev environment
+        "otp": otp_code 
     }
-
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def verify_otp_and_register(
     payload: RegisterVerifyRequest,
     db: AsyncSession = Depends(get_db)
 ):
-    # 1. Parse identifier
     id_type, normalized_val = parse_identifier(payload.identifier)
 
-    # 2. Verify OTP
-    otp_result = await db.execute(
-        select(OtpLog)
-        .where(OtpLog.target == normalized_val)
-        .where(OtpLog.otp_code == payload.otp_code)
-        .where(OtpLog.otp_type == OtpType.REGISTRATION)
-        .where(OtpLog.is_used == False)
-        .order_by(OtpLog.created_at.desc())
-    )
-    otp_log = otp_result.scalars().first()
-
-    if otp_log is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid OTP code. Please try again."
+    # 2. Verify Token or OTP
+    if id_type == "email":
+        if not payload.verification_token:
+            raise HTTPException(status_code=400, detail="Email verification token required.")
+        
+        # Verify token in email_otp_requests
+        otp_result = await db.execute(
+            select(EmailOTPRequest)
+            .where(EmailOTPRequest.id == payload.verification_token)
+            .where(EmailOTPRequest.email == normalized_val)
+            .where(EmailOTPRequest.verified == True)
         )
-
-    # Check if expired
-    # Compare with timezone-naive utcnow (since OtpLog.expires_at is timezone-naive or tz-aware depending on DB)
-    now = datetime.utcnow()
-    # Remove timezone info for comparison if DB returns timezone-aware
-    expires_naive = otp_log.expires_at.replace(tzinfo=None) if otp_log.expires_at.tzinfo else otp_log.expires_at
-    if expires_naive < now:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="OTP code has expired. Please request a new one."
+        otp_req = otp_result.scalars().first()
+        if not otp_req:
+            raise HTTPException(status_code=400, detail="Invalid or expired verification token.")
+    else:
+        if not payload.otp_code:
+            raise HTTPException(status_code=400, detail="OTP code required for mobile registration.")
+            
+        otp_result = await db.execute(
+            select(OtpLog)
+            .where(OtpLog.target == normalized_val)
+            .where(OtpLog.otp_code == payload.otp_code)
+            .where(OtpLog.otp_type == OtpType.REGISTRATION)
+            .where(OtpLog.is_used == False)
+            .order_by(OtpLog.created_at.desc())
         )
+        otp_log = otp_result.scalars().first()
+
+        if otp_log is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid OTP code.")
+
+        now = datetime.utcnow()
+        expires_naive = otp_log.expires_at.replace(tzinfo=None) if otp_log.expires_at.tzinfo else otp_log.expires_at
+        if expires_naive < now:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OTP code has expired.")
+        
+        otp_log.is_used = True
 
     # 3. Check uniqueness again (race condition check)
     if id_type == "email":

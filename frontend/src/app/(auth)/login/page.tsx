@@ -17,9 +17,18 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const handleSendOtp = () => {
+  const handleSendOtp = async () => {
     if (mobile.length >= 10) {
-      setOtpSent(true);
+      try {
+        setIsLoading(true);
+        setErrorMsg("");
+        await axios.post(`${getApiBaseUrl()}/auth/phone/send-otp`, { phone: mobile });
+        setOtpSent(true);
+      } catch (error: any) {
+        setErrorMsg(error.response?.data?.detail || "Failed to send OTP");
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -29,18 +38,21 @@ export default function LoginPage() {
     setErrorMsg("");
 
     try {
-      const username = method === "password" ? email : mobile;
-      const pwd = method === "password" ? password : otp;
+      let response;
+      if (method === "password") {
+        const formData = new URLSearchParams();
+        formData.append('username', email);
+        formData.append('password', password);
 
-      const formData = new URLSearchParams();
-      formData.append('username', username);
-      formData.append('password', pwd);
-
-      const response = await axios.post(`${getApiBaseUrl()}/auth/login`, formData, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      });
+        response = await axios.post(`${getApiBaseUrl()}/auth/login`, formData, {
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+      } else {
+        response = await axios.post(`${getApiBaseUrl()}/auth/phone/verify-otp`, {
+          phone: mobile,
+          otp: otp
+        });
+      }
 
       if (response.data.access_token) {
         localStorage.setItem("token", response.data.access_token);

@@ -26,9 +26,26 @@ class EventCategory(str, PyEnum):
     OTHER = "other"
 
 
+class EventVisibility(str, PyEnum):
+    OPEN_TO_ALL = "open_to_all"
+    MEMBERS_ONLY = "members_only"
+
+
+class EventPricingType(str, PyEnum):
+    FREE = "free"
+    PAID = "paid"
+
+
+class EventPaymentMode(str, PyEnum):
+    PAY_ONLINE = "pay_online"
+    PAY_AT_VENUE = "pay_at_venue"
+
+
 class PaymentStatus(str, PyEnum):
+    NOT_APPLICABLE = "not_applicable"
     PENDING = "pending"
     PAID = "paid"
+    VERIFIED = "verified"
     FAILED = "failed"
     REFUNDED = "refunded"
 
@@ -76,7 +93,18 @@ class Event(Base, TimestampMixin):
         nullable=False
     )
     is_featured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    is_members_only: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    
+    visibility: Mapped[EventVisibility] = mapped_column(
+        Enum(EventVisibility, name="event_visibility"),
+        default=EventVisibility.OPEN_TO_ALL,
+        nullable=False
+    )
+    pricing_type: Mapped[EventPricingType] = mapped_column(
+        Enum(EventPricingType, name="event_pricing_type"),
+        default=EventPricingType.FREE,
+        nullable=False
+    )
+    
     timeline: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
 
     # Relationships
@@ -185,16 +213,25 @@ class EventRegistration(Base, TimestampMixin):
         primary_key=True,
         default=uuid.uuid4
     )
-    user_id: Mapped[uuid.UUID] = mapped_column(
+    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("users.user_id", ondelete="CASCADE"),
-        nullable=False
+        nullable=True
     )
+    guest_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    guest_phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    guest_email: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    
     event_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("events.event_id", ondelete="CASCADE"),
         nullable=False
     )
     pass_count: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     total_amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    
+    payment_mode: Mapped[Optional[EventPaymentMode]] = mapped_column(
+        Enum(EventPaymentMode, name="event_payment_mode"),
+        nullable=True
+    )
     payment_status: Mapped[PaymentStatus] = mapped_column(
         Enum(PaymentStatus, name="payment_status"),
         default=PaymentStatus.PENDING,
