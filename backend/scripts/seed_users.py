@@ -67,6 +67,49 @@ async def seed_data():
         else:
             print(f"Admin {admin_email} already exists.")
 
+        # Create default donation categories
+        from app.models.donation import DonationCategory
+        categories = [
+            ("General Fund", "General contributions for Samaj activities"),
+            ("Education Support", "Scholarships and educational support for students"),
+            ("Medical Aid", "Healthcare and medical emergency assistance"),
+            ("Bhavan Maintenance", "Maintenance and upgrade of Samaj Bhavan rooms and facilities")
+        ]
+        for name, desc in categories:
+            cat_result = await db.execute(select(DonationCategory).where(DonationCategory.name == name))
+            if cat_result.scalars().first() is None:
+                new_cat = DonationCategory(
+                    name=name,
+                    description=desc,
+                    is_active=True
+                )
+                db.add(new_cat)
+                print(f"Created category: {name}")
+
+        # Create default rooms and halls
+        from app.models.booking import Room
+        rooms = [
+            ("Maharaja Agrasen Hall", "hall", 500, 15000.00, "Ground Floor", "A1", {"AC": True, "Sound System": True, "Chairs": 500}),
+            ("Deluxe AC Room 101", "room", 3, 1200.00, "First Floor", "101", {"AC": True, "Double Bed": True, "Geyser": True}),
+            ("Standard Non-AC Room 102", "room", 2, 800.00, "First Floor", "102", {"Double Bed": True, "Fan": True}),
+            ("VVIP Suite 201", "room", 4, 2500.00, "Second Floor", "201", {"AC": True, "Mini Fridge": True, "Sofa": True, "Geyser": True})
+        ]
+        for name, r_type, cap, price, floor, num, amenities in rooms:
+            room_result = await db.execute(select(Room).where(Room.name == name))
+            if room_result.scalars().first() is None:
+                new_room = Room(
+                    name=name,
+                    type=r_type,
+                    capacity=cap,
+                    price_per_day=price,
+                    floor=floor,
+                    room_number=num,
+                    amenities=amenities,
+                    is_available=True
+                )
+                db.add(new_room)
+                print(f"Created room: {name}")
+
         await db.commit()
 
 async def main():

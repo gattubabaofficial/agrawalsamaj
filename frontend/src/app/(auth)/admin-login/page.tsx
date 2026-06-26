@@ -30,7 +30,7 @@ export default function AdminLoginPage() {
       });
 
       if (response.data.access_token) {
-        if (response.data.role !== "ADMIN") {
+        if (response.data.role.toUpperCase() !== "ADMIN") {
           setErrorMsg("Access Denied: You are not an administrator.");
           setIsLoading(false);
           return;

@@ -187,7 +187,7 @@ C. User (Non-Member)
 
 5.1 Family System
 - Each family will have a unique Family ID
-- First registered family member generates the Family ID
+- Already registered family and have unique Family Id
 - Other family members must register using the same Family ID
 
 5.2 Member Profile

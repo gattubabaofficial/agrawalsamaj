@@ -3,6 +3,7 @@ import uuid
 import json
 import logging
 import qrcode
+import asyncio
 from pathlib import Path
 from twilio.rest import Client
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,6 +40,10 @@ def generate_qr_code(pass_id: uuid.UUID) -> str:
 
 def send_whatsapp_qr(to_number: str, qr_image_url: str, event_name: str, pass_number: int, total_passes: int) -> str:
     """Sends the WhatsApp message with QR using Twilio SDK and returns the Message SID."""
+    if not to_number:
+        logger.error("Recipient phone number is empty.")
+        return "failed_sid"
+
     if not settings.TWILIO_ACCOUNT_SID or not settings.TWILIO_AUTH_TOKEN:
         logger.warning("Twilio credentials not configured. Skipping WhatsApp send.")
         return "mock_sid"
@@ -47,17 +52,27 @@ def send_whatsapp_qr(to_number: str, qr_image_url: str, event_name: str, pass_nu
         client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
         
         # Ensure number is E.164 formatted for WhatsApp (e.g., whatsapp:+919876543210)
-        formatted_number = to_number
+        formatted_number = to_number.strip()
         if not formatted_number.startswith("whatsapp:"):
             if not formatted_number.startswith("+"):
                 formatted_number = f"+91{formatted_number}" # Assuming India default if no country code
             formatted_number = f"whatsapp:{formatted_number}"
 
+        # Check if local address (localhost / 127.0.0.1) is used for media URL
+        # Twilio cannot download media from localhost, so we omit media_url and include link in body text
+        is_local = "localhost" in qr_image_url or "127.0.0.1" in qr_image_url
+
+        whatsapp_from = settings.TWILIO_WHATSAPP_FROM or "whatsapp:+14155238886"
+
         message_kwargs = {
-            "from_": settings.TWILIO_WHATSAPP_FROM,
-            "to": formatted_number,
-            "media_url": [qr_image_url]
+            "from_": whatsapp_from,
+            "to": formatted_number
         }
+
+        if not is_local:
+            message_kwargs["media_url"] = [qr_image_url]
+        else:
+            logger.info("Local environment detected. Omitted media_url to avoid Twilio 400 error.")
 
         # If a Content SID is provided, use it (required for production/out-of-session)
         if settings.TWILIO_CONTENT_SID:
@@ -69,7 +84,10 @@ def send_whatsapp_qr(to_number: str, qr_image_url: str, event_name: str, pass_nu
             })
         else:
             # Fallback for sandbox testing without approved template
-            message_kwargs["body"] = f"Your ticket for {event_name} - pass {pass_number} of {total_passes}. See you there!"
+            body_text = f"Your ticket for {event_name} - pass {pass_number} of {total_passes}. See you there!"
+            if is_local:
+                body_text += f"\nView Ticket QR code: {qr_image_url}"
+            message_kwargs["body"] = body_text
 
         if settings.TWILIO_STATUS_CALLBACK_URL:
             message_kwargs["status_callback"] = settings.TWILIO_STATUS_CALLBACK_URL
@@ -84,8 +102,10 @@ def send_whatsapp_qr(to_number: str, qr_image_url: str, event_name: str, pass_nu
 
 from app.database import SessionLocal
 
-async def generate_and_send_passes(registration_id: uuid.UUID):
-    """Generates QRs, creates EventPass records, and sends them via WhatsApp."""
+async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = False):
+    """Generates QRs, creates EventPass records, and sends them via WhatsApp.
+    If passes already exist, it resends them instead of creating duplicates.
+    """
     async with SessionLocal() as db:
         # Fetch registration and event
         result = await db.execute(
@@ -100,8 +120,8 @@ async def generate_and_send_passes(registration_id: uuid.UUID):
             
         registration, event = row
         
-        # We only generate passes if they haven't been generated yet (e.g. qr_delivered = True means already done)
-        if registration.qr_delivered:
+        # We only generate passes if they haven't been generated yet (or if we are forcing a resend)
+        if registration.qr_delivered and not force:
             logger.info(f"Passes already delivered for {registration_id}")
             return
 
@@ -114,10 +134,47 @@ async def generate_and_send_passes(registration_id: uuid.UUID):
             if user:
                 user_phone = user.mobile
                 
+        user_phone = user_phone.strip() if user_phone else None
         if not user_phone:
             logger.warning(f"No phone number found for registration {registration_id}")
             return
 
+        # Check if we already have passes for this registration
+        pass_result = await db.execute(
+            select(EventPass).filter(EventPass.registration_id == registration_id)
+        )
+        existing_passes = pass_result.scalars().all()
+
+        success_count = 0
+        if existing_passes:
+            logger.info(f"Resending existing {len(existing_passes)} passes for registration {registration_id}")
+            for idx, event_pass in enumerate(existing_passes):
+                pass_number = idx + 1
+                
+                # Resend WhatsApp
+                message_sid = await asyncio.to_thread(
+                    send_whatsapp_qr,
+                    to_number=user_phone,
+                    qr_image_url=event_pass.qr_image_url,
+                    event_name=event.title,
+                    pass_number=pass_number,
+                    total_passes=len(existing_passes)
+                )
+                
+                event_pass.whatsapp_message_sid = message_sid
+                if message_sid != "failed_sid":
+                    event_pass.delivery_status = "queued"
+                    success_count += 1
+                else:
+                    event_pass.delivery_status = "failed"
+            
+            if success_count > 0:
+                registration.qr_delivered = True
+            await db.commit()
+            logger.info(f"Successfully resent {success_count} of {len(existing_passes)} passes for registration {registration_id}")
+            return
+
+        # Generate new passes if none exist
         passes_created = 0
         for i in range(registration.pass_count):
             pass_number = i + 1
@@ -127,7 +184,8 @@ async def generate_and_send_passes(registration_id: uuid.UUID):
             qr_url = generate_qr_code(new_pass_id)
             
             # 2. Send WhatsApp
-            message_sid = send_whatsapp_qr(
+            message_sid = await asyncio.to_thread(
+                send_whatsapp_qr,
                 to_number=user_phone,
                 qr_image_url=qr_url,
                 event_name=event.title,
@@ -147,7 +205,10 @@ async def generate_and_send_passes(registration_id: uuid.UUID):
             )
             db.add(new_pass)
             passes_created += 1
+            if message_sid != "failed_sid":
+                success_count += 1
 
-        registration.qr_delivered = True
+        if success_count > 0:
+            registration.qr_delivered = True
         await db.commit()
-        logger.info(f"Successfully generated and sent {passes_created} passes for registration {registration_id}")
+        logger.info(f"Successfully generated and sent {success_count} of {passes_created} passes for registration {registration_id}")

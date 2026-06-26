@@ -10,7 +10,7 @@ from app.dependencies import get_db, get_current_user, get_optional_current_user
 from app.models.user import User, UserRole
 from app.models.event import (
     Event, EventRegistration, EventCategory, EventStatus, PaymentStatus,
-    EventVisibility, EventPricingType, EventPaymentMode
+    EventVisibility, EventPricingType, EventPaymentMode, EventPass
 )
 from app.services.whatsapp_service import generate_and_send_passes
 
@@ -56,13 +56,16 @@ class EventResponse(BaseModel):
     pass_price: float
     total_passes: Optional[int]
     passes_sold: int
+    max_per_user: int
     status: EventStatus
+    is_featured: bool
     visibility: EventVisibility
     pricing_type: EventPricingType
     timeline: Optional[list]
 
     class Config:
         from_attributes = True
+        use_enum_values = True
 
 class EventRegistrationRequest(BaseModel):
     pass_count: int = Field(default=1, gt=0)
@@ -70,6 +73,10 @@ class EventRegistrationRequest(BaseModel):
     guest_phone: Optional[str] = None
     guest_email: Optional[str] = None
     payment_mode: Optional[EventPaymentMode] = None
+
+class PaymentVerifyRequest(BaseModel):
+    razorpay_payment_id: Optional[str] = None
+    razorpay_signature: Optional[str] = None
 
 # Routes
 @router.post("/", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
@@ -107,6 +114,78 @@ async def list_events(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Event).order_by(Event.start_datetime))
     return result.scalars().all()
 
+@router.get("/my-registrations")
+async def get_my_registrations(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Join with Event to get event details
+    result = await db.execute(
+        select(EventRegistration, Event)
+        .join(Event, EventRegistration.event_id == Event.event_id)
+        .filter(EventRegistration.user_id == current_user.user_id)
+        .order_by(Event.start_datetime.desc())
+    )
+    
+    registrations = []
+    for reg, event in result.all():
+        # Fetch passes for this registration
+        pass_res = await db.execute(
+            select(EventPass).filter(EventPass.registration_id == reg.registration_id)
+        )
+        passes = pass_res.scalars().all()
+        passes_data = [{
+            "pass_id": str(p.pass_id),
+            "qr_image_url": p.qr_image_url,
+            "status": p.status
+        } for p in passes]
+
+        registrations.append({
+            "registration_id": reg.registration_id,
+            "pass_count": reg.pass_count,
+            "total_amount": reg.total_amount,
+            "payment_status": reg.payment_status,
+            "event_title": event.title,
+            "event_start": event.start_datetime,
+            "event_venue": event.venue,
+            "passes": passes_data
+        })
+        
+    return registrations
+
+@router.get("/registrations/all")
+async def get_all_registrations(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Only admins can view all registrations")
+
+    result = await db.execute(
+        select(EventRegistration, Event, User)
+        .join(Event, EventRegistration.event_id == Event.event_id)
+        .outerjoin(User, EventRegistration.user_id == User.user_id)
+        .order_by(EventRegistration.created_at.desc())
+    )
+    
+    registrations = []
+    for reg, event, user in result.all():
+        registrations.append({
+            "registration_id": reg.registration_id,
+            "pass_count": reg.pass_count,
+            "total_amount": reg.total_amount,
+            "payment_status": reg.payment_status,
+            "payment_mode": reg.payment_mode,
+            "event_title": event.title,
+            "event_start": event.start_datetime,
+            "user_name": f"{user.first_name} {user.surname}" if user else reg.guest_name,
+            "user_email": user.email if user else reg.guest_email,
+            "user_mobile": user.mobile if user else reg.guest_phone,
+            "created_at": reg.created_at
+        })
+        
+    return registrations
+
 @router.get("/{event_id}", response_model=EventResponse)
 async def get_event(event_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Event).filter(Event.event_id == event_id))
@@ -139,7 +218,6 @@ async def register_event(
     if event.visibility == EventVisibility.MEMBERS_ONLY:
         if not current_user:
             raise HTTPException(status_code=401, detail="This event is for members only. Please log in.")
-        # Optionally, check if user is an approved member (omitted for brevity, assuming login is enough)
     else:
         if not current_user and not (reg_data.guest_name and reg_data.guest_phone and reg_data.guest_email):
             raise HTTPException(status_code=400, detail="Guest name, phone, and email are required for non-logged in users")
@@ -164,16 +242,18 @@ async def register_event(
         if payment_mode == EventPaymentMode.PAY_AT_VENUE:
             payment_status = PaymentStatus.PENDING
         elif payment_mode == EventPaymentMode.PAY_ONLINE:
-            # We set it to PENDING initially. The frontend redirect triggers actual payment
-            # A webhook or verification endpoint would mark it VERIFIED.
-            # Returning a dummy razorpay order ID for now.
             payment_status = PaymentStatus.PENDING
+
+    # Store entered contact details, or fallback to current user's profile details
+    guest_name = reg_data.guest_name or (f"{current_user.first_name} {current_user.surname}" if current_user else None)
+    guest_phone = reg_data.guest_phone or (current_user.mobile if current_user else None)
+    guest_email = reg_data.guest_email or (current_user.email if current_user else None)
 
     registration = EventRegistration(
         user_id=user_id,
-        guest_name=reg_data.guest_name if not current_user else None,
-        guest_phone=reg_data.guest_phone if not current_user else None,
-        guest_email=reg_data.guest_email if not current_user else None,
+        guest_name=guest_name,
+        guest_phone=guest_phone,
+        guest_email=guest_email,
         event_id=event.event_id,
         pass_count=reg_data.pass_count,
         total_amount=total_amount,
@@ -207,32 +287,37 @@ async def register_event(
 
     return response
 
-@router.get("/my-registrations")
-async def get_my_registrations(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+@router.post("/{registration_id}/verify-payment")
+async def verify_registration_payment(
+    registration_id: uuid.UUID,
+    verify_data: PaymentVerifyRequest,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db)
 ):
-    # Join with Event to get event details
-    result = await db.execute(
-        select(EventRegistration, Event)
-        .join(Event, EventRegistration.event_id == Event.event_id)
-        .filter(EventRegistration.user_id == current_user.user_id)
-        .order_by(Event.start_datetime.desc())
-    )
-    
-    registrations = []
-    for reg, event in result.all():
-        registrations.append({
-            "registration_id": reg.registration_id,
-            "pass_count": reg.pass_count,
-            "total_amount": reg.total_amount,
-            "payment_status": reg.payment_status,
-            "event_title": event.title,
-            "event_start": event.start_datetime,
-            "event_venue": event.venue,
-        })
-        
-    return registrations
+    result = await db.execute(select(EventRegistration).filter(EventRegistration.registration_id == registration_id))
+    registration = result.scalar_one_or_none()
+    if not registration:
+        raise HTTPException(status_code=404, detail="Registration booking not found")
+
+    if registration.payment_status == PaymentStatus.VERIFIED:
+        return {"status": "success", "message": "Payment already verified", "registration_id": registration_id}
+
+    registration.payment_status = PaymentStatus.VERIFIED
+    if verify_data.razorpay_payment_id:
+        registration.razorpay_payment_id = verify_data.razorpay_payment_id
+
+    await db.commit()
+
+    # Trigger tickets QR delivery on WhatsApp
+    background_tasks.add_task(generate_and_send_passes, registration.registration_id)
+
+    return {
+        "status": "success",
+        "message": "Payment successfully verified and passes delivery triggered",
+        "registration_id": registration_id
+    }
+
+
 
 @router.put("/{event_id}", response_model=EventResponse)
 async def update_event(
@@ -274,38 +359,7 @@ async def delete_event(
     await db.delete(event)
     await db.commit()
 
-@router.get("/registrations/all")
-async def get_all_registrations(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="Only admins can view all registrations")
 
-    result = await db.execute(
-        select(EventRegistration, Event, User)
-        .join(Event, EventRegistration.event_id == Event.event_id)
-        .outerjoin(User, EventRegistration.user_id == User.user_id)
-        .order_by(EventRegistration.created_at.desc())
-    )
-    
-    registrations = []
-    for reg, event, user in result.all():
-        registrations.append({
-            "registration_id": reg.registration_id,
-            "pass_count": reg.pass_count,
-            "total_amount": reg.total_amount,
-            "payment_status": reg.payment_status,
-            "payment_mode": reg.payment_mode,
-            "event_title": event.title,
-            "event_start": event.start_datetime,
-            "user_name": f"{user.first_name} {user.surname}" if user else reg.guest_name,
-            "user_email": user.email if user else reg.guest_email,
-            "user_mobile": user.mobile if user else reg.guest_phone,
-            "created_at": reg.created_at
-        })
-        
-    return registrations
 
 @router.get("/admin/events/{event_id}/bookings")
 async def get_event_bookings(
@@ -337,7 +391,6 @@ async def get_event_bookings(
             "created_at": reg.created_at
         })
     return bookings
-
 @router.post("/admin/bookings/{booking_id}/mark-paid")
 async def mark_booking_paid(
     booking_id: uuid.UUID,
@@ -365,3 +418,25 @@ async def mark_booking_paid(
     background_tasks.add_task(generate_and_send_passes, registration.registration_id)
     
     return {"status": "success", "message": "Booking marked as paid and ticket generated"}
+
+@router.post("/admin/bookings/{booking_id}/resend-qr")
+async def resend_booking_qr(
+    booking_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Only admins can resend tickets")
+
+    result = await db.execute(select(EventRegistration).filter(EventRegistration.registration_id == booking_id))
+    registration = result.scalar_one_or_none()
+    if not registration:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    if registration.payment_status not in [PaymentStatus.VERIFIED, PaymentStatus.PAID, PaymentStatus.NOT_APPLICABLE]:
+        raise HTTPException(status_code=400, detail="Only verified, paid, or free bookings can have tickets resent")
+
+    background_tasks.add_task(generate_and_send_passes, registration.registration_id, force=True)
+
+    return {"status": "success", "message": "QR ticket resend triggered"}

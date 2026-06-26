@@ -38,6 +38,17 @@ class RoomCreate(BaseModel):
     description: Optional[str] = None
     amenities: Optional[dict] = None
 
+class RoomUpdate(BaseModel):
+    name: Optional[str] = None
+    type: Optional[str] = None
+    capacity: Optional[int] = None
+    price_per_day: Optional[float] = None
+    room_number: Optional[str] = None
+    floor: Optional[str] = None
+    description: Optional[str] = None
+    amenities: Optional[dict] = None
+    is_available: Optional[bool] = None
+
 class BookingCreate(BaseModel):
     room_id: uuid.UUID
     start_date: date
@@ -93,6 +104,47 @@ async def create_room(
     await db.commit()
     await db.refresh(new_room)
     return new_room
+
+@router.put("/rooms/{room_id}", response_model=RoomResponse)
+async def update_room(
+    room_id: uuid.UUID,
+    room_data: RoomUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    result = await db.execute(select(Room).filter(Room.room_id == room_id))
+    room = result.scalar_one_or_none()
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+    update_data = room_data.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(room, key, value)
+
+    await db.commit()
+    await db.refresh(room)
+    return room
+
+@router.delete("/rooms/{room_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_room(
+    room_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    result = await db.execute(select(Room).filter(Room.room_id == room_id))
+    room = result.scalar_one_or_none()
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+    await db.delete(room)
+    await db.commit()
+
 
 @router.post("/", response_model=BookingResponse, status_code=status.HTTP_201_CREATED)
 async def create_booking(

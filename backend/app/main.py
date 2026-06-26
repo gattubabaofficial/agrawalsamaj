@@ -1,3 +1,7 @@
+from dotenv import load_dotenv
+# Load environment variables before any other imports
+load_dotenv(override=True)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
@@ -9,6 +13,7 @@ from app.routers.bookings import router as bookings_router
 from app.routers.donations import router as donations_router
 from app.routers.dashboard import router as dashboard_router
 from app.routers.passes import router as passes_router
+from app.routers.chat import router as chat_router
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -39,6 +44,7 @@ app.include_router(bookings_router)
 app.include_router(donations_router)
 app.include_router(dashboard_router)
 app.include_router(passes_router)
+app.include_router(chat_router)
 
 
 @app.get("/")

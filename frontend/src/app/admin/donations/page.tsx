@@ -5,6 +5,19 @@ import { Heart, Search, Loader2, FileText, CheckCircle } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
 
+const formatDateTime12Hour = (dateTimeStr: string) => {
+  if (!dateTimeStr) return "";
+  const date = new Date(dateTimeStr);
+  return date.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  });
+};
+
 export default function AdminDonationsPage() {
   const [donations, setDonations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,7 +65,7 @@ export default function AdminDonationsPage() {
         `"${d.category_name || ''}"`,
         d.amount,
         d.payment_status,
-        `"${new Date(d.donated_at).toLocaleString()}"`,
+        `"${formatDateTime12Hour(d.donated_at)}"`,
         `"${d.message || ''}"`
       ].join(",");
     });
@@ -171,7 +184,7 @@ export default function AdminDonationsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-xs text-zinc-500">
-                      {new Date(d.donated_at).toLocaleString()}
+                      {formatDateTime12Hour(d.donated_at)}
                     </td>
                   </tr>
                 ))

@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     TWILIO_AUTH_TOKEN: str = ""
     TWILIO_PHONE_NUMBER: Optional[str] = None
     TWILIO_WHATSAPP_NUMBER: Optional[str] = None
-    TWILIO_WHATSAPP_FROM: str = ""
+    TWILIO_WHATSAPP_FROM: str = "whatsapp:+14155238886"
     TWILIO_CONTENT_SID: str = ""
     TWILIO_STATUS_CALLBACK_URL: str = ""
     DOMAIN_URL: str = "http://localhost:8000"

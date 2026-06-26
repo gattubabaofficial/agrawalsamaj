@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Mail, Phone, Lock, Eye, EyeOff, ShieldCheck, Loader2 } from "lucide-react";
+import { signIn } from "next-auth/react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
 
@@ -16,6 +17,40 @@ export default function LoginPage() {
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [resendCountdown, setResendCountdown] = useState(0);
+
+  useEffect(() => {
+    if (resendCountdown <= 0) return;
+    const timer = setTimeout(() => {
+      setResendCountdown((prev) => prev - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [resendCountdown]);
+
+  useEffect(() => {
+    const syncSession = async () => {
+      try {
+        const { getSession } = await import("next-auth/react");
+        const session = await getSession();
+        if (session && (session as any).accessToken) {
+          const token = (session as any).accessToken;
+          const role = (session as any).role || "guest";
+          localStorage.setItem("token", token);
+          localStorage.setItem("userRole", role);
+          
+          const params = new URLSearchParams(window.location.search);
+          let redirectUrl = params.get("next");
+          if (!redirectUrl) {
+            redirectUrl = role === "admin" ? "/admin/dashboard" : "/dashboard";
+          }
+          window.location.href = redirectUrl;
+        }
+      } catch (error) {
+        console.error("Error syncing NextAuth session:", error);
+      }
+    };
+    syncSession();
+  }, []);
 
   const handleSendOtp = async () => {
     if (mobile.length >= 10) {
@@ -24,6 +59,7 @@ export default function LoginPage() {
         setErrorMsg("");
         await axios.post(`${getApiBaseUrl()}/auth/phone/send-otp`, { phone: mobile });
         setOtpSent(true);
+        setResendCountdown(30); // 30s cooldown
       } catch (error: any) {
         setErrorMsg(error.response?.data?.detail || "Failed to send OTP");
       } finally {
@@ -180,10 +216,10 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={handleSendOtp}
-                    disabled={mobile.length < 10}
-                    className="px-4 py-2.5 rounded-xl border border-zinc-200 text-xs font-semibold hover:bg-zinc-50 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                    disabled={mobile.length < 10 || isLoading || resendCountdown > 0}
+                    className="px-4 py-2.5 rounded-xl border border-zinc-200 text-xs font-semibold hover:bg-zinc-50 disabled:opacity-50 disabled:pointer-events-none transition-colors min-w-[90px] text-center"
                   >
-                    {otpSent ? "Resend" : "Send OTP"}
+                    {resendCountdown > 0 ? `${resendCountdown}s` : otpSent ? "Resend" : "Send OTP"}
                   </button>
                 </div>
               </div>
@@ -223,7 +259,11 @@ export default function LoginPage() {
           <div className="flex-grow border-t border-zinc-200"></div>
         </div>
 
-        <button className="flex items-center justify-center gap-2 w-full py-2.5 rounded-2xl border border-zinc-200 hover:bg-zinc-50 text-xs font-semibold transition-colors">
+        <button
+          type="button"
+          onClick={() => signIn("google")}
+          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-2xl border border-zinc-200 hover:bg-zinc-50 text-xs font-semibold transition-colors cursor-pointer"
+        >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12.24 10.285V14.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.866-3.577-7.866-8s3.536-8 7.866-8c2.46 0 4.105 1.025 5.047 1.926l3.227-3.11C18.422 2.106 15.607 1 12.24 1 5.48 1 0 6.48 0 13.24s5.48 12.24 12.24 12.24c7.058 0 11.755-4.965 11.755-11.96 0-.807-.087-1.427-.193-2.023l-11.562-.212z"/>
           </svg>

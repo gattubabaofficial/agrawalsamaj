@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle, Clock, XCircle, Search, Home, Plus, X, MapPin } from "lucide-react";
+import { CheckCircle, Clock, XCircle, Search, Home, Plus, X, MapPin, Pencil, Trash2 } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
 
@@ -23,6 +23,7 @@ export default function AdminBookingsPage() {
   const [amenitiesInput, setAmenitiesInput] = useState("");
   const [description, setDescription] = useState("");
   const [isSavingRoom, setIsSavingRoom] = useState(false);
+  const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -47,15 +48,43 @@ export default function AdminBookingsPage() {
     }
   };
 
-  const handleAddRoom = async (e: React.FormEvent) => {
+  const resetRoomForm = () => {
+    setRoomName(""); setRoomType("room"); setRoomNumber(""); setFloor("");
+    setCapacity(""); setPricePerDay(""); setAmenitiesInput(""); setDescription("");
+    setEditingRoomId(null);
+  };
+
+  const handleEditRoom = (room: any) => {
+    setEditingRoomId(room.room_id);
+    setRoomName(room.name || "");
+    setRoomType(room.type || "room");
+    setRoomNumber(room.room_number || "");
+    setFloor(room.floor || "");
+    setCapacity(room.capacity ? String(room.capacity) : "");
+    setPricePerDay(room.price_per_day ? String(room.price_per_day) : "");
+    setAmenitiesInput(room.amenities?.features?.join(", ") || "");
+    setDescription(room.description || "");
+    setShowAddRoom(true);
+  };
+
+  const handleDeleteRoom = async (roomId: string) => {
+    if (!confirm("Are you sure you want to delete this room? All associated bookings will also be deleted.")) return;
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`${getApiBaseUrl()}/bookings/rooms/${roomId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchData();
+    } catch (error: any) {
+      alert(error.response?.data?.detail || "Failed to delete room.");
+    }
+  };
+
+  const handleSaveRoom = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingRoom(true);
     try {
       const token = localStorage.getItem("token");
-      
-      // Convert comma-separated string to list, then map to dictionary (backend currently accepts dict, but we can send an array or an object)
-      // Wait, backend expects amenities: Optional[dict] = None
-      // We'll store it as { "features": ["AC", "TV"] } or similar
       const features = amenitiesInput.split(",").map(a => a.trim()).filter(a => a);
       const amenitiesPayload = { features };
 
@@ -70,18 +99,21 @@ export default function AdminBookingsPage() {
         amenities: amenitiesPayload
       };
 
-      await axios.post(`${getApiBaseUrl()}/bookings/rooms`, payload, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      if (editingRoomId) {
+        await axios.put(`${getApiBaseUrl()}/bookings/rooms/${editingRoomId}`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } else {
+        await axios.post(`${getApiBaseUrl()}/bookings/rooms`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
       
-      alert("Room added successfully!");
       setShowAddRoom(false);
-      setRoomName(""); setRoomType("room"); setRoomNumber(""); setFloor("");
-      setCapacity(""); setPricePerDay(""); setAmenitiesInput(""); setDescription("");
-      
+      resetRoomForm();
       fetchData();
     } catch (error: any) {
-      alert(error.response?.data?.detail || "Failed to add room.");
+      alert(error.response?.data?.detail || "Failed to save room.");
     } finally {
       setIsSavingRoom(false);
     }
@@ -205,7 +237,7 @@ export default function AdminBookingsPage() {
         <div className="space-y-6">
           <div className="flex justify-end">
             <button 
-              onClick={() => setShowAddRoom(!showAddRoom)}
+              onClick={() => { if (showAddRoom) { setShowAddRoom(false); resetRoomForm(); } else { resetRoomForm(); setShowAddRoom(true); } }}
               className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors flex items-center gap-2"
             >
               {showAddRoom ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
@@ -215,8 +247,8 @@ export default function AdminBookingsPage() {
 
           {showAddRoom && (
             <div className="bg-white rounded-2xl border border-amber-200 shadow-sm p-6 sm:p-8">
-              <h2 className="text-xl font-bold text-zinc-900 mb-6">Create New Room / Hall</h2>
-              <form onSubmit={handleAddRoom} className="space-y-4">
+              <h2 className="text-xl font-bold text-zinc-900 mb-6">{editingRoomId ? "Edit Room / Hall" : "Create New Room / Hall"}</h2>
+              <form onSubmit={handleSaveRoom} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-zinc-700 mb-1">Room Name</label>
@@ -263,9 +295,14 @@ export default function AdminBookingsPage() {
                   <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder="Additional details..." className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"></textarea>
                 </div>
 
-                <div className="pt-2 flex justify-end">
+                <div className="pt-2 flex justify-end gap-3">
+                  {editingRoomId && (
+                    <button type="button" onClick={() => { setShowAddRoom(false); resetRoomForm(); }} className="px-6 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold rounded-xl transition-colors">
+                      Cancel
+                    </button>
+                  )}
                   <button type="submit" disabled={isSavingRoom} className="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-semibold rounded-xl shadow-sm transition-colors">
-                    {isSavingRoom ? "Saving..." : "Save Room"}
+                    {isSavingRoom ? "Saving..." : editingRoomId ? "Update Room" : "Save Room"}
                   </button>
                 </div>
               </form>
@@ -284,9 +321,27 @@ export default function AdminBookingsPage() {
                       {r.floor && <span className="text-xs text-zinc-500 font-medium">({r.floor})</span>}
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xl font-bold text-emerald-600">₹{r.price_per_day}</p>
-                    <p className="text-xs text-zinc-500 font-medium">Per Day</p>
+                  <div className="flex items-start gap-2">
+                    <div className="text-right">
+                      <p className="text-xl font-bold text-emerald-600">₹{r.price_per_day}</p>
+                      <p className="text-xs text-zinc-500 font-medium">Per Day</p>
+                    </div>
+                    <div className="flex gap-1 ml-2">
+                      <button
+                        onClick={() => handleEditRoom(r)}
+                        className="p-1.5 text-zinc-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                        title="Edit Room"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteRoom(r.room_id)}
+                        className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                        title="Delete Room"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
                 {r.description && <p className="text-sm text-zinc-600 mb-4 line-clamp-2">{r.description}</p>}

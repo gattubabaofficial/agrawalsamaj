@@ -19,7 +19,7 @@ export default function UserDashboard() {
   useEffect(() => {
     const fetchDashboard = async () => {
       const storedRole = localStorage.getItem("userRole");
-      if (storedRole) setRole(storedRole);
+      if (storedRole) setRole(storedRole.toUpperCase());
       
       try {
         const token = localStorage.getItem("token");

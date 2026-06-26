@@ -1,5 +1,9 @@
 import uvicorn
 import socket
+from dotenv import load_dotenv
+
+# Load environment variables from .env
+load_dotenv()
 
 def get_local_ip():
     """Get the machine's local network IP address."""

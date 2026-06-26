@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CalendarPlus, MapPin, Users, Edit, Trash2, Clock, Plus, X, AlertTriangle, ShieldAlert, List, ArrowLeft, Ticket } from "lucide-react";
+import { CalendarPlus, MapPin, Users, Edit, Trash2, Clock, Plus, X, AlertTriangle, ShieldAlert, List, ArrowLeft, Ticket, CheckCircle, Send } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
 
@@ -24,6 +24,19 @@ interface EventData {
   pricing_type: string;
   timeline: TimelineItem[];
 }
+
+const formatDateTime12Hour = (dateTimeStr: string) => {
+  if (!dateTimeStr) return "";
+  const date = new Date(dateTimeStr);
+  return date.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  });
+};
 
 export default function AdminEventsPage() {
   const [events, setEvents] = useState<any[]>([]);
@@ -75,6 +88,15 @@ export default function AdminEventsPage() {
     setActiveView("registrations");
   };
 
+  const handleAuthError = (error: any) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("userRole");
+      alert("Session expired. Please log in again.");
+      window.location.href = "/admin-login";
+    }
+  };
+
   const fetchRegistrations = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -82,37 +104,57 @@ export default function AdminEventsPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRegistrations(res.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch registrations", error);
+      handleAuthError(error);
     }
   };
 
   const handleOpenEventBookings = async (eventId: string) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get(`${getApiBaseUrl()}/admin/events/${eventId}/bookings`, {
+      const res = await axios.get(`${getApiBaseUrl()}/events/admin/events/${eventId}/bookings`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setEventBookings(res.data);
       setSelectedEventId(eventId);
       setActiveView("event_bookings");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch event bookings", error);
+      handleAuthError(error);
     }
   };
 
   const handleMarkPaid = async (bookingId: string) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.post(`${getApiBaseUrl()}/admin/bookings/${bookingId}/mark-paid`, {}, {
+      await axios.post(`${getApiBaseUrl()}/events/admin/bookings/${bookingId}/mark-paid`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Refresh list
       if (selectedEventId) {
         handleOpenEventBookings(selectedEventId);
       }
-    } catch (error) {
+      fetchRegistrations();
+    } catch (error: any) {
       console.error("Failed to mark paid", error);
+      handleAuthError(error);
+    }
+  };
+
+  const handleResendQR = async (bookingId: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(`${getApiBaseUrl()}/events/admin/bookings/${bookingId}/resend-qr`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert("QR ticket resend successfully triggered!");
+      if (selectedEventId) {
+        handleOpenEventBookings(selectedEventId);
+      }
+    } catch (error: any) {
+      console.error("Failed to resend QR code", error);
+      alert(error.response?.data?.detail || "Failed to resend QR code");
     }
   };
 
@@ -370,7 +412,7 @@ export default function AdminEventsPage() {
                   )}
                   <div className="flex items-center gap-2 text-sm text-zinc-600">
                     <CalendarPlus className="w-4 h-4 text-zinc-400 flex-shrink-0" />
-                    <span className="truncate">{new Date(evt.start_datetime).toLocaleString()}</span>
+                    <span className="truncate">{formatDateTime12Hour(evt.start_datetime)}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-zinc-600">
                     <MapPin className="w-4 h-4 text-zinc-400 flex-shrink-0" />
@@ -418,12 +460,13 @@ export default function AdminEventsPage() {
                   <th className="px-6 py-4 font-semibold">Passes</th>
                   <th className="px-6 py-4 font-semibold">Payment Status</th>
                   <th className="px-6 py-4 font-semibold">Date Registered</th>
+                  <th className="px-6 py-4 font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
                 {registrations.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-zinc-500">
+                    <td colSpan={6} className="px-6 py-12 text-center text-zinc-500">
                       No registrations found.
                     </td>
                   </tr>
@@ -445,16 +488,47 @@ export default function AdminEventsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold uppercase ${
-                          reg.payment_status === 'completed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                          'bg-amber-50 text-amber-700 border border-amber-200'
-                        }`}>
-                          {reg.payment_status}
-                        </span>
-                        {reg.total_amount > 0 && <div className="text-xs text-zinc-500 mt-1">₹{reg.total_amount}</div>}
+                        <div className="flex flex-col items-start gap-1">
+                          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold uppercase ${
+                            reg.payment_status === 'verified' || reg.payment_status === 'completed' || reg.payment_status === 'paid' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                            reg.payment_status === 'not_applicable' ? 'bg-zinc-100 text-zinc-700 border border-zinc-200' :
+                            'bg-amber-50 text-amber-700 border border-amber-200'
+                          }`}>
+                            {reg.payment_status.replace('_', ' ')}
+                          </span>
+                          {reg.payment_mode && (
+                            <span className="text-[10px] font-semibold text-zinc-600 bg-zinc-100 px-2 py-0.5 rounded uppercase">
+                              {reg.payment_mode.replace('_', ' ')}
+                            </span>
+                          )}
+                          {reg.total_amount > 0 && <div className="text-xs text-zinc-500 mt-1">₹{reg.total_amount}</div>}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-xs text-zinc-500">
-                        {new Date(reg.created_at).toLocaleString()}
+                        {formatDateTime12Hour(reg.created_at)}
+                      </td>
+                      <td className="px-6 py-4">
+                        {reg.payment_status === 'pending' && reg.payment_mode === 'pay_at_venue' && (
+                          <button
+                            onClick={() => handleMarkPaid(reg.registration_id)}
+                            className="px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-xs font-bold transition-colors whitespace-nowrap"
+                          >
+                            Mark as Paid
+                          </button>
+                        )}
+                        {(['verified', 'completed', 'paid', 'not_applicable'].includes(reg.payment_status)) && (
+                          <div className="flex flex-col gap-1.5 items-start">
+                            <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1 whitespace-nowrap">
+                              <CheckCircle className="w-3.5 h-3.5" /> {reg.payment_status === 'not_applicable' ? 'Free Entry' : 'Approved'}
+                            </span>
+                            <button
+                              onClick={() => handleResendQR(reg.registration_id)}
+                              className="px-2.5 py-1 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-600 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-sm whitespace-nowrap"
+                            >
+                              <Send className="w-3 h-3" /> Resend QR
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -501,7 +575,7 @@ export default function AdminEventsPage() {
                         <div className="font-semibold text-zinc-900">{bk.name}</div>
                         <div className="text-xs text-zinc-500">{bk.phone}</div>
                         <div className="text-xs text-zinc-500">{bk.email}</div>
-                        <div className="text-xs text-zinc-400 mt-1">{new Date(bk.created_at).toLocaleString()}</div>
+                        <div className="text-xs text-zinc-400 mt-1">{formatDateTime12Hour(bk.created_at)}</div>
                       </td>
                       <td className="px-6 py-4">
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 text-xs font-bold border border-amber-100">
@@ -534,10 +608,18 @@ export default function AdminEventsPage() {
                             Mark as Paid
                           </button>
                         )}
-                        {bk.payment_status === 'verified' && (
-                          <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
-                            <ShieldAlert className="w-3 h-3" /> Paid & Verified
-                          </span>
+                        {(bk.payment_status === 'verified' || bk.payment_status === 'not_applicable') && (
+                          <div className="flex flex-col gap-1.5 items-start">
+                            <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                              <CheckCircle className="w-3 h-3" /> {bk.payment_status === 'verified' ? 'Paid & Verified' : 'Free Entry'}
+                            </span>
+                            <button
+                              onClick={() => handleResendQR(bk.registration_id)}
+                              className="px-2.5 py-1 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-600 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-sm"
+                            >
+                              <Send className="w-3 h-3" /> Resend QR
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { User, Mail, Phone, Lock, ShieldCheck, AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
+import { signIn } from "next-auth/react";
 
 export default function RegisterPage() {
   // Traditional Signup Inputs
@@ -14,6 +15,8 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [verificationToken, setVerificationToken] = useState("");
+  const [familyCode, setFamilyCode] = useState("");
+  const [familyRelation, setFamilyRelation] = useState("");
 
   // UI / Flow States
   const [isLoading, setIsLoading] = useState(false);
@@ -25,6 +28,7 @@ export default function RegisterPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [identifierVerified, setIdentifierVerified] = useState(false);
   const [devOtp, setDevOtp] = useState<string | null>(null); // For developer convenience in dev mode
+  const [resendCountdown, setResendCountdown] = useState(0);
 
   // OAuth Simulation States
   const [showOAuthModal, setShowOAuthModal] = useState(false);
@@ -46,6 +50,39 @@ export default function RegisterPage() {
     return () => clearTimeout(timer);
   }, [success, countdown]);
 
+  useEffect(() => {
+    if (resendCountdown <= 0) return;
+    const timer = setTimeout(() => {
+      setResendCountdown((prev) => prev - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [resendCountdown]);
+
+  useEffect(() => {
+    const syncSession = async () => {
+      try {
+        const { getSession } = await import("next-auth/react");
+        const session = await getSession();
+        if (session && (session as any).accessToken) {
+          const token = (session as any).accessToken;
+          const role = (session as any).role || "guest";
+          localStorage.setItem("token", token);
+          localStorage.setItem("userRole", role);
+          
+          const params = new URLSearchParams(window.location.search);
+          let redirectUrl = params.get("next");
+          if (!redirectUrl) {
+            redirectUrl = role === "admin" ? "/admin/dashboard" : "/dashboard";
+          }
+          window.location.href = redirectUrl;
+        }
+      } catch (error) {
+        console.error("Error syncing NextAuth session:", error);
+      }
+    };
+    syncSession();
+  }, []);
+
   const handleSendOtp = async () => {
     if (!identifier.trim()) {
       setError("Please enter your email address or mobile number first.");
@@ -65,6 +102,7 @@ export default function RegisterPage() {
 
       if (response.data.status === "success") {
         setOtpSent(true);
+        setResendCountdown(30); // 30s cooldown
         if (response.data.otp) setDevOtp(response.data.otp);
       }
     } catch (err: any) {
@@ -127,6 +165,11 @@ export default function RegisterPage() {
         payload.otp_code = otpCode;
       }
 
+      if (familyCode.trim()) {
+        payload.family_code = familyCode.trim();
+        payload.family_relation = familyRelation || "Member";
+      }
+
       const response = await axios.post(`${getApiBaseUrl()}/auth/register`, payload);
 
       if (response.data.status === "success" || response.status === 201) {
@@ -159,13 +202,20 @@ export default function RegisterPage() {
     const mockProviderId = `${oauthProvider}_id_${Math.floor(100000 + Math.random() * 900000)}`;
 
     try {
-      const response = await axios.post(`${getApiBaseUrl()}/auth/register/oauth`, {
+      const payload: any = {
         first_name: oauthFirstName.trim(),
         surname: oauthSurname.trim(),
         email: oauthEmail.trim(),
         provider: oauthProvider,
         provider_id: mockProviderId,
-      });
+      };
+
+      if (familyCode.trim()) {
+        payload.family_code = familyCode.trim();
+        payload.family_relation = familyRelation || "Member";
+      }
+
+      const response = await axios.post(`${getApiBaseUrl()}/auth/register/oauth`, payload);
 
       if (response.data.status === "success" || response.status === 201) {
         setShowOAuthModal(false);
@@ -257,7 +307,6 @@ export default function RegisterPage() {
                         <input
                           type="text"
                           required
-                          disabled={otpSent}
                           placeholder="rahul@example.com or 9876543210"
                           value={identifier}
                           onChange={(e) => setIdentifier(e.target.value)}
@@ -267,10 +316,10 @@ export default function RegisterPage() {
                       <button
                         type="button"
                         onClick={handleSendOtp}
-                        disabled={isLoading || !identifier.trim() || (otpSent && !devOtp)}
-                        className="px-4 py-2.5 rounded-xl bg-zinc-900 text-white hover:bg-zinc-800 text-xs font-semibold disabled:opacity-50 disabled:pointer-events-none transition-colors border border-zinc-200/20"
+                        disabled={isLoading || !identifier.trim() || resendCountdown > 0}
+                        className="px-4 py-2.5 rounded-xl bg-zinc-900 text-white hover:bg-zinc-800 text-xs font-semibold disabled:opacity-50 disabled:pointer-events-none transition-colors border border-zinc-200/20 min-w-[90px] text-center"
                       >
-                        {otpSent ? "Sent" : "Verify"}
+                        {resendCountdown > 0 ? `${resendCountdown}s` : otpSent ? "Resend" : "Verify"}
                       </button>
                     </div>
                   </div>
@@ -342,6 +391,35 @@ export default function RegisterPage() {
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="font-semibold text-zinc-700">Family Code (Optional)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. FAM-P4E40W"
+                        value={familyCode}
+                        onChange={(e) => setFamilyCode(e.target.value.toUpperCase())}
+                        className="w-full px-4 py-2 rounded-xl border border-zinc-200 bg-transparent text-zinc-950 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 font-mono"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="font-semibold text-zinc-700">Relation to Head</label>
+                      <select
+                        value={familyRelation}
+                        onChange={(e) => setFamilyRelation(e.target.value)}
+                        required={familyCode.trim().length > 0}
+                        className="w-full px-4 py-2 rounded-xl border border-zinc-200 bg-white text-zinc-950 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
+                      >
+                        <option value="">Select Relation...</option>
+                        <option value="Spouse">Spouse</option>
+                        <option value="Son">Son</option>
+                        <option value="Daughter">Daughter</option>
+                        <option value="Parent">Parent</option>
+                        <option value="Sibling">Sibling</option>
+                      </select>
+                    </div>
+                  </div>
+
                   <div className="space-y-1.5">
                     <label className="font-semibold text-zinc-700">Create Password</label>
                     <div className="relative">
@@ -378,7 +456,7 @@ export default function RegisterPage() {
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => handleSocialClick("google")}
+                onClick={() => signIn("google")}
                 className="flex items-center justify-center gap-2 py-2.5 rounded-2xl border border-zinc-200 hover:bg-zinc-50 text-xs font-semibold transition-colors cursor-pointer"
               >
                 <svg className="w-4 h-4 text-rose-500" viewBox="0 0 24 24" fill="currentColor">
@@ -388,7 +466,7 @@ export default function RegisterPage() {
               </button>
               <button
                 type="button"
-                onClick={() => handleSocialClick("yahoo")}
+                onClick={() => signIn("yahoo")}
                 className="flex items-center justify-center gap-2 py-2.5 rounded-2xl border border-zinc-200 hover:bg-zinc-50 text-xs font-semibold transition-colors cursor-pointer"
               >
                 <span className="font-extrabold text-purple-650 italic text-sm">Y!</span>
@@ -464,6 +542,35 @@ export default function RegisterPage() {
                   onChange={(e) => setOauthEmail(e.target.value)}
                   className="w-full px-4 py-2 rounded-xl border border-zinc-200 bg-transparent text-zinc-950 focus:outline-none focus:ring-1 focus:ring-amber-500"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="font-semibold text-zinc-700">Family Code (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. FAM-P4E40W"
+                    value={familyCode}
+                    onChange={(e) => setFamilyCode(e.target.value.toUpperCase())}
+                    className="w-full px-4 py-2 rounded-xl border border-zinc-200 bg-transparent text-zinc-950 focus:outline-none focus:ring-1 focus:ring-amber-500 font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-semibold text-zinc-700">Relation to Head</label>
+                  <select
+                    value={familyRelation}
+                    onChange={(e) => setFamilyRelation(e.target.value)}
+                    required={familyCode.trim().length > 0}
+                    className="w-full px-4 py-2 rounded-xl border border-zinc-200 bg-white text-zinc-950 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  >
+                    <option value="">Select Relation...</option>
+                    <option value="Spouse">Spouse</option>
+                    <option value="Son">Son</option>
+                    <option value="Daughter">Daughter</option>
+                    <option value="Parent">Parent</option>
+                    <option value="Sibling">Sibling</option>
+                  </select>
+                </div>
               </div>
 
               <div className="flex gap-3 pt-2">

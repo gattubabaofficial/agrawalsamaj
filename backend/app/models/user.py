@@ -31,6 +31,7 @@ class Family(Base, TimestampMixin):
     family_code: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=False)
     family_name: Mapped[str] = mapped_column(String(200), nullable=False)
     head_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(nullable=True)
+    member_limit: Mapped[Optional[int]] = mapped_column(nullable=True)
 
     # Relationships
     members: Mapped[List["User"]] = relationship(

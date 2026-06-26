@@ -60,10 +60,36 @@ def upgrade() -> None:
     with op.batch_alter_table('otp_logs', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_otp_logs_target'), ['target'], unique=False)
 
+    op.create_table('email_otp_requests',
+    sa.Column('id', sa.VARCHAR(length=36), nullable=False),
+    sa.Column('email', sa.String(length=255), nullable=False),
+    sa.Column('otp_hash', sa.String(length=255), nullable=False),
+    sa.Column('expires_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('attempts', sa.Integer(), nullable=False),
+    sa.Column('verified', sa.Boolean(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.PrimaryKeyConstraint('id')
+    )
+
+    op.create_table('phone_otp_requests',
+    sa.Column('id', sa.VARCHAR(length=36), nullable=False),
+    sa.Column('phone', sa.String(length=15), nullable=False),
+    sa.Column('otp_hash', sa.String(length=255), nullable=False),
+    sa.Column('expires_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('attempts', sa.Integer(), nullable=False),
+    sa.Column('verified', sa.Boolean(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.PrimaryKeyConstraint('id')
+    )
+
     op.create_table('rooms',
     sa.Column('room_id', sa.Uuid(), nullable=False),
     sa.Column('name', sa.String(length=200), nullable=False),
     sa.Column('type', sa.String(length=50), nullable=False),
+    sa.Column('room_number', sa.String(length=50), nullable=True),
+    sa.Column('floor', sa.String(length=50), nullable=True),
     sa.Column('capacity', sa.Integer(), nullable=True),
     sa.Column('price_per_day', sa.Numeric(precision=10, scale=2), nullable=False),
     sa.Column('floor_plan_url', sa.String(length=500), nullable=True),
@@ -142,6 +168,9 @@ def upgrade() -> None:
     sa.Column('donation_id', sa.Uuid(), nullable=False),
     sa.Column('user_id', sa.Uuid(), nullable=True),
     sa.Column('category_id', sa.Uuid(), nullable=False),
+    sa.Column('guest_name', sa.String(length=100), nullable=True),
+    sa.Column('guest_email', sa.String(length=100), nullable=True),
+    sa.Column('guest_mobile', sa.String(length=20), nullable=True),
     sa.Column('amount', sa.Numeric(precision=10, scale=2), nullable=False),
     sa.Column('payment_status', sa.Enum('PENDING', 'PAID', 'FAILED', 'REFUNDED', name='payment_status'), nullable=False),
     sa.Column('razorpay_order_id', sa.String(length=100), nullable=True),
@@ -171,6 +200,8 @@ def upgrade() -> None:
     sa.Column('max_per_user', sa.Integer(), nullable=False),
     sa.Column('status', sa.Enum('DRAFT', 'UPCOMING', 'ONGOING', 'COMPLETED', 'CANCELLED', name='event_status'), nullable=False),
     sa.Column('is_featured', sa.Boolean(), nullable=False),
+    sa.Column('is_members_only', sa.Boolean(), server_default=sa.text('0'), nullable=False),
+    sa.Column('timeline', sa.JSON(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.ForeignKeyConstraint(['created_by'], ['users.user_id'], ondelete='SET NULL'),
@@ -292,6 +323,8 @@ def downgrade() -> None:
 
     op.drop_table('users')
     op.drop_table('rooms')
+    op.drop_table('email_otp_requests')
+    op.drop_table('phone_otp_requests')
     with op.batch_alter_table('otp_logs', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_otp_logs_target'))
 
