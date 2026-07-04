@@ -31,7 +31,17 @@ This project is separated into a modern frontend and a robust backend.
    ```bash
    pip install -r requirements.txt
    ```
-4. Run the development server:
+4. Setup the SQLite Database (`test.db`) and seed initial data:
+   ```bash
+   # 1. Run migrations to create tables
+   alembic upgrade head
+   
+   # 2. Run the seed script to populate mock users, families, events, etc.
+   python scripts/seed_data.py
+   ```
+   *Note: This creates a `test.db` file in the backend folder and outputs login credentials in the terminal for Admin, Member, and Guest accounts.*
+
+5. Run the development server:
    ```bash
    uvicorn app.main:app --reload
    ```
