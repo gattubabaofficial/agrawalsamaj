@@ -44,6 +44,15 @@ def send_whatsapp_qr(to_number: str, qr_image_url: str, event_name: str, pass_nu
         logger.error("Recipient phone number is empty.")
         return "failed_sid"
 
+    # Dummy mode: just log and skip Twilio call
+    whatsapp_provider = getattr(settings, "WHATSAPP_PROVIDER", "twilio").lower()
+    if whatsapp_provider == "dummy":
+        logger.info(
+            f"[WHATSAPP DUMMY] To: {to_number} | Event: {event_name} "
+            f"| Pass {pass_number}/{total_passes} | QR: {qr_image_url}"
+        )
+        return "dummy_sid"
+
     if not settings.TWILIO_ACCOUNT_SID or not settings.TWILIO_AUTH_TOKEN:
         logger.warning("Twilio credentials not configured. Skipping WhatsApp send.")
         return "mock_sid"
@@ -162,7 +171,7 @@ async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = Fal
                 )
                 
                 event_pass.whatsapp_message_sid = message_sid
-                if message_sid != "failed_sid":
+                if message_sid not in ("failed_sid", None):
                     event_pass.delivery_status = "queued"
                     success_count += 1
                 else:
@@ -201,7 +210,7 @@ async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = Fal
                 qr_image_url=qr_url,
                 status=PassStatus.UNUSED,
                 whatsapp_message_sid=message_sid,
-                delivery_status="queued" if message_sid != "failed_sid" else "failed"
+                delivery_status="queued" if message_sid not in ("failed_sid", None) else "failed"
             )
             db.add(new_pass)
             passes_created += 1

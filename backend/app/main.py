@@ -14,6 +14,7 @@ from app.routers.donations import router as donations_router
 from app.routers.dashboard import router as dashboard_router
 from app.routers.passes import router as passes_router
 from app.routers.chat import router as chat_router
+from app.routers.blog import router as blog_router
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -25,6 +26,7 @@ app = FastAPI(
 local_origin_regex = r"https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?"
 
 from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 app.add_middleware(
     CORSMiddleware,
@@ -36,6 +38,11 @@ app.add_middleware(
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# Serve uploaded blog media files
+uploads_dir = Path("uploads")
+uploads_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
 app.include_router(auth_router)
 app.include_router(membership_router)
 app.include_router(family_router)
@@ -45,6 +52,7 @@ app.include_router(donations_router)
 app.include_router(dashboard_router)
 app.include_router(passes_router)
 app.include_router(chat_router)
+app.include_router(blog_router)
 
 
 @app.get("/")

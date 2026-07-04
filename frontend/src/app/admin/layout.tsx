@@ -17,7 +17,8 @@ import {
   Shield,
   ChevronDown,
   ChevronRight,
-  Contact
+  Contact,
+  BookOpen
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -73,6 +74,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Events Management", href: "/admin/events", icon: Calendar },
     { name: "Bhavan Bookings", href: "/admin/bookings", icon: Home },
     { name: "Donations Management", href: "/admin/donations", icon: Heart },
+    { name: "Blog Management", href: "/admin/blog", icon: BookOpen },
     { name: "Settings", href: "/admin/settings", icon: Settings },
   ];
 

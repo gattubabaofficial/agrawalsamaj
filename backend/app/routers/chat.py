@@ -194,19 +194,24 @@ async def get_conversations(
             "is_member": c_user.is_member,
             "profile_photo": c_user.profile_photo,
             "last_message": msg.content,
-            "last_message_time": msg.sent_at.isoformat(),
+            "last_message_time": msg.sent_at.isoformat() + "Z",
             "unread_count": 0 # Simple mock count, can be extended if needed
         })
 
     # 2. Fetch Groups user belongs to
     grp_stmt = select(Group).join(
         GroupMember, Group.group_id == GroupMember.group_id
-    ).where(GroupMember.user_id == current_user.user_id)
+    ).where(GroupMember.user_id == current_user.user_id).distinct()
     
     grp_res = await db.execute(grp_stmt)
     my_groups = grp_res.scalars().all()
 
+    processed_groups = set()
     for grp in my_groups:
+        if grp.group_id in processed_groups:
+            continue
+        processed_groups.add(grp.group_id)
+
         # Get last message of this group
         msg_stmt = select(Message).where(
             Message.group_id == grp.group_id
@@ -222,7 +227,7 @@ async def get_conversations(
             "location": grp.location,
             "profile_photo": None,
             "last_message": g_msg.content if g_msg else "No messages yet",
-            "last_message_time": g_msg.sent_at.isoformat() if g_msg else grp.created_at.isoformat(),
+            "last_message_time": g_msg.sent_at.isoformat() + "Z" if g_msg else grp.created_at.isoformat() + "Z",
             "unread_count": 0
         })
 
@@ -266,7 +271,7 @@ async def get_personal_messages(
         "sender_id": str(m.sender_id),
         "receiver_id": str(m.receiver_id),
         "content": m.content,
-        "sent_at": m.sent_at.isoformat(),
+        "sent_at": m.sent_at.isoformat() + "Z",
         "is_read": m.is_read
     } for m in messages]
 
@@ -314,7 +319,7 @@ async def send_personal_message_to(
         "sender_name": f"{current_user.first_name} {current_user.surname}",
         "receiver_id": str(new_msg.receiver_id),
         "content": new_msg.content,
-        "sent_at": new_msg.sent_at.isoformat()
+        "sent_at": new_msg.sent_at.isoformat() + "Z"
     }
 
     # Broadcast via WebSockets
@@ -439,7 +444,7 @@ async def get_group_messages(
             "sender_id": str(m.sender_id),
             "sender_name": f"{sender.first_name} {sender.surname}" if sender else "Unknown User",
             "content": m.content,
-            "sent_at": m.sent_at.isoformat()
+            "sent_at": m.sent_at.isoformat() + "Z"
         })
     return data
 
@@ -482,7 +487,7 @@ async def send_group_message(
         "sender_id": str(new_msg.sender_id),
         "sender_name": f"{current_user.first_name} {current_user.surname}",
         "content": new_msg.content,
-        "sent_at": new_msg.sent_at.isoformat()
+        "sent_at": new_msg.sent_at.isoformat() + "Z"
     }
 
     # Broadcast via websocket

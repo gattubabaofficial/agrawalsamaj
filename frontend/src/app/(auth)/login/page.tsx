@@ -27,7 +27,36 @@ export default function LoginPage() {
     return () => clearTimeout(timer);
   }, [resendCountdown]);
 
+  // Redirect if already logged in
   useEffect(() => {
+    const checkExistingSession = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      try {
+        const { getApiBaseUrl } = await import("@/utils/api");
+        const res = await fetch(`${getApiBaseUrl()}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const role = data.role || localStorage.getItem("userRole") || "guest";
+          const params = new URLSearchParams(window.location.search);
+          const next = params.get("next");
+          window.location.href = next || (role === "admin" ? "/admin/dashboard" : "/dashboard");
+        } else {
+          // Token invalid — clear it
+          localStorage.removeItem("token");
+          localStorage.removeItem("userRole");
+        }
+      } catch {
+        // Network error — stay on login page
+      }
+    };
+    checkExistingSession();
+
+    // Also sync NextAuth session if present
     const syncSession = async () => {
       try {
         const { getSession } = await import("next-auth/react");
@@ -37,7 +66,6 @@ export default function LoginPage() {
           const role = (session as any).role || "guest";
           localStorage.setItem("token", token);
           localStorage.setItem("userRole", role);
-          
           const params = new URLSearchParams(window.location.search);
           let redirectUrl = params.get("next");
           if (!redirectUrl) {
@@ -92,8 +120,12 @@ export default function LoginPage() {
 
       if (response.data.access_token) {
         localStorage.setItem("token", response.data.access_token);
-        localStorage.setItem("userRole", response.data.role);
-        
+        localStorage.setItem("userRole", response.data.role || "guest");
+        // Store name if returned (some backends include it in token response)
+        if (response.data.first_name) {
+          localStorage.setItem("userName", `${response.data.first_name} ${response.data.surname || ""}`);
+        }
+
         const params = new URLSearchParams(window.location.search);
         let redirectUrl = params.get("next");
         if (!redirectUrl) {

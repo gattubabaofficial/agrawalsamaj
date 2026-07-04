@@ -11,6 +11,7 @@ export default function ProfilePage() {
   const [formData, setFormData] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -41,10 +42,51 @@ export default function ProfilePage() {
       });
       setProfile(res.data);
       setIsEditing(false);
+      
+      // Update local storage so navbar reflects changes
+      if (res.data.first_name) localStorage.setItem("userName", res.data.first_name);
+      if (res.data.profile_photo) {
+        localStorage.setItem("profile_photo", res.data.profile_photo);
+        window.dispatchEvent(new Event("profile_updated"));
+      }
     } catch (error) {
       alert("Failed to save profile.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const data = new FormData();
+    data.append("file", file);
+
+    setIsUploadingPhoto(true);
+    try {
+      const token = localStorage.getItem("token");
+      const uploadRes = await axios.post(`${getApiBaseUrl()}/family/upload-photo`, data, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      const photoUrl = uploadRes.data.photo_url;
+      
+      const res = await axios.put(`${getApiBaseUrl()}/auth/profile`, { ...profile, profile_photo: photoUrl }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setProfile(res.data);
+      setFormData(res.data);
+      
+      if (res.data.profile_photo) {
+        localStorage.setItem("profile_photo", res.data.profile_photo);
+        window.dispatchEvent(new Event("profile_updated"));
+      }
+    } catch (error: any) {
+      console.error(error);
+      const msg = error.response?.data?.detail || "Failed to upload photo.";
+      alert(msg);
+    } finally {
+      setIsUploadingPhoto(false);
     }
   };
 
@@ -71,8 +113,18 @@ export default function ProfilePage() {
 
       <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
         <div className="p-6 sm:p-10 border-b border-zinc-200 bg-zinc-50/50 flex flex-col sm:flex-row items-center gap-6">
-          <div className="w-24 h-24 flex-shrink-0 rounded-full bg-gradient-to-br from-amber-400 to-rose-400 flex items-center justify-center text-white font-bold text-3xl shadow-inner">
-            {initial}
+          <div className="relative group w-24 h-24 flex-shrink-0">
+            {profile.profile_photo ? (
+              <img src={`${getApiBaseUrl().replace('/api/v1', '')}${profile.profile_photo}`} alt="Profile" className="w-full h-full rounded-full object-cover shadow-inner" />
+            ) : (
+              <div className="w-full h-full rounded-full bg-gradient-to-br from-amber-400 to-rose-400 flex items-center justify-center text-white font-bold text-3xl shadow-inner">
+                {initial}
+              </div>
+            )}
+            <label className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity overflow-hidden">
+              <span className="text-white text-xs font-medium">{isUploadingPhoto ? "Wait..." : "Change"}</span>
+              <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={isUploadingPhoto} />
+            </label>
           </div>
           <div className="text-center sm:text-left flex-1">
             <h2 className="text-2xl font-bold text-zinc-900">{profile.first_name} {profile.surname}</h2>

@@ -1,0 +1,97 @@
+import uuid
+from datetime import datetime
+from enum import Enum as PyEnum
+from typing import List, Optional
+from sqlalchemy import String, Boolean, ForeignKey, DateTime, Enum, Integer, Text, UniqueConstraint, JSON
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.database import Base
+from app.models.base import TimestampMixin
+
+
+class BlogStatus(str, PyEnum):
+    DRAFT = "draft"
+    PUBLISHED = "published"
+
+
+class Blog(Base, TimestampMixin):
+    __tablename__ = "blogs"
+
+    blog_id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    author_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
+    )
+    title: Mapped[str] = mapped_column(String(300), nullable=False)
+    slug: Mapped[str] = mapped_column(String(350), unique=True, index=True, nullable=False)
+    # Markdown content stored here
+    content: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    cover_image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    tags: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)  # List[str]
+    status: Mapped[BlogStatus] = mapped_column(
+        Enum(BlogStatus, name="blog_status"),
+        default=BlogStatus.DRAFT,
+        nullable=False,
+    )
+    views: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    # Relationships
+    author: Mapped["User"] = relationship("User", foreign_keys=[author_id])  # type: ignore[name-defined]
+    comments: Mapped[List["BlogComment"]] = relationship(
+        "BlogComment", back_populates="blog", cascade="all, delete-orphan"
+    )
+    likes: Mapped[List["BlogLike"]] = relationship(
+        "BlogLike", back_populates="blog", cascade="all, delete-orphan"
+    )
+
+
+class BlogComment(Base, TimestampMixin):
+    __tablename__ = "blog_comments"
+
+    comment_id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    blog_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("blogs.blog_id", ondelete="CASCADE"), nullable=False
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
+    )
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    # parent_id for 1-level nested replies
+    parent_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("blog_comments.comment_id", ondelete="CASCADE"), nullable=True
+    )
+
+    # Relationships
+    blog: Mapped[Blog] = relationship("Blog", back_populates="comments")
+    author: Mapped["User"] = relationship("User", foreign_keys=[user_id])  # type: ignore[name-defined]
+    replies: Mapped[List["BlogComment"]] = relationship(
+        "BlogComment",
+        back_populates="parent",
+        cascade="all, delete-orphan",
+        foreign_keys=[parent_id],
+    )
+    parent: Mapped[Optional["BlogComment"]] = relationship(
+        "BlogComment",
+        back_populates="replies",
+        remote_side="BlogComment.comment_id",
+        foreign_keys=[parent_id],
+    )
+
+
+class BlogLike(Base):
+    __tablename__ = "blog_likes"
+    __table_args__ = (UniqueConstraint("blog_id", "user_id", name="uq_blog_like"),)
+
+    like_id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    blog_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("blogs.blog_id", ondelete="CASCADE"), nullable=False
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow, nullable=False
+    )
+
+    # Relationships
+    blog: Mapped[Blog] = relationship("Blog", back_populates="likes")
+    user: Mapped["User"] = relationship("User")  # type: ignore[name-defined]

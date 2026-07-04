@@ -197,7 +197,7 @@ export default function UserDonationsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        {donation.payment_status === "paid" && (
+                        {donation.payment_status === "PAID" && (
                           <button className="text-amber-600 hover:text-amber-700 font-medium inline-flex items-center gap-1">
                             <Download className="w-4 h-4" /> PDF
                           </button>
