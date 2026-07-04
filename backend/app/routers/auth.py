@@ -764,6 +764,7 @@ class ProfileResponse(BaseModel):
     family_id: Optional[uuid.UUID] = None
     profile_photo: Optional[str] = None
     is_member: bool
+    role: str
     
     class Config:
         from_attributes = True

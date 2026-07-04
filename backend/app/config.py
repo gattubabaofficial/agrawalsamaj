@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     TWILIO_STATUS_CALLBACK_URL: str = ""
     DOMAIN_URL: str = "http://localhost:8000"
 
+    # WhatsApp provider: 'twilio' or 'dummy' (dummy just logs, no actual send)
+    WHATSAPP_PROVIDER: str = "twilio"
+
     # Email
     FROM_EMAIL: str = "noreply@agrawalsamaj.org"
     SENDGRID_API_KEY: Optional[str] = None

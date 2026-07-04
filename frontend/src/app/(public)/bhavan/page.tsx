@@ -111,14 +111,27 @@ export default function BhavanPage() {
                 <div className="space-y-2 pt-4 border-t border-zinc-100">
                   <h4 className="text-2xs uppercase tracking-wider font-semibold text-zinc-400">Amenities</h4>
                   <div className="flex flex-wrap gap-1.5">
-                    {fac.amenities?.map((amenity: string) => (
-                      <span
-                        key={amenity}
-                        className="px-2 py-0.5 rounded-lg text-3xs font-medium bg-zinc-50 border border-zinc-100 text-zinc-500"
-                      >
-                        {amenity}
-                      </span>
-                    ))}
+                    {fac.amenities && typeof fac.amenities === 'object' && !Array.isArray(fac.amenities)
+                      ? Object.entries(fac.amenities)
+                          .filter(([, val]) => val)
+                          .map(([amenity]) => (
+                            <span
+                              key={amenity}
+                              className="px-2 py-0.5 rounded-lg text-3xs font-medium bg-zinc-50 border border-zinc-100 text-zinc-500 capitalize"
+                            >
+                              {amenity.replace(/_/g, ' ')}
+                            </span>
+                          ))
+                      : Array.isArray(fac.amenities)
+                      ? fac.amenities.map((amenity: string) => (
+                          <span
+                            key={amenity}
+                            className="px-2 py-0.5 rounded-lg text-3xs font-medium bg-zinc-50 border border-zinc-100 text-zinc-500"
+                          >
+                            {amenity}
+                          </span>
+                        ))
+                      : null}
                   </div>
                 </div>
               </div>

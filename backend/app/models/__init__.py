@@ -6,8 +6,8 @@ from app.models.booking import Room, Booking, PaymentMode, BookingStatus
 from app.models.donation import DonationCategory, Donation
 from app.models.chat import Group, GroupMember, Message, GroupType
 from app.models.audit import AuditLog, Notification, NotificationType
-
 from app.models.requests import MembershipRequest, FamilyJoinRequest, RequestStatus
+from app.models.blog import Blog, BlogComment, BlogLike, BlogStatus
 
 # Ensure all models are exported
 __all__ = [
@@ -45,4 +45,8 @@ __all__ = [
     "MembershipRequest",
     "FamilyJoinRequest",
     "RequestStatus",
+    "Blog",
+    "BlogComment",
+    "BlogLike",
+    "BlogStatus",
 ]

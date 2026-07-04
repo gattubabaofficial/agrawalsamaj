@@ -17,7 +17,8 @@ import {
   ChevronDown,
   ChevronRight,
   Settings,
-  Contact
+  Contact,
+  BookOpen
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -55,6 +56,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "My Bookings", href: "/dashboard/bookings", icon: Home },
     { name: "Donations", href: "/dashboard/donations", icon: Heart },
     { name: "Chat", href: "/dashboard/chat", icon: MessageCircle },
+    { name: "My Blogs", href: "/dashboard/blog", icon: BookOpen },
   ];
 
   const managementItems = [
@@ -70,7 +72,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   ];
 
   const filteredGeneralItems = generalItems.filter(item => {
-    if (item.href === "/dashboard/family") {
+    if (item.href === "/dashboard/family" || item.href === "/dashboard/blog") {
       return role === "MEMBER" || role === "ADMIN";
     }
     return true;

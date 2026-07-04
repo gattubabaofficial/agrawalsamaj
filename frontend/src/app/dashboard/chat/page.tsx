@@ -150,14 +150,16 @@ export default function ChatPage() {
   // Setup WS Connection
   const getWsUrl = (): string => {
     const token = localStorage.getItem("token") || "";
-    if (typeof window !== "undefined") {
-      const hostname = window.location.hostname === "0.0.0.0" ? "localhost" : window.location.hostname;
-      return `ws://${hostname}:8000/api/v1/chat/ws?token=${token}`;
-    }
-    return `ws://localhost:8000/api/v1/chat/ws?token=${token}`;
+    const baseUrl = getApiBaseUrl();
+    // Convert http/https to ws/wss
+    const wsBaseUrl = baseUrl.replace(/^http/, "ws");
+    return `${wsBaseUrl}/chat/ws?token=${token}`;
   };
 
   const connectWebSocket = () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
     if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
       return;
     }
@@ -399,6 +401,7 @@ export default function ChatPage() {
     if (sidebarTab === "all") return true;
     return c.type === sidebarTab;
   });
+  const uniqueFilteredConversations = filteredConversations.filter((v, i, a) => a.findIndex(t => t.id === v.id && t.type === v.type) === i);
 
   return (
     <div className="flex h-[calc(100vh-8rem)] -m-6 bg-zinc-50 border border-zinc-200 overflow-hidden rounded-2xl shadow-sm">
@@ -490,12 +493,12 @@ export default function ChatPage() {
               <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
               <span className="text-xs">Loading conversations...</span>
             </div>
-          ) : filteredConversations.length === 0 ? (
+          ) : uniqueFilteredConversations.length === 0 ? (
             <div className="p-6 text-center text-zinc-400 text-xs">
               No conversations found.
             </div>
           ) : (
-            filteredConversations.map((c) => {
+            uniqueFilteredConversations.map((c) => {
               const isActive = activeChat?.id === c.id;
               const initials = c.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
               return (
