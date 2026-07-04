@@ -1,0 +1,364 @@
+AGRAWAL SAMAJ MANAGEMENT PORTAL
+FUNCTIONAL REQUIREMENTS DOCUMENT
+
+==================================================
+1. PUBLIC WEBSITE
+==================================================
+
+1.1 Home Page
+- Hero carousel/banner
+- Recent events section
+- Bhavan location information
+- Donation section
+- Photo gallery
+- Quick access links
+
+1.2 About Us
+- About Agrawal Samaj
+- Vision and Mission
+- Board Members
+- Committee Members
+
+1.3 Events
+
+1.3.1 Event Listing
+- Upcoming Events
+- Ongoing Events
+- Completed Events
+- Featured Events
+
+Each Event Card will display:
+- Event Banner/Image
+- Event Name
+- Event Date
+- Event Time
+- Event Location
+- Event Category
+- Registration Status
+- Pass Price (if applicable)
+
+1.3.2 Event Details Page
+
+Basic Information:
+- Event Name
+- Event Description
+- Event Banner
+- Organizer Name
+- Event Venue
+- Event Address
+
+Schedule Information:
+- Program Start Time
+- Guest Arrival Time
+- Cultural Program Time
+- Food Serving Time
+- Closing Time
+- Complete Event Timeline
+
+Registration Information:
+- Registration Status
+- Available Seats
+- Remaining Seats
+- Registration Deadline
+
+Pass Information:
+- Pass Price
+- Number of Passes Available
+- Maximum Passes Per User
+- Automatic Total Amount Calculation
+
+Gallery:
+- Event Photos
+- Event Videos
+
+Documents:
+- Event Brochure
+- Event Instructions
+- Event Rules
+
+1.3.3 Event Registration
+
+- Login required for registration
+- Select number of passes
+- Online payment
+- Registration confirmation
+- QR Pass generation
+- QR delivery through WhatsApp and Email
+
+1.3.4 QR Pass Verification
+
+- QR scanning by Admin or Volunteer
+- One-time scan validation
+- Duplicate scans not allowed
+- Attendance automatically recorded
+
+1.3.5 Event Notifications
+
+- New Event Announcement
+- Registration Confirmation
+- Event Reminder
+- Schedule Changes
+- Event Cancellation Notice
+
+1.3.6 Event Statistics (Admin)
+
+- Total Registrations
+- Total Passes Sold
+- Attendance Count
+- Revenue Generated
+- Check-in Reports
+
+1.4 Bhavan Booking
+- Hall booking information
+- Room booking information
+- Pricing details
+- Floor plans
+- Availability status
+
+1.5 Donation
+- Online donation facility
+- Donation categories
+- Donation history (for logged-in users)
+
+==================================================
+2. AUTHENTICATION & REGISTRATION
+==================================================
+
+Registration Methods:
+- Mobile Number + OTP
+- Email + OTP
+- Google Sign-In
+- Yahoo Email Registration
+
+Login Methods:
+- Mobile Number + OTP
+- Email + Password/OTP
+- Google Login
+
+OTP Verification:
+- SMS OTP for mobile registration
+- Email OTP for email registration
+
+==================================================
+3. USER ROLES
+==================================================
+
+A. Admin
+B. Member
+C. User (Non-Member)
+
+==================================================
+4. ADMIN MODULE
+==================================================
+
+4.1 Dashboard
+- Total Members Count
+- Total Users Count
+- Active Events
+- Bhavan Bookings
+- Donation Statistics
+
+4.2 Member Management
+- View all members
+- View all user details regardless of privacy settings
+- Add/Edit/Delete members
+- Approve or reject registrations
+- Classify users as:
+  * Registered Member
+  * Non-Member/Outsider
+
+4.3 Event Management
+- Create events
+- Manage event schedules
+- Manage ticket/pass pricing
+- Generate QR passes
+- Track attendance
+- Manage volunteers and scanners
+
+4.4 Booking Management
+- Approve bookings
+- Manage room availability
+- Update cash payment status
+- View booking history
+
+==================================================
+5. MEMBER MANAGEMENT
+==================================================
+
+5.1 Family System
+- Each family will have a unique Family ID
+- Already registered family and have unique Family Id
+- Other family members must register using the same Family ID
+
+5.2 Member Profile
+Profile fields:
+- First Name
+- Surname
+- Family ID
+- Mobile Number
+- Address
+- Email Address
+- Profession
+- Profile Photo
+
+5.3 Privacy Controls
+Members and Users can choose visibility of:
+- Mobile Number
+- Email Address
+- Address
+
+Privacy Rules:
+- Hidden information is not visible to other users
+- Admin can always view all information
+
+==================================================
+6. MEMBER DIRECTORY
+==================================================
+
+Registered Members List:
+- Search members
+- Filter members
+- View member profiles
+
+Non-Registered Members List:
+- Separate listing
+- Search and filter options
+
+Permissions:
+- Member: Add/Edit own details
+- User: Add/Edit own details
+- Admin: Add/Edit/Delete any record
+
+==================================================
+7. COMMUNICATION MODULE
+==================================================
+
+7.1 Personal Chat
+- One-to-one messaging
+- Available for all users, members, and admins
+- End-to-end privacy
+- Admin cannot view private conversations
+
+7.2 Group Chats
+
+Member Group:
+- Registered Members Group
+
+Non-Member Group:
+- General Users Group
+
+Location-Based Groups:
+- Colony-wise Groups
+- Area-wise Groups
+
+Examples:
+- Khushi Vihar Group
+- Patrakar Colony Group
+
+==================================================
+8. EVENT MANAGEMENT
+==================================================
+
+8.1 Event Schedule
+Admin can define:
+- Program start time
+- Food serving time
+- Session timings
+- Event agenda
+
+8.2 Event Pass System
+- Passes sold through the website/app
+- Admin defines pass price
+- User selects number of passes
+- Total amount calculated automatically
+- Online payment support
+
+8.3 QR Pass System
+- Unique QR generated for each pass
+- QR sent through WhatsApp
+- QR scanned by admin/volunteer
+- Once scanned, QR becomes invalid
+- Duplicate entry not allowed
+
+==================================================
+9. BHAVAN BOOKING MODULE
+==================================================
+
+9.1 Online Booking
+Users can book:
+- Rooms
+- Halls
+- Facilities
+
+9.2 Booking Process
+- Check availability
+- Select room/hall
+- View floor plan
+- Choose suitable room
+- Submit booking request
+
+9.3 Payment Options
+- Online Payment
+- Cash Payment
+
+Cash Payment Workflow:
+- Admin updates payment status after receiving payment
+
+9.4 Public Visibility
+Booking information visible on public website.
+Actual booking and payment require login.
+
+Redirection Logic:
+- Logged-in users -> Dashboard Booking Module
+- Non-logged-in users -> Login/Register first
+
+==================================================
+10. PAYMENT MANAGEMENT
+==================================================
+
+Supported Payments:
+- UPI
+- Debit Card
+- Credit Card
+- Net Banking
+- Cash
+
+Modules:
+- Event Pass Payments
+- Bhavan Booking Payments
+- Donations
+
+==================================================
+11. NOTIFICATIONS
+==================================================
+
+- Registration OTP
+- Event Updates
+- Booking Confirmations
+- Payment Receipts
+- QR Pass Delivery
+- WhatsApp Notifications
+- Email Notifications
+- SMS Notifications
+
+==================================================
+12. SECURITY REQUIREMENTS
+==================================================
+
+- OTP Verification
+- Role-Based Access Control
+- Data Privacy Controls
+- Secure Payment Gateway
+- QR Validation System
+- Audit Logs for Admin Actions
+
+==================================================
+13. FUTURE ENHANCEMENTS
+==================================================
+
+- Mobile Application
+- Push Notifications
+- Digital Membership Card
+- Advanced Reports & Analytics
+- Volunteer Management System
+- Attendance Reports
