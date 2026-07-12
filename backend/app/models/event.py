@@ -246,7 +246,14 @@ class EventRegistration(Base, TimestampMixin):
     razorpay_payment_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     qr_code: Mapped[Optional[str]] = mapped_column(String(255), unique=True, index=True, nullable=True)
     qr_delivered: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    
+
+    # Approver tracking (admin who approved/verified a cash / pay-at-venue payment)
+    approved_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("users.user_id", ondelete="SET NULL"),
+        nullable=True
+    )
+    approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
     # Check-in / Attendance
     attended: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     scanned_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

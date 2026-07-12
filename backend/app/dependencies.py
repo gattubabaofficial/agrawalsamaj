@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db_session
+from app.models.user import UserRole
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login", auto_error=False)
 
@@ -92,10 +93,26 @@ async def get_optional_current_user(
 
 
 async def get_current_admin(current_user=Depends(get_current_user)):
-    """Enforce that the logged-in user is an admin."""
-    if current_user.role != "admin":
+    """Enforce that the logged-in user is an admin (or super admin, which is a
+    superset of admin privileges)."""
+    if current_user.role not in ("admin", "super_admin"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions",
         )
     return current_user
+
+
+async def get_current_super_admin(current_user=Depends(get_current_user)):
+    """Enforce that the logged-in user is a super admin."""
+    if current_user.role != "super_admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Super admin privileges required",
+        )
+    return current_user
+
+
+def is_admin_level(user) -> bool:
+    """True if the user has admin or super-admin privileges."""
+    return getattr(user, "role", None) in ("admin", "super_admin", UserRole.ADMIN, UserRole.SUPER_ADMIN)

@@ -69,6 +69,10 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const pollingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const intentionalCloseRef = useRef(false);
+  const activeChatRef = useRef<any>(null);
+  const currentUserRef = useRef<any>(null);
 
   // 1. Fetch current user
   useEffect(() => {
@@ -179,13 +183,15 @@ export default function ChatPage() {
           // Verify if message belongs to current user
           // For personal DMs, if sender or receiver matches target, push.
           // For group DMs, if group_id matches target group.
-          if (activeChat) {
-            const isMyDM = payload.type === "personal" && activeChat.type === "personal" &&
-              ((payload.sender_id === activeChat.id && payload.receiver_id === currentUser?.user_id) ||
-               (payload.sender_id === currentUser?.user_id && payload.receiver_id === activeChat.id));
+          const chat = activeChatRef.current;
+          const me = currentUserRef.current;
+          if (chat) {
+            const isMyDM = payload.type === "personal" && chat.type === "personal" &&
+              ((payload.sender_id === chat.id && payload.receiver_id === me?.user_id) ||
+               (payload.sender_id === me?.user_id && payload.receiver_id === chat.id));
 
-            const isMyGroupMsg = payload.type === "group" && activeChat.type === "group" &&
-              payload.group_id === activeChat.id;
+            const isMyGroupMsg = payload.type === "group" && chat.type === "group" &&
+              payload.group_id === chat.id;
 
             if (isMyDM || isMyGroupMsg) {
               setMessages((prev) => {
@@ -209,13 +215,16 @@ export default function ChatPage() {
         }
       };
 
-      ws.onerror = (err) => {
-        console.error("WebSocket encountered error", err);
+      ws.onerror = () => {
+        // Browsers fire onerror (with no useful detail) right before onclose.
+        // Reconnection is handled in onclose, so we don't spam the console here.
       };
 
       ws.onclose = () => {
-        console.log("WebSocket disconnected. Retrying in 5 seconds...");
-        setTimeout(() => {
+        // Don't reconnect if we closed the socket on purpose (unmount / navigation).
+        if (intentionalCloseRef.current) return;
+        if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = setTimeout(() => {
           connectWebSocket();
         }, 5000);
       };
@@ -231,11 +240,28 @@ export default function ChatPage() {
     }
   }, [activeChat]);
 
-  // Connect WebSocket & Poll Backup
+  // Keep refs in sync so the long-lived WebSocket handlers read the latest values
+  useEffect(() => { activeChatRef.current = activeChat; }, [activeChat]);
+  useEffect(() => { currentUserRef.current = currentUser; }, [currentUser]);
+
+  // Dedicated WebSocket lifecycle: connect once per user, tear down cleanly.
+  useEffect(() => {
+    intentionalCloseRef.current = false;
+    connectWebSocket();
+    return () => {
+      intentionalCloseRef.current = true;
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+    };
+  }, [currentUser]);
+
+  // Initial data load & polling backup (does NOT own the WebSocket)
   useEffect(() => {
     fetchConversations();
     fetchGroups();
-    connectWebSocket();
 
     // Polling fallback checks if ws is offline
     pollingTimerRef.current = setInterval(() => {
@@ -258,7 +284,6 @@ export default function ChatPage() {
     }, 4000);
 
     return () => {
-      if (wsRef.current) wsRef.current.close();
       if (pollingTimerRef.current) clearInterval(pollingTimerRef.current);
     };
   }, [activeChat, currentUser]);

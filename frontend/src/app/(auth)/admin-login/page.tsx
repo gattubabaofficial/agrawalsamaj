@@ -30,7 +30,8 @@ export default function AdminLoginPage() {
       });
 
       if (response.data.access_token) {
-        if (response.data.role.toUpperCase() !== "ADMIN") {
+        const role = (response.data.role || "").toUpperCase();
+        if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
           setErrorMsg("Access Denied: You are not an administrator.");
           setIsLoading(false);
           return;

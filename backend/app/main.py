@@ -15,6 +15,8 @@ from app.routers.dashboard import router as dashboard_router
 from app.routers.passes import router as passes_router
 from app.routers.chat import router as chat_router
 from app.routers.blog import router as blog_router
+from app.routers.admin import router as admin_router
+from app.routers.receipts import router as receipts_router
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -53,6 +55,8 @@ app.include_router(dashboard_router)
 app.include_router(passes_router)
 app.include_router(chat_router)
 app.include_router(blog_router)
+app.include_router(admin_router)
+app.include_router(receipts_router)
 
 
 @app.get("/")

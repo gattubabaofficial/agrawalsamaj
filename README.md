@@ -63,12 +63,18 @@ This project is separated into a modern frontend and a robust backend.
    The web application will be available at `http://localhost:3000`
 
 ## Features Included
-* **Authentication**: JWT-based authentication with Role-Based Access Control (Guest, Member, Admin).
+* **Authentication**: JWT-based authentication with Role-Based Access Control (Guest, Member, Admin, **Super Admin**).
+* **Super Admin**: A dedicated super admin can create/deactivate admin accounts, set/reset their passwords, and view each admin's performance (approvals handled and cash generated). See `/admin/admins`.
+* **Approver tracking**: Whenever an admin approves a cash/offline payment (Bhavan or event), their name is recorded as the approver. Each admin can see their own stats at `/admin/performance`.
 * **Family Management**: Join or create families using unique family codes. Manage family members.
 * **Events**: Browse upcoming events, get passes with a mock payment gateway, and view registrations.
 * **Bhavan Bookings**: Request room and hall bookings for community functions.
-* **Donations**: Contribute to various causes (Education, Medical, Maintenance) with tax-exemption receipts.
+  * **Dynamic pricing**: Admins can set custom per-day rates for a room over specific date ranges (`/admin/pricing`); bookings are priced day-by-day using the applicable rule (highest priority wins), falling back to the room default.
+  * **Minimum-stay rules**: Admins can require a minimum number of booked days for stays overlapping a date window.
+* **Receipts (PDF)**: A PDF receipt is generated for every booking and event payment — automatically on online payment, and after admin approval for offline/cash payments. Members download theirs at `/dashboard/receipts`; admins see all at `/admin/receipts`.
 * **Admin Dashboard**: Approvals, data tables, and analytics.
+
+> **Upgrading an existing database:** after pulling these changes, run `alembic upgrade head` to add the new tables/columns, then re-run `python scripts/seed_data.py` on a fresh DB to create the dedicated **Super Admin** account (`superadmin@agrawalsamaj.org` / `SuperAdmin@123`). Also run `pip install -r requirements.txt` to install `reportlab` (used for PDF receipts).
 
 ## Environment Variables
 

@@ -86,6 +86,20 @@ USERS = [
         "family_code": None,
         "family_relation": None,
     },
+    {
+        "first_name": "Super",
+        "surname": "Admin",
+        "mobile": "9900000000",
+        "email": "superadmin@agrawalsamaj.org",
+        "password": "SuperAdmin@123",
+        "role": UserRole.SUPER_ADMIN,
+        "is_member": True,
+        "samaj_id": "AGS-SUPER-000",
+        "profession": "Administrator",
+        "address": "Agrawal Bhavan, Jaipur, Rajasthan",
+        "family_code": None,
+        "family_relation": None,
+    },
 ]
 
 EVENTS = [
@@ -464,6 +478,7 @@ async def seed():
         print("=" * 55)
         print("  LOGIN CREDENTIALS")
         print("=" * 55)
+        print(f"  [SUPER]  {USERS[3]['email']} | {USERS[3]['password']}")
         print(f"  [ADMIN]  {USERS[0]['email']} | {USERS[0]['password']}")
         print(f"  [MEMBER] {USERS[1]['email']} | {USERS[1]['password']}")
         print(f"  [GUEST]  {USERS[2]['email']} | {USERS[2]['password']}")

@@ -54,6 +54,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Users Directory", href: "/dashboard/users", icon: Users },
     { name: "My Events", href: "/dashboard/events", icon: Calendar },
     { name: "My Bookings", href: "/dashboard/bookings", icon: Home },
+    { name: "My Receipts", href: "/dashboard/receipts", icon: BookOpen },
     { name: "Donations", href: "/dashboard/donations", icon: Heart },
     { name: "Chat", href: "/dashboard/chat", icon: MessageCircle },
     { name: "My Blogs", href: "/dashboard/blog", icon: BookOpen },

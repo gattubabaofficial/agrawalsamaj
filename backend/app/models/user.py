@@ -10,6 +10,7 @@ from app.models.base import TimestampMixin
 
 
 class UserRole(str, PyEnum):
+    SUPER_ADMIN = "super_admin"
     ADMIN = "admin"
     MEMBER = "member"
     GUEST = "guest"
@@ -78,6 +79,13 @@ class User(Base, TimestampMixin):
     google_id: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True)
     yahoo_id: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True)
 
+    # Admin management: which super admin created this admin account, and notes
+    created_by_admin_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("users.user_id", ondelete="SET NULL"),
+        nullable=True
+    )
+    admin_notes: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
+
     # Relationships
     family: Mapped[Optional[Family]] = relationship(
         "Family",
@@ -95,7 +103,8 @@ class User(Base, TimestampMixin):
     bookings: Mapped[List["Booking"]] = relationship(
         "Booking",
         back_populates="user",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        foreign_keys="[Booking.user_id]"
     )
     
     donations: Mapped[List["Donation"]] = relationship(

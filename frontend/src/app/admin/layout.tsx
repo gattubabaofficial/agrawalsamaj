@@ -26,6 +26,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
+  const [role, setRole] = useState<string>("");
   const [isManagementOpen, setIsManagementOpen] = useState(
     pathname.startsWith("/admin") &&
     !["/admin/profile", "/admin/family", "/admin/my-events", "/admin/my-bookings", "/admin/my-donations", "/admin/chat"].includes(pathname)
@@ -34,9 +35,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     setIsClient(true);
     const token = localStorage.getItem("token");
-    const role = localStorage.getItem("userRole");
-    
-    if (!token || role?.toUpperCase() !== "ADMIN") {
+    const storedRole = localStorage.getItem("userRole");
+    setRole((storedRole || "").toUpperCase());
+
+    const r = storedRole?.toUpperCase();
+    if (!token || (r !== "ADMIN" && r !== "SUPER_ADMIN")) {
       router.push("/admin-login");
     }
   }, [router]);
@@ -56,8 +59,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push("/admin-login");
   };
 
+  const isSuperAdmin = role === "SUPER_ADMIN";
+
   const generalItems = [
     { name: "My Profile", href: "/admin/profile", icon: User },
+    { name: "My Performance", href: "/admin/performance", icon: Shield },
     { name: "My Family", href: "/admin/family", icon: Users },
     { name: "My Events", href: "/admin/my-events", icon: Calendar },
     { name: "My Bookings", href: "/admin/my-bookings", icon: Home },
@@ -67,13 +73,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const managementItems = [
     { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+    ...(isSuperAdmin ? [{ name: "Admin Management", href: "/admin/admins", icon: Shield }] : []),
     { name: "Membership Requests", href: "/admin/requests", icon: UserPlus },
     { name: "Families Directory", href: "/admin/families", icon: Component },
     { name: "Members Directory", href: "/admin/members", icon: Contact },
     { name: "Users Directory", href: "/admin/users", icon: Users },
     { name: "Events Management", href: "/admin/events", icon: Calendar },
     { name: "Bhavan Bookings", href: "/admin/bookings", icon: Home },
+    { name: "Room Pricing & Rules", href: "/admin/pricing", icon: Settings },
     { name: "Donations Management", href: "/admin/donations", icon: Heart },
+    { name: "Receipts", href: "/admin/receipts", icon: BookOpen },
     { name: "Blog Management", href: "/admin/blog", icon: BookOpen },
     { name: "Settings", href: "/admin/settings", icon: Settings },
   ];

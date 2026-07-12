@@ -1,8 +1,8 @@
 import uuid
-from datetime import date
+from datetime import date, datetime
 from enum import Enum as PyEnum
 from typing import List, Optional
-from sqlalchemy import String, Boolean, ForeignKey, Date, Enum, Numeric, Integer, JSON
+from sqlalchemy import String, Boolean, ForeignKey, Date, DateTime, Enum, Numeric, Integer, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -48,6 +48,16 @@ class Room(Base, TimestampMixin):
         back_populates="room",
         cascade="all, delete-orphan"
     )
+    pricing_rules: Mapped[List["RoomPricingRule"]] = relationship(
+        "RoomPricingRule",
+        back_populates="room",
+        cascade="all, delete-orphan"
+    )
+    booking_rules: Mapped[List["RoomBookingRule"]] = relationship(
+        "RoomBookingRule",
+        back_populates="room",
+        cascade="all, delete-orphan"
+    )
 
 
 class Booking(Base, TimestampMixin):
@@ -87,6 +97,53 @@ class Booking(Base, TimestampMixin):
     razorpay_payment_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
 
+    # Approver tracking (admin who approved/verified the payment)
+    approved_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("users.user_id", ondelete="SET NULL"),
+        nullable=True
+    )
+    approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
     # Relationships
     room: Mapped[Room] = relationship("Room", back_populates="bookings")
-    user: Mapped["User"] = relationship("User", back_populates="bookings")
+    user: Mapped["User"] = relationship("User", back_populates="bookings", foreign_keys=[user_id])
+    approver: Mapped[Optional["User"]] = relationship("User", foreign_keys=[approved_by])
+
+
+class RoomPricingRule(Base, TimestampMixin):
+    """Date-range based custom pricing for a room. Overrides the room's default
+    price_per_day for bookings whose dates fall inside [start_date, end_date]."""
+    __tablename__ = "room_pricing_rules"
+
+    rule_id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    room_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("rooms.room_id", ondelete="CASCADE"),
+        nullable=False
+    )
+    label: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)  # e.g. "Diwali season"
+    start_date: Mapped[date] = mapped_column(Date, nullable=False)
+    end_date: Mapped[date] = mapped_column(Date, nullable=False)
+    price_per_day: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    priority: Mapped[int] = mapped_column(Integer, default=0, nullable=False)  # higher wins on overlap
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    room: Mapped[Room] = relationship("Room", back_populates="pricing_rules")
+
+
+class RoomBookingRule(Base, TimestampMixin):
+    """Minimum-stay rule: for bookings overlapping [start_date, end_date] the guest
+    must book at least `min_days` days."""
+    __tablename__ = "room_booking_rules"
+
+    rule_id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    room_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("rooms.room_id", ondelete="CASCADE"),
+        nullable=True  # null = applies to all rooms
+    )
+    label: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    start_date: Mapped[date] = mapped_column(Date, nullable=False)
+    end_date: Mapped[date] = mapped_column(Date, nullable=False)
+    min_days: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    room: Mapped[Optional[Room]] = relationship("Room", back_populates="booking_rules")

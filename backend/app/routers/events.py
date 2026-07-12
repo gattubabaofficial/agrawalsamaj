@@ -6,13 +6,44 @@ from datetime import datetime
 import uuid
 from pydantic import BaseModel, Field
 
-from app.dependencies import get_db, get_current_user, get_optional_current_user
+from datetime import datetime as _dt
+
+from app.dependencies import get_db, get_current_user, get_optional_current_user, is_admin_level
 from app.models.user import User, UserRole
 from app.models.event import (
     Event, EventRegistration, EventCategory, EventStatus, PaymentStatus,
     EventVisibility, EventPricingType, EventPaymentMode, EventPass
 )
+from app.models.receipt import ReceiptType
 from app.services.whatsapp_service import generate_and_send_passes
+from app.services.receipt_service import create_receipt
+
+
+async def _issue_event_receipt(db, registration, *, is_offline, issuer=None):
+    """Create a receipt for an event registration payment."""
+    event = (await db.execute(select(Event).where(Event.event_id == registration.event_id))).scalar_one_or_none()
+    payer = None
+    if registration.user_id:
+        payer = (await db.execute(select(User).where(User.user_id == registration.user_id))).scalar_one_or_none()
+    payer_name = (f"{payer.first_name} {payer.surname}" if payer else (registration.guest_name or "Guest"))
+    mode = registration.payment_mode.value if hasattr(registration.payment_mode, "value") else str(registration.payment_mode or "")
+    return await create_receipt(
+        db,
+        receipt_type=ReceiptType.EVENT,
+        amount=float(registration.total_amount),
+        payer_name=payer_name,
+        payment_mode=mode,
+        is_offline=is_offline,
+        description=f"Event booking: {event.title if event else 'Event'}",
+        registration_id=registration.registration_id,
+        user_id=registration.user_id,
+        issued_by=issuer.user_id if issuer else None,
+        issued_by_name=(f"{issuer.first_name} {issuer.surname}" if issuer else None),
+        extra_rows=[
+            ("Event", event.title if event else "-"),
+            ("Passes", registration.pass_count),
+        ],
+    )
 
 router = APIRouter(prefix="/api/v1/events", tags=["Events"])
 
@@ -85,7 +116,7 @@ async def create_event(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != UserRole.ADMIN:
+    if not is_admin_level(current_user):
         raise HTTPException(status_code=403, detail="Only admins can create events")
 
     new_event = Event(
@@ -158,7 +189,7 @@ async def get_all_registrations(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != UserRole.ADMIN:
+    if not is_admin_level(current_user):
         raise HTTPException(status_code=403, detail="Only admins can view all registrations")
 
     result = await db.execute(
@@ -308,13 +339,18 @@ async def verify_registration_payment(
 
     await db.commit()
 
+    # Issue an online receipt
+    receipt = await _issue_event_receipt(db, registration, is_offline=False)
+
     # Trigger tickets QR delivery on WhatsApp
     background_tasks.add_task(generate_and_send_passes, registration.registration_id)
 
     return {
         "status": "success",
         "message": "Payment successfully verified and passes delivery triggered",
-        "registration_id": registration_id
+        "registration_id": registration_id,
+        "receipt_number": receipt.receipt_number,
+        "receipt_url": receipt.pdf_url,
     }
 
 
@@ -326,7 +362,7 @@ async def update_event(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != UserRole.ADMIN:
+    if not is_admin_level(current_user):
         raise HTTPException(status_code=403, detail="Only admins can update events")
 
     result = await db.execute(select(Event).filter(Event.event_id == event_id))
@@ -348,7 +384,7 @@ async def delete_event(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != UserRole.ADMIN:
+    if not is_admin_level(current_user):
         raise HTTPException(status_code=403, detail="Only admins can delete events")
 
     result = await db.execute(select(Event).filter(Event.event_id == event_id))
@@ -367,7 +403,7 @@ async def get_event_bookings(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != UserRole.ADMIN:
+    if not is_admin_level(current_user):
         raise HTTPException(status_code=403, detail="Only admins can view bookings")
 
     result = await db.execute(
@@ -398,7 +434,7 @@ async def mark_booking_paid(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != UserRole.ADMIN:
+    if not is_admin_level(current_user):
         raise HTTPException(status_code=403, detail="Only admins can modify bookings")
 
     result = await db.execute(select(EventRegistration).filter(EventRegistration.registration_id == booking_id))
@@ -408,16 +444,27 @@ async def mark_booking_paid(
 
     if registration.payment_mode != EventPaymentMode.PAY_AT_VENUE:
         raise HTTPException(status_code=400, detail="Only PAY_AT_VENUE bookings can be manually marked as paid")
-        
+
     if registration.payment_status == PaymentStatus.VERIFIED:
         return {"status": "success", "message": "Already verified"}
 
     registration.payment_status = PaymentStatus.VERIFIED
+    # Record the approving admin (approver) for this cash / at-venue payment
+    registration.approved_by = current_user.user_id
+    registration.approved_at = _dt.utcnow()
     await db.commit()
-    
+
+    # Generate offline receipt now that the admin has approved the cash payment
+    receipt = await _issue_event_receipt(db, registration, is_offline=True, issuer=current_user)
+
     background_tasks.add_task(generate_and_send_passes, registration.registration_id)
-    
-    return {"status": "success", "message": "Booking marked as paid and ticket generated"}
+
+    return {
+        "status": "success",
+        "message": "Booking marked as paid and ticket generated",
+        "receipt_number": receipt.receipt_number,
+        "receipt_url": receipt.pdf_url,
+    }
 
 @router.post("/admin/bookings/{booking_id}/resend-qr")
 async def resend_booking_qr(
@@ -426,7 +473,7 @@ async def resend_booking_qr(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != UserRole.ADMIN:
+    if not is_admin_level(current_user):
         raise HTTPException(status_code=403, detail="Only admins can resend tickets")
 
     result = await db.execute(select(EventRegistration).filter(EventRegistration.registration_id == booking_id))
