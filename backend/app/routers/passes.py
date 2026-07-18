@@ -32,6 +32,9 @@ async def twilio_status_webhook(request: Request, db: AsyncSession = Depends(get
         
     return {"status": "success"}
 
+from sqlalchemy.orm import joinedload
+from app.models.event import EventRegistration
+
 @router.get("/{pass_id}")
 async def get_pass_details(
     pass_id: uuid.UUID,
@@ -42,16 +45,40 @@ async def get_pass_details(
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Not authorized")
         
-    result = await db.execute(select(EventPass).filter(EventPass.pass_id == pass_id))
+    result = await db.execute(
+        select(EventPass)
+        .options(
+            joinedload(EventPass.event),
+            joinedload(EventPass.registration).joinedload(EventRegistration.user)
+        )
+        .filter(EventPass.pass_id == pass_id)
+    )
     event_pass = result.scalar_one_or_none()
     
     if not event_pass:
         raise HTTPException(status_code=404, detail="Pass not found")
         
+    registration = event_pass.registration
+    event = event_pass.event
+    
+    g_name = registration.guest_name
+    g_phone = registration.guest_phone
+    if not g_name and registration.user:
+        g_name = f"{registration.user.first_name} {registration.user.surname}"
+    if not g_phone and registration.user:
+        g_phone = registration.user.mobile
+        
     return {
         "pass_id": event_pass.pass_id,
         "registration_id": event_pass.registration_id,
         "event_id": event_pass.event_id,
+        "event_title": event.title if event else "Unknown Event",
+        "event_start_datetime": event.start_datetime if event else None,
+        "event_venue": event.venue if event else "Unknown Venue",
+        "guest_name": g_name or "Guest",
+        "guest_phone": g_phone or "N/A",
+        "payment_status": registration.payment_status if registration else "PENDING",
+        "payment_mode": registration.payment_mode if registration else None,
         "status": event_pass.status,
         "delivery_status": event_pass.delivery_status,
         "scanned_at": event_pass.scanned_at

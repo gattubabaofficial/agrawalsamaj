@@ -18,7 +18,8 @@ import {
   ChevronDown,
   ChevronRight,
   Contact,
-  BookOpen
+  BookOpen,
+  QrCode
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -79,6 +80,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Members Directory", href: "/admin/members", icon: Contact },
     { name: "Users Directory", href: "/admin/users", icon: Users },
     { name: "Events Management", href: "/admin/events", icon: Calendar },
+    { name: "Pass Verification", href: "/admin/scan", icon: QrCode },
     { name: "Bhavan Bookings", href: "/admin/bookings", icon: Home },
     { name: "Room Pricing & Rules", href: "/admin/pricing", icon: Settings },
     { name: "Donations Management", href: "/admin/donations", icon: Heart },

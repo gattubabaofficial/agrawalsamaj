@@ -16,9 +16,9 @@ async def send_sms(phone: str, message: str) -> bool:
     if is_dummy_provider or is_dummy_msg91 or is_dummy_twilio or is_dummy_2factor:
         # Simulate SMS sending in development
         print(f"\n==========================================")
-        print(f"📡 [DUMMY SMS DISPATCHED]")
-        print(f"📱 To: {phone}")
-        print(f"💬 Message: {message}")
+        print(f"[DUMMY SMS DISPATCHED]")
+        print(f"To: {phone}")
+        print(f"Message: {message}")
         print(f"==========================================\n")
         return True
 
