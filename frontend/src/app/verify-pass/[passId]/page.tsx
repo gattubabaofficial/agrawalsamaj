@@ -23,7 +23,7 @@ export default function VerifyPassPage() {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("userRole")?.toUpperCase();
 
-    if (!token || (role !== "ADMIN" && role !== "SUPER_ADMIN")) {
+    if (!token || (role !== "ADMIN" && role !== "SUPER_ADMIN" && role !== "VOLUNTEER")) {
       // Redirect to admin login with redirect parameter
       const redirectUrl = encodeURIComponent(`/verify-pass/${passId}`);
       router.push(`/admin-login?redirect=${redirectUrl}`);

@@ -31,7 +31,7 @@ export default function AdminLoginPage() {
 
       if (response.data.access_token) {
         const role = (response.data.role || "").toUpperCase();
-        if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+        if (role !== "ADMIN" && role !== "SUPER_ADMIN" && role !== "VOLUNTEER") {
           setErrorMsg("Access Denied: You are not an administrator.");
           setIsLoading(false);
           return;
@@ -39,9 +39,9 @@ export default function AdminLoginPage() {
 
         localStorage.setItem("token", response.data.access_token);
         localStorage.setItem("userRole", response.data.role);
-        
+
         const params = new URLSearchParams(window.location.search);
-        const redirectUrl = params.get("next") || "/admin/dashboard";
+        const redirectUrl = params.get("next") || (role === "VOLUNTEER" ? "/admin/scan" : "/admin/dashboard");
         window.location.href = redirectUrl;
       }
     } catch (error: any) {

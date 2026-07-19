@@ -40,8 +40,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     setRole((storedRole || "").toUpperCase());
 
     const r = storedRole?.toUpperCase();
-    if (!token || (r !== "ADMIN" && r !== "SUPER_ADMIN")) {
+    if (!token || (r !== "ADMIN" && r !== "SUPER_ADMIN" && r !== "VOLUNTEER")) {
       router.push("/admin-login");
+    } else if (r === "VOLUNTEER" && pathname === "/admin/dashboard") {
+      router.push("/admin/scan");
     }
   }, [router]);
 
@@ -61,10 +63,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   const isSuperAdmin = role === "SUPER_ADMIN";
+  const isAdmin = role === "ADMIN";
+  const isVolunteer = role === "VOLUNTEER";
 
   const generalItems = [
     { name: "My Profile", href: "/admin/profile", icon: User },
-    { name: "My Performance", href: "/admin/performance", icon: Shield },
+    ...(isSuperAdmin || isAdmin ? [{ name: "My Performance", href: "/admin/performance", icon: Shield }] : []),
     { name: "My Family", href: "/admin/family", icon: Users },
     { name: "My Events", href: "/admin/my-events", icon: Calendar },
     { name: "My Bookings", href: "/admin/my-bookings", icon: Home },
@@ -73,20 +77,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ];
 
   const managementItems = [
-    { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+    ...(isSuperAdmin || isAdmin ? [{ name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard }] : []),
     ...(isSuperAdmin ? [{ name: "Admin Management", href: "/admin/admins", icon: Shield }] : []),
-    { name: "Membership Requests", href: "/admin/requests", icon: UserPlus },
-    { name: "Families Directory", href: "/admin/families", icon: Component },
-    { name: "Members Directory", href: "/admin/members", icon: Contact },
-    { name: "Users Directory", href: "/admin/users", icon: Users },
-    { name: "Events Management", href: "/admin/events", icon: Calendar },
+    ...(isSuperAdmin || isAdmin ? [
+      { name: "Membership Requests", href: "/admin/requests", icon: UserPlus },
+      { name: "Families Directory", href: "/admin/families", icon: Component },
+      { name: "Members Directory", href: "/admin/members", icon: Contact },
+      { name: "Users Directory", href: "/admin/users", icon: Users },
+      { name: "Events Management", href: "/admin/events", icon: Calendar },
+    ] : []),
     { name: "Pass Verification", href: "/admin/scan", icon: QrCode },
-    { name: "Bhavan Bookings", href: "/admin/bookings", icon: Home },
-    { name: "Room Pricing & Rules", href: "/admin/pricing", icon: Settings },
-    { name: "Donations Management", href: "/admin/donations", icon: Heart },
-    { name: "Receipts", href: "/admin/receipts", icon: BookOpen },
-    { name: "Blog Management", href: "/admin/blog", icon: BookOpen },
-    { name: "Settings", href: "/admin/settings", icon: Settings },
+    ...(isSuperAdmin || isAdmin ? [
+      { name: "Bhavan Bookings", href: "/admin/bookings", icon: Home },
+      { name: "Room Pricing & Rules", href: "/admin/pricing", icon: Settings },
+      { name: "Donations Management", href: "/admin/donations", icon: Heart },
+      { name: "Receipts", href: "/admin/receipts", icon: BookOpen },
+      { name: "Blog Management", href: "/admin/blog", icon: BookOpen },
+      { name: "Settings", href: "/admin/settings", icon: Settings },
+    ] : [])
   ];
 
   if (!isClient) return null; // Prevent hydration mismatch
