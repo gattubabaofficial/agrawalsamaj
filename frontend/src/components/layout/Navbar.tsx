@@ -98,7 +98,9 @@ export default function Navbar() {
     localStorage.removeItem("userRole");
     setAuthUser(null);
     setUserMenuOpen(false);
-    router.push("/");
+    // Hard redirect so any admin/dashboard layout further up the history
+    // stack can't bounce the user back in with stale client state.
+    window.location.href = "/";
   };
 
   const getDashboardHref = () => {

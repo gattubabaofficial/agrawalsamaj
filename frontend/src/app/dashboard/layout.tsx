@@ -38,7 +38,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userRole");
-    router.push("/login");
+    // Hard redirect so no stale client state survives the transition.
+    window.location.href = "/login";
   };
 
   const rawRole = typeof window !== "undefined" ? localStorage.getItem("userRole") : "GUEST";

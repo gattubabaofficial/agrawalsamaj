@@ -59,7 +59,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userRole");
-    router.push("/admin-login");
+    // Hard redirect (not router.push) so the admin layout and its
+    // mounted-role state can't survive the transition and bounce back.
+    window.location.href = "/admin-login";
   };
 
   const isSuperAdmin = role === "SUPER_ADMIN";
