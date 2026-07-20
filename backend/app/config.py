@@ -30,10 +30,23 @@ class Settings(BaseSettings):
     TWILIO_WHATSAPP_FROM: str = "whatsapp:+14155238886"
     TWILIO_CONTENT_SID: str = ""
     TWILIO_STATUS_CALLBACK_URL: str = ""
-    DOMAIN_URL: str = "http://localhost:8000"
 
-    # WhatsApp provider: 'twilio' or 'dummy' (dummy just logs, no actual send)
-    WHATSAPP_PROVIDER: str = "twilio"
+    # Public base URL of THIS backend — used to build /static/... media links.
+    DOMAIN_URL: str = "http://localhost:8000"
+    # Public base URL of the Next.js frontend — used to build links that a human
+    # opens, e.g. the /verify-pass/<id> target encoded into pass QR codes.
+    # Must be reachable from the device scanning the QR, so never "localhost"
+    # when serving over a network.
+    FRONTEND_URL: str = "http://localhost:3000"
+
+    # WhatsApp provider: 'whatsapp_web' (whatsapp-web.js sidecar), 'twilio',
+    # or 'dummy' (just logs, no actual send)
+    WHATSAPP_PROVIDER: str = "whatsapp_web"
+
+    # whatsapp-web.js sidecar (see /whatsapp-service)
+    WHATSAPP_WEB_URL: str = "http://localhost:3001"
+    WHATSAPP_WEB_API_KEY: str = ""
+    WHATSAPP_WEB_TIMEOUT: int = 60
 
     # Email
     FROM_EMAIL: str = "noreply@agrawalsamaj.org"

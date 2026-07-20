@@ -43,9 +43,15 @@ This project is separated into a modern frontend and a robust backend.
 
 5. Run the development server:
    ```bash
-   uvicorn app.main:app --reload
+   python run.py
    ```
-   The API will be available at `http://localhost:8000`
+   The API will be available at `http://localhost:8000`, and on your LAN at
+   `http://<your-ip>:8000` (the startup banner prints both).
+
+   > Use `python run.py`, **not** `uvicorn app.main:app --reload`. Bare `uvicorn`
+   > binds `127.0.0.1`, so the API is unreachable from phones or other machines
+   > and the frontend fails with `AxiosError: Network Error` when opened via a
+   > LAN IP. `run.py` binds `0.0.0.0`.
 
 ### Frontend Setup
 1. Navigate to the frontend directory:
@@ -84,7 +90,14 @@ To run the backend fully, create a `.env` file in the `backend/` directory with 
 # Application settings
 APP_NAME="Agrawal Samaj API"
 ENVIRONMENT="development"
+
+# Public base URLs. DOMAIN_URL is this API (used for /static media links);
+# FRONTEND_URL is the Next.js app (used for links people open, such as the
+# /verify-pass target encoded into pass QR codes).
+# Set BOTH to your LAN IP when serving over a network — a QR pointing at
+# "localhost" resolves to the scanning phone itself and will not work.
 DOMAIN_URL="http://localhost:8000"
+FRONTEND_URL="http://localhost:3000"
 
 # Security (JWT)
 SECRET_KEY="your-super-secret-key"

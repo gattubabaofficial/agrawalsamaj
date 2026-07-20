@@ -1,0 +1,5 @@
+node_modules/
+.env
+# Linked-device session — contains credentials for the sending WhatsApp account.
+.wwebjs_auth/
+.wwebjs_cache/

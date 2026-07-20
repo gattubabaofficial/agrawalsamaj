@@ -9,12 +9,20 @@ export const getApiBaseUrl = (): string => {
     return process.env.NEXT_PUBLIC_API_URL;
   }
 
-  // Client-side dynamic hostname checking
+  // Client-side: talk to our OWN origin and let the Next rewrite in
+  // next.config.ts proxy through to the backend. Keeping everything on one
+  // origin means no CORS, and — critically — no mixed content when the app is
+  // served over HTTPS, which the QR scanner requires for camera access.
+  //
+  // This stays an absolute URL on purpose: the chat page derives its WebSocket
+  // endpoint via `.replace(/^http/, "ws")`, which needs a protocol to be present.
   if (typeof window !== "undefined") {
-    // Construct the backend URL using the browser's hostname on port 8000
-    // If hostname is 0.0.0.0 (which is invalid for client requests), fallback to localhost
-    const hostname = window.location.hostname === "0.0.0.0" ? "localhost" : window.location.hostname;
-    return `http://${hostname}:8000/api/v1`;
+    // 0.0.0.0 is a bind address, not something a client can connect to.
+    const host = window.location.hostname === "0.0.0.0"
+      ? `localhost:${window.location.port || "3000"}`
+      : window.location.host; // host includes the port
+    const protocol = window.location.protocol === "https:" ? "https" : "http";
+    return `${protocol}://${host}/api/v1`;
   }
 
   // Fallback for Server-Side Rendering (SSR)
