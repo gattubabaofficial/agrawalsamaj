@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Menu, X, Heart, Calendar, Building, Info, Home, LogIn,
-  BookOpen, LayoutDashboard, LogOut, User, ChevronDown, Shield
+  BookOpen, LayoutDashboard, LogOut, User, ChevronDown, Shield, QrCode
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getApiBaseUrl } from "@/utils/api";
@@ -98,12 +98,18 @@ export default function Navbar() {
     localStorage.removeItem("userRole");
     setAuthUser(null);
     setUserMenuOpen(false);
-    router.push("/");
+    // Hard redirect so any admin/dashboard layout further up the history
+    // stack can't bounce the user back in with stale client state.
+    window.location.href = "/";
   };
 
   const getDashboardHref = () => {
-    return authUser?.role === "admin" ? "/admin/dashboard" : "/dashboard";
+    if (authUser?.role === "admin" || authUser?.role === "super_admin") return "/admin/dashboard";
+    if (authUser?.role === "volunteer") return "/admin/scan";
+    return "/dashboard";
   };
+
+  const isVolunteer = authUser?.role === "volunteer";
 
   return (
     <nav
@@ -163,6 +169,14 @@ export default function Navbar() {
             ) : authUser ? (
               // LOGGED IN STATE
               <div className="flex items-center gap-2">
+                {isVolunteer && (
+                  <Link
+                    href="/admin/scan"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold bg-sky-500 hover:bg-sky-600 text-white shadow-sm transition-colors"
+                  >
+                    <QrCode className="w-4 h-4" /> Scan Tickets
+                  </Link>
+                )}
                 {/* User avatar menu */}
                 <div className="relative" ref={menuRef}>
                   <button
@@ -195,10 +209,10 @@ export default function Navbar() {
                             onClick={() => setUserMenuOpen(false)}
                             className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-zinc-600 hover:bg-amber-50 hover:text-amber-600 transition-colors"
                           >
-                            <LayoutDashboard className="w-4 h-4" /> Dashboard
+                            <LayoutDashboard className="w-4 h-4" /> {isVolunteer ? "Scan Tickets" : "Dashboard"}
                           </Link>
                           <Link
-                            href={authUser.role === "admin" ? "/admin/profile" : "/dashboard/profile"}
+                            href={authUser.role === "admin" || authUser.role === "super_admin" || authUser.role === "volunteer" ? "/admin/profile" : "/dashboard/profile"}
                             onClick={() => setUserMenuOpen(false)}
                             className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-zinc-600 hover:bg-amber-50 hover:text-amber-600 transition-colors"
                           >
@@ -298,9 +312,10 @@ export default function Navbar() {
                     <Link
                       href={getDashboardHref()}
                       onClick={() => setIsOpen(false)}
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 text-white font-medium text-base"
+                      className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-white font-medium text-base ${isVolunteer ? "bg-sky-500" : "bg-amber-500"}`}
                     >
-                      <LayoutDashboard className="w-4 h-4" /> Go to Dashboard
+                      {isVolunteer ? <QrCode className="w-4 h-4" /> : <LayoutDashboard className="w-4 h-4" />}
+                      {isVolunteer ? "Scan Tickets" : "Go to Dashboard"}
                     </Link>
                     <button
                       onClick={() => { handleLogout(); setIsOpen(false); }}

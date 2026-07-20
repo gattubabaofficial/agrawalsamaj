@@ -12,6 +12,7 @@ from app.models.base import TimestampMixin
 class UserRole(str, PyEnum):
     SUPER_ADMIN = "super_admin"
     ADMIN = "admin"
+    VOLUNTEER = "volunteer"
     MEMBER = "member"
     GUEST = "guest"
 

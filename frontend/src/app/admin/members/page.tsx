@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Mail, Phone, MapPin, ShieldAlert, Award, FileUser, MessageSquare } from "lucide-react";
+import { Search, Mail, Phone, MapPin, ShieldAlert, Award, FileUser, MessageSquare, HandHeart, Undo2 } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
 import { useRouter } from "next/navigation";
@@ -28,6 +28,7 @@ export default function AdminMembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMembers();
@@ -45,6 +46,24 @@ export default function AdminMembersPage() {
       console.error("Failed to fetch members", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateRole = async (userId: string, role: "volunteer" | "member") => {
+    setUpdatingUserId(userId);
+    try {
+      const token = localStorage.getItem("token");
+      await axios.patch(
+        `${getApiBaseUrl()}/membership/users/${userId}/role`,
+        { role },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setMembers(prev => prev.map(m => m.user_id === userId ? { ...m, role } : m));
+    } catch (error) {
+      console.error("Failed to update role", error);
+      alert("Failed to update role. Please try again.");
+    } finally {
+      setUpdatingUserId(null);
     }
   };
 
@@ -147,15 +166,37 @@ export default function AdminMembersPage() {
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between">
-                    <button
-                      onClick={() => router.push(`/admin/chat?userId=${m.user_id}`)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" /> Message
-                    </button>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                      Active Member
+                  <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => router.push(`/admin/chat?userId=${m.user_id}`)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" /> Message
+                      </button>
+                      {m.role === 'volunteer' ? (
+                        <button
+                          onClick={() => updateRole(m.user_id, 'member')}
+                          disabled={updatingUserId === m.user_id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          <Undo2 className="w-3.5 h-3.5" /> Revoke Volunteer
+                        </button>
+                      ) : m.role === 'member' ? (
+                        <button
+                          onClick={() => updateRole(m.user_id, 'volunteer')}
+                          disabled={updatingUserId === m.user_id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          <HandHeart className="w-3.5 h-3.5" /> Make Volunteer
+                        </button>
+                      ) : null}
+                    </div>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
+                      m.role === 'volunteer' ? 'bg-sky-50 text-sky-700 border border-sky-100' :
+                      'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                    }`}>
+                      {m.role === 'volunteer' ? 'Volunteer' : 'Active Member'}
                     </span>
                   </div>
                 </div>

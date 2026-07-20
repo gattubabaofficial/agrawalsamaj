@@ -7,6 +7,13 @@ import { signIn } from "next-auth/react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
 
+function getRoleHomeUrl(role: string) {
+  const r = (role || "").toLowerCase();
+  if (r === "admin" || r === "super_admin") return "/admin/dashboard";
+  if (r === "volunteer") return "/admin/scan";
+  return "/dashboard";
+}
+
 export default function LoginPage() {
   const [method, setMethod] = useState("password"); // 'password' or 'otp'
   const [showPassword, setShowPassword] = useState(false);
@@ -44,7 +51,7 @@ export default function LoginPage() {
           const role = data.role || localStorage.getItem("userRole") || "guest";
           const params = new URLSearchParams(window.location.search);
           const next = params.get("next");
-          window.location.href = next || (role === "admin" ? "/admin/dashboard" : "/dashboard");
+          window.location.href = next || getRoleHomeUrl(role);
         } else {
           // Token invalid — clear it
           localStorage.removeItem("token");
@@ -69,7 +76,7 @@ export default function LoginPage() {
           const params = new URLSearchParams(window.location.search);
           let redirectUrl = params.get("next");
           if (!redirectUrl) {
-            redirectUrl = role === "admin" ? "/admin/dashboard" : "/dashboard";
+            redirectUrl = getRoleHomeUrl(role);
           }
           window.location.href = redirectUrl;
         }
@@ -129,7 +136,7 @@ export default function LoginPage() {
         const params = new URLSearchParams(window.location.search);
         let redirectUrl = params.get("next");
         if (!redirectUrl) {
-          redirectUrl = response.data.role === "admin" ? "/admin/dashboard" : "/dashboard";
+          redirectUrl = getRoleHomeUrl(response.data.role);
         }
         window.location.href = redirectUrl;
       }

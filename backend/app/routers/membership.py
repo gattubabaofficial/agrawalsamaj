@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from pydantic import BaseModel
 from typing import List
 import uuid
 import json
@@ -13,6 +14,14 @@ from app.models.requests import MembershipRequest, RequestStatus, FamilyCreation
 from app.dependencies import get_current_user, get_current_admin
 
 router = APIRouter(prefix="/api/v1/membership", tags=["membership"])
+
+# Roles an admin may assign through the generic role-update endpoint below.
+# Admin/super_admin promotion goes through the dedicated admin-account flow in routers/admin.py.
+ASSIGNABLE_ROLES = {UserRole.GUEST, UserRole.MEMBER, UserRole.VOLUNTEER}
+
+
+class RoleUpdateRequest(BaseModel):
+    role: str
 
 
 def generate_family_code():
@@ -322,15 +331,56 @@ async def list_members(
     return data
 
 
+@router.patch("/users/{user_id}/role")
+async def update_user_role(
+    user_id: str,
+    payload: RoleUpdateRequest,
+    current_admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db_session)
+):
+    try:
+        new_role = UserRole(payload.role)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid role.")
+
+    if new_role not in ASSIGNABLE_ROLES:
+        raise HTTPException(status_code=403, detail="Cannot assign this role through this endpoint.")
+
+    try:
+        user_uuid = uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid user id.")
+
+    result = await db.execute(select(User).where(User.user_id == user_uuid))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    if user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN):
+        raise HTTPException(status_code=403, detail="Cannot change the role of an admin through this endpoint.")
+
+    user.role = new_role
+    if new_role == UserRole.MEMBER:
+        user.is_member = True
+        if not user.samaj_id:
+            user.samaj_id = f"SMJ-{str(user.user_id)[:6].upper()}"
+    elif new_role == UserRole.GUEST:
+        user.is_member = False
+
+    await db.commit()
+    return {"message": f"Role updated to {new_role.value}.", "user_id": str(user.user_id), "role": new_role.value}
+
+
 @router.get("/users")
 async def list_users(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
 ):
     # Fetch all registered users who are not registered members and not admins
+    # (volunteers are included so they remain visible in the directory after promotion)
     result = await db.execute(
         select(User).filter(
-            (User.role == UserRole.GUEST) & (User.is_member == False)
+            (User.role.in_([UserRole.GUEST, UserRole.VOLUNTEER])) & (User.is_member == False)
         ).order_by(User.first_name, User.surname)
     )
     users = result.scalars().all()

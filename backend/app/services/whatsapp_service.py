@@ -185,14 +185,34 @@ async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = Fal
 
         # Generate new passes if none exist
         passes_created = 0
+        pass_records = []
         for i in range(registration.pass_count):
-            pass_number = i + 1
             new_pass_id = uuid.uuid4()
             
-            # 1. Generate QR Code
+            # 1. Generate QR Code (fast local generation)
             qr_url = generate_qr_code(new_pass_id)
             
-            # 2. Send WhatsApp
+            # 2. Add pass record
+            new_pass = EventPass(
+                pass_id=new_pass_id,
+                registration_id=registration.registration_id,
+                event_id=event.event_id,
+                qr_image_url=qr_url,
+                status=PassStatus.UNUSED,
+                whatsapp_message_sid=None,
+                delivery_status="pending"
+            )
+            db.add(new_pass)
+            pass_records.append((new_pass, qr_url))
+            passes_created += 1
+            
+        # Commit immediately so the passes exist in DB and are visible in UI right away
+        await db.commit()
+        logger.info(f"Committed {passes_created} passes for registration {registration_id}. Sending WhatsApp notifications in background...")
+
+        # Now send WhatsApp notifications
+        for idx, (event_pass, qr_url) in enumerate(pass_records):
+            pass_number = idx + 1
             message_sid = await asyncio.to_thread(
                 send_whatsapp_qr,
                 to_number=user_phone,
@@ -202,21 +222,13 @@ async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = Fal
                 total_passes=registration.pass_count
             )
             
-            # 3. Save Pass Record
-            new_pass = EventPass(
-                pass_id=new_pass_id,
-                registration_id=registration.registration_id,
-                event_id=event.event_id,
-                qr_image_url=qr_url,
-                status=PassStatus.UNUSED,
-                whatsapp_message_sid=message_sid,
-                delivery_status="queued" if message_sid not in ("failed_sid", None) else "failed"
-            )
-            db.add(new_pass)
-            passes_created += 1
+            event_pass.whatsapp_message_sid = message_sid
             if message_sid != "failed_sid":
+                event_pass.delivery_status = "queued"
                 success_count += 1
-
+            else:
+                event_pass.delivery_status = "failed"
+                
         if success_count > 0:
             registration.qr_delivered = True
         await db.commit()

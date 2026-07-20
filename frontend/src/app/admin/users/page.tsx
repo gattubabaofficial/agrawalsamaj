@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Mail, Phone, MapPin, ShieldAlert, Award, FileUser, User, MessageSquare } from "lucide-react";
+import { Search, Mail, Phone, MapPin, ShieldAlert, Award, FileUser, User, MessageSquare, HandHeart, Undo2 } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
 import { useRouter } from "next/navigation";
@@ -28,6 +28,7 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<SamajUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -45,6 +46,24 @@ export default function AdminUsersPage() {
       console.error("Failed to fetch users", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateRole = async (userId: string, role: "volunteer" | "guest") => {
+    setUpdatingUserId(userId);
+    try {
+      const token = localStorage.getItem("token");
+      await axios.patch(
+        `${getApiBaseUrl()}/membership/users/${userId}/role`,
+        { role },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setUsers(prev => prev.map(u => u.user_id === userId ? { ...u, role } : u));
+    } catch (error) {
+      console.error("Failed to update role", error);
+      alert("Failed to update role. Please try again.");
+    } finally {
+      setUpdatingUserId(null);
     }
   };
 
@@ -109,6 +128,7 @@ export default function AdminUsersPage() {
                       ) : (
                         <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm border ${
                           u.role === 'admin' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                          u.role === 'volunteer' ? 'bg-sky-50 text-sky-700 border-sky-200' :
                           u.is_member ? 'bg-amber-50 text-amber-700 border-amber-200' :
                           'bg-zinc-100 text-zinc-600 border-zinc-200'
                         }`}>
@@ -155,15 +175,35 @@ export default function AdminUsersPage() {
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between">
-                    <button
-                      onClick={() => router.push(`/admin/chat?userId=${u.user_id}`)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" /> Message
-                    </button>
+                  <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => router.push(`/admin/chat?userId=${u.user_id}`)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" /> Message
+                      </button>
+                      {u.role === 'volunteer' ? (
+                        <button
+                          onClick={() => updateRole(u.user_id, 'guest')}
+                          disabled={updatingUserId === u.user_id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          <Undo2 className="w-3.5 h-3.5" /> Revoke Volunteer
+                        </button>
+                      ) : u.role === 'guest' ? (
+                        <button
+                          onClick={() => updateRole(u.user_id, 'volunteer')}
+                          disabled={updatingUserId === u.user_id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          <HandHeart className="w-3.5 h-3.5" /> Make Volunteer
+                        </button>
+                      ) : null}
+                    </div>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
                       u.role === 'admin' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
+                      u.role === 'volunteer' ? 'bg-sky-50 text-sky-700 border-sky-100' :
                       u.is_member ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
                       'bg-zinc-100 text-zinc-500 border-zinc-200'
                     }`}>
