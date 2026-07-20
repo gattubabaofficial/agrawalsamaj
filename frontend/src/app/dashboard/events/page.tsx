@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, MapPin, Ticket, Loader2, ShieldAlert, Plus, Minus, X, AlertCircle } from "lucide-react";
+import { Calendar, MapPin, Ticket, Loader2, ShieldAlert, Plus, Minus, X, AlertCircle, Info } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
@@ -14,6 +14,9 @@ export default function UserEventsPage() {
   
   // View Passes Modal State
   const [viewingPassesReg, setViewingPassesReg] = useState<any>(null);
+  
+  // View Event Details Modal State
+  const [viewingDetailsEvent, setViewingDetailsEvent] = useState<any>(null);
   
   // Registration Booking Modal State
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
@@ -258,15 +261,18 @@ export default function UserEventsPage() {
                     </div>
                   )}
 
-                  <div className="pt-4 border-t border-zinc-100 flex items-center justify-between">
-                    <div className="text-sm font-bold text-zinc-900">
-                      {event.pass_price > 0 ? `₹ ${event.pass_price.toFixed(2)}` : "Free"} <span className="text-xs text-zinc-500 font-medium">/ pass</span>
-                    </div>
+                  <div className="pt-4 border-t border-zinc-100 flex items-center gap-3">
+                    <button
+                      onClick={() => setViewingDetailsEvent(event)}
+                      className="flex-1 py-2.5 px-3 border border-zinc-300 hover:border-amber-500 hover:bg-amber-50 text-zinc-700 hover:text-amber-700 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                    >
+                      <Info className="w-4 h-4 text-amber-500" /> View Details
+                    </button>
                     <button 
                       onClick={() => handleRegisterClick(event)}
-                      className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors"
+                      className="flex-1 py-2.5 px-3 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5"
                     >
-                      Register Now
+                      <Ticket className="w-4 h-4 text-amber-400" /> Book a Ticket
                     </button>
                   </div>
                 </div>
@@ -591,6 +597,97 @@ export default function UserEventsPage() {
                 className="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-zinc-900/10"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Event Details Modal */}
+      {viewingDetailsEvent && (
+        <div className="fixed inset-0 bg-zinc-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-xl max-w-lg w-full overflow-hidden border border-zinc-200 flex flex-col max-h-[90vh] animate-scale-up">
+            <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
+              <div>
+                <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-full uppercase tracking-wider">
+                  {viewingDetailsEvent.category}
+                </span>
+                <h3 className="font-bold text-zinc-900 text-lg mt-1">{viewingDetailsEvent.title}</h3>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setViewingDetailsEvent(null)}
+                className="p-1.5 hover:bg-zinc-100 rounded-lg text-zinc-500 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5 overflow-y-auto flex-1 text-sm">
+              {viewingDetailsEvent.is_members_only && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 flex-shrink-0" />
+                  <span>This event is restricted for registered Samaj members only.</span>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <h4 className="font-semibold text-zinc-400 text-xs uppercase tracking-wider">Description</h4>
+                <p className="text-zinc-600 leading-relaxed">{viewingDetailsEvent.description || "No detailed description provided."}</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
+                <div className="flex items-start gap-2.5">
+                  <Calendar className="w-4 h-4 text-amber-500 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-semibold text-zinc-800">Date & Time</p>
+                    <p className="text-xs text-zinc-500">{formatDateTime12Hour(viewingDetailsEvent.start_datetime)}</p>
+                  </div>
+                </div>
+                {viewingDetailsEvent.venue && (
+                  <div className="flex items-start gap-2.5">
+                    <MapPin className="w-4 h-4 text-amber-500 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-semibold text-zinc-800">Venue</p>
+                      <p className="text-xs text-zinc-500">{viewingDetailsEvent.venue}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {viewingDetailsEvent.timeline && viewingDetailsEvent.timeline.length > 0 && (
+                <div className="space-y-2 pt-3 border-t border-zinc-100">
+                  <h4 className="font-semibold text-zinc-400 text-xs uppercase tracking-wider">Event Schedule</h4>
+                  <div className="space-y-2 bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
+                    {viewingDetailsEvent.timeline.map((item: any, i: number) => (
+                      <div key={i} className="flex gap-3 text-xs">
+                        <span className="font-bold text-amber-600 w-20 flex-shrink-0">{formatTime12Hour(item.time)}</span>
+                        <span className="text-zinc-700 font-medium">{item.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-4 border-t border-zinc-100 bg-zinc-50/50 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setViewingDetailsEvent(null)}
+                className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold text-sm rounded-xl transition-all"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const evt = viewingDetailsEvent;
+                  setViewingDetailsEvent(null);
+                  handleRegisterClick(evt);
+                }}
+                className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm rounded-xl transition-all shadow-md flex items-center gap-2"
+              >
+                <Ticket className="w-4 h-4" /> Book a Ticket
               </button>
             </div>
           </div>

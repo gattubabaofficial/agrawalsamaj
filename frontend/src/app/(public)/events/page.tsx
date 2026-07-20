@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Calendar, MapPin, Tag, Clock, Search, ArrowRight } from "lucide-react";
+import { Calendar, MapPin, Tag, Clock, Search, ArrowRight, Info, Ticket } from "lucide-react";
 import { motion } from "framer-motion";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
@@ -171,15 +171,18 @@ export default function EventsPage() {
                 )}
               </div>
 
-              <div className="pt-6 flex justify-between items-center border-t border-zinc-100 mt-6">
-                <span className="font-bold text-zinc-900">
-                  {evt.pass_price === 0 ? "Free" : `₹${evt.pass_price}`}
-                </span>
+              <div className="pt-6 border-t border-zinc-100 mt-6 flex items-center gap-3">
                 <Link
                   href={`/events/${evt.event_id}`}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 hover:text-amber-700"
+                  className="flex-1 py-2.5 px-3 border border-zinc-300 hover:border-amber-500 hover:bg-amber-50 text-zinc-700 hover:text-amber-700 text-xs font-semibold rounded-xl transition-all text-center flex items-center justify-center gap-1.5 shadow-sm"
                 >
-                  View Details & Book <ArrowRight className="w-4 h-4" />
+                  <Info className="w-4 h-4 text-amber-500" /> View Details
+                </Link>
+                <Link
+                  href={`/events/${evt.event_id}`}
+                  className="flex-1 py-2.5 px-3 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl transition-all text-center flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  <Ticket className="w-4 h-4 text-amber-400" /> Book a Ticket
                 </Link>
               </div>
             </motion.div>
