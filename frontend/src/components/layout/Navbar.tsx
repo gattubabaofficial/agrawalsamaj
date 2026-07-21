@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Menu, X, Heart, Calendar, Building, Info, Home, LogIn,
+  Menu, X, Heart, Calendar, Building, Info, Home,
   BookOpen, LayoutDashboard, LogOut, User, ChevronDown, Shield, QrCode
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -231,24 +231,7 @@ export default function Navbar() {
                   </AnimatePresence>
                 </div>
               </div>
-            ) : (
-              // LOGGED OUT STATE
-              <>
-                <Link
-                  href="/login"
-                  className="px-4 py-2 text-sm font-medium text-zinc-700 hover:text-zinc-950 flex items-center gap-1.5 transition-colors"
-                >
-                  <LogIn className="w-4 h-4" />
-                  Sign In
-                </Link>
-                <Link
-                  href="/register"
-                  className="relative px-5 py-2 overflow-hidden rounded-full group bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium text-sm transition-all duration-300 shadow-md shadow-amber-500/20 hover:shadow-orange-600/30 hover:scale-[1.02]"
-                >
-                  <span className="relative z-10">Register</span>
-                </Link>
-              </>
-            )}
+            ) : null}
           </div>
 
           {/* Mobile menu button */}
@@ -324,25 +307,7 @@ export default function Navbar() {
                       <LogOut className="w-4 h-4" /> Sign Out
                     </button>
                   </>
-                ) : (
-                  <>
-                    <Link
-                      href="/login"
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-200 text-zinc-700 font-medium text-base hover:bg-zinc-50 transition-colors"
-                    >
-                      <LogIn className="w-4 h-4" />
-                      Sign In
-                    </Link>
-                    <Link
-                      href="/register"
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium text-base shadow-md shadow-amber-500/20"
-                    >
-                      Register
-                    </Link>
-                  </>
-                )}
+                ) : null}
               </div>
             </div>
           </motion.div>
