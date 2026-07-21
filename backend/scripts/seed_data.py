@@ -1,7 +1,7 @@
 """
 Dummy Data Seed Script
 Run from backend/ directory:
-    python scripts/seed_data.py
+    venv\Scripts\python.exe scripts/seed_data.py
 """
 
 import asyncio
@@ -9,6 +9,7 @@ import sys
 import os
 import bcrypt
 from datetime import datetime, date, timedelta
+from sqlalchemy import delete
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
@@ -40,6 +41,11 @@ FAMILIES = [
         "family_code": "FAM002",
         "family_name": "Agrawal Family - Gupta",
         "member_limit": 8,
+    },
+    {
+        "family_code": "FAM003",
+        "family_name": "Agrawal Family - Mittal",
+        "member_limit": 6,
     },
 ]
 
@@ -100,22 +106,36 @@ USERS = [
         "family_code": None,
         "family_relation": None,
     },
+    {
+        "first_name": "Sunil",
+        "surname": "Mittal",
+        "mobile": "9829012345",
+        "email": "sunil.mittal@agrawalsamaj.org",
+        "password": "Member@123",
+        "role": UserRole.MEMBER,
+        "is_member": True,
+        "samaj_id": "AGS-MBR-003",
+        "profession": "Chartered Accountant",
+        "address": "88, Rajat Path, Mansarovar, Jaipur",
+        "family_code": "FAM003",
+        "family_relation": "head",
+    },
 ]
 
 EVENTS = [
     {
-        "title": "Agrawal Samaj Diwali Mahotsav 2025",
-        "description": "Grand Diwali celebration with cultural programs, traditional food, and fireworks. All samaj members and their families are invited to celebrate this festival of lights together.",
-        "organizer_name": "Agrawal Samaj Trust",
-        "venue": "Samaj Bhawan, Main Hall",
-        "address": "1, Samaj Bhawan Road, Jaipur, Rajasthan 302001",
+        "title": "Maharaja Agrasen Jayanti Mahotsav 2026",
+        "description": "Annual grand celebration of Maharaja Agrasen Jayanti featuring procession, cultural performances, youth awards, and community feast at Agrasen Bhawan Mansarovar.",
+        "organizer_name": "Agrawal Samaj Samiti Mansarovar",
+        "venue": "Agrasen Bhawan Main Ground & Hall",
+        "address": "Rajat Path, Mansarovar, Jaipur, Rajasthan 302020",
         "category": EventCategory.CULTURAL,
-        "start_datetime": datetime.now() + timedelta(days=15),
-        "end_datetime": datetime.now() + timedelta(days=15, hours=6),
-        "registration_deadline": datetime.now() + timedelta(days=12),
-        "pass_price": 500.0,
+        "start_datetime": datetime.now() + timedelta(days=25),
+        "end_datetime": datetime.now() + timedelta(days=25, hours=8),
+        "registration_deadline": datetime.now() + timedelta(days=20),
+        "pass_price": 150.0,
         "total_passes": 500,
-        "passes_sold": 127,
+        "passes_sold": 164,
         "max_per_user": 10,
         "status": EventStatus.UPCOMING,
         "is_featured": True,
@@ -123,107 +143,118 @@ EVENTS = [
         "pricing_type": EventPricingType.PAID,
     },
     {
-        "title": "Samaj Satsang & Puja — Navratri Special",
-        "description": "Join us for the sacred Navratri puja and bhajan sandhya. Prasad will be distributed to all attendees. A spiritual evening dedicated to Maa Durga.",
-        "organizer_name": "Dharm Samiti, Agrawal Samaj",
-        "venue": "Durga Mandir Hall",
-        "address": "5, Temple Road, Jaipur, Rajasthan",
+        "title": "Shri Krishna Janmashtami Pooja & Bhajan Sandhya",
+        "description": "Divine Krishna Janmashtami pooja, live bhajan performance, and children's Jhanki competition followed by Maha Prasad for all attendees.",
+        "organizer_name": "Dharmic Mahila Samiti",
+        "venue": "Agrasen Bhawan Temple Courtyard",
+        "address": "Rajat Path, Mansarovar, Jaipur, Rajasthan 302020",
         "category": EventCategory.RELIGIOUS,
-        "start_datetime": datetime.now() + timedelta(days=5),
-        "end_datetime": datetime.now() + timedelta(days=5, hours=4),
-        "registration_deadline": datetime.now() + timedelta(days=3),
+        "start_datetime": datetime.now() + timedelta(days=10),
+        "end_datetime": datetime.now() + timedelta(days=10, hours=5),
+        "registration_deadline": datetime.now() + timedelta(days=8),
         "pass_price": 0.0,
-        "total_passes": 200,
-        "passes_sold": 88,
+        "total_passes": 300,
+        "passes_sold": 180,
         "max_per_user": 5,
         "status": EventStatus.UPCOMING,
-        "is_featured": False,
-        "visibility": EventVisibility.MEMBERS_ONLY,
+        "is_featured": True,
+        "visibility": EventVisibility.OPEN_TO_ALL,
         "pricing_type": EventPricingType.FREE,
     },
     {
-        "title": "Annual Sports Day — Cricket & Kabaddi",
-        "description": "Annual inter-family cricket tournament and kabaddi matches. Come cheer for your family team! Prizes and trophies for winners.",
-        "organizer_name": "Yuva Mandal, Agrawal Samaj",
-        "venue": "Samaj Sports Ground",
-        "address": "Near Samaj Bhawan, Jaipur",
+        "title": "Free Eye Check-up & Medical Camp",
+        "description": "Free eye testing, cataract check-up, and blood donation drive organized in association with Metro Mass Hospital for general public.",
+        "organizer_name": "Agrawal Seva Mandal",
+        "venue": "Ground Floor Hall, Agrasen Bhawan",
+        "address": "Rajat Path, Mansarovar, Jaipur",
+        "category": EventCategory.SOCIAL,
+        "start_datetime": datetime.now() + timedelta(days=40),
+        "end_datetime": datetime.now() + timedelta(days=40, hours=6),
+        "registration_deadline": datetime.now() + timedelta(days=38),
+        "pass_price": 0.0,
+        "total_passes": 400,
+        "passes_sold": 95,
+        "max_per_user": 4,
+        "status": EventStatus.UPCOMING,
+        "is_featured": False,
+        "visibility": EventVisibility.OPEN_TO_ALL,
+        "pricing_type": EventPricingType.FREE,
+    },
+    {
+        "title": "Agrawal Youth Premier League (Cricket Tournament)",
+        "description": "Annual inter-colony T20 cricket tournament for Agrawal Samaj youth teams. Trophy, medals, and refreshments provided.",
+        "organizer_name": "Agrawal Yuva Sangathan",
+        "venue": "Mansarovar Sports Academy Ground",
+        "address": "Mansarovar, Jaipur",
         "category": EventCategory.SPORTS,
-        "start_datetime": datetime.now() - timedelta(days=30),
-        "end_datetime": datetime.now() - timedelta(days=30) + timedelta(hours=8),
-        "registration_deadline": datetime.now() - timedelta(days=33),
-        "pass_price": 100.0,
-        "total_passes": 300,
-        "passes_sold": 245,
+        "start_datetime": datetime.now() - timedelta(days=15),
+        "end_datetime": datetime.now() - timedelta(days=15) + timedelta(hours=10),
+        "registration_deadline": datetime.now() - timedelta(days=18),
+        "pass_price": 200.0,
+        "total_passes": 250,
+        "passes_sold": 250,
         "max_per_user": 5,
         "status": EventStatus.COMPLETED,
         "is_featured": False,
-        "visibility": EventVisibility.OPEN_TO_ALL,
-        "pricing_type": EventPricingType.PAID,
-    },
-    {
-        "title": "Scholarship Distribution Ceremony 2025",
-        "description": "Annual scholarship distribution for meritorious students from samaj families. 50 scholarships worth ₹10,000 each to be awarded.",
-        "organizer_name": "Shiksha Samiti, Agrawal Samaj",
-        "venue": "Samaj Bhawan, Conference Room",
-        "address": "1, Samaj Bhawan Road, Jaipur, Rajasthan 302001",
-        "category": EventCategory.EDUCATIONAL,
-        "start_datetime": datetime.now() + timedelta(days=30),
-        "end_datetime": datetime.now() + timedelta(days=30, hours=3),
-        "registration_deadline": datetime.now() + timedelta(days=25),
-        "pass_price": 0.0,
-        "total_passes": 150,
-        "passes_sold": 42,
-        "max_per_user": 3,
-        "status": EventStatus.UPCOMING,
-        "is_featured": True,
         "visibility": EventVisibility.MEMBERS_ONLY,
-        "pricing_type": EventPricingType.FREE,
+        "pricing_type": EventPricingType.PAID,
     },
 ]
 
 ROOMS = [
     {
-        "name": "Main Banquet Hall",
-        "room_number": "G-01",
-        "floor": "Ground",
+        "name": "First Unit (Ground Floor Hall & 5 Rooms)",
+        "room_number": "GF-UNIT-1",
+        "floor": "Ground Floor",
         "type": "hall",
-        "capacity": 500,
+        "capacity": 600,
         "price_per_day": 15000.0,
-        "description": "Fully air-conditioned banquet hall with stage, sound system, and projector. Ideal for weddings and large gatherings.",
-        "amenities": {"ac": True, "projector": True, "sound_system": True, "parking": True, "catering": False},
+        "description": "Includes the main ground-floor hall, 5 guest rooms, outer hall, and dedicated commercial kitchen for grand wedding ceremonies and events.",
+        "amenities": {"ac": True, "stage": True, "sound_system": True, "kitchen": True, "rooms_count": 5},
         "is_available": True,
     },
     {
-        "name": "Conference Room A",
-        "room_number": "1-01",
-        "floor": "First",
+        "name": "Second Unit (First Floor Rooms & Dormitories)",
+        "room_number": "FF-UNIT-2",
+        "floor": "First Floor",
         "type": "room",
-        "capacity": 50,
-        "price_per_day": 3000.0,
-        "description": "Modern conference room with whiteboard and video conferencing setup.",
-        "amenities": {"ac": True, "projector": True, "whiteboard": True, "wifi": True},
+        "capacity": 200,
+        "price_per_day": 14000.0,
+        "description": "Includes 11 furnished guest rooms on the 1st floor, 3 spacious dormitory halls, and 1 kitchen. Ideal for large family stay during functions.",
+        "amenities": {"rooms": 11, "dormitories": 3, "kitchen": True, "attached_bathrooms": True},
         "is_available": True,
     },
     {
-        "name": "Guest Room — Deluxe",
-        "room_number": "2-01",
-        "floor": "Second",
+        "name": "Third Unit (Basement Hall & Kitchen)",
+        "room_number": "BASE-UNIT-3",
+        "floor": "Basement",
+        "type": "hall",
+        "capacity": 150,
+        "price_per_day": 4000.0,
+        "description": "Includes spacious basement hall and 1 kitchen. Perfect for dining arrangements, exhibitions, or small gatherings.",
+        "amenities": {"basement": True, "kitchen": True, "air_ventilation": True},
+        "is_available": True,
+    },
+    {
+        "name": "Individual AC Guest Room",
+        "room_number": "AC-201",
+        "floor": "Second Floor",
+        "type": "room",
+        "capacity": 3,
+        "price_per_day": 600.0,
+        "description": "Comfortable AC guest room. Intended primarily for outstation family members and hospital visitor stays.",
+        "amenities": {"ac": True, "double_bed": True, "geyser": True, "attached_bathroom": True},
+        "is_available": True,
+    },
+    {
+        "name": "Individual Non-AC Guest Room",
+        "room_number": "NAC-205",
+        "floor": "Second Floor",
         "type": "room",
         "capacity": 4,
-        "price_per_day": 1200.0,
-        "description": "Comfortable deluxe guest room with attached bathroom, AC and TV. For outstation samaj members.",
-        "amenities": {"ac": True, "tv": True, "wifi": True, "attached_bathroom": True},
-        "is_available": True,
-    },
-    {
-        "name": "Open Lawn",
-        "room_number": "OUT-01",
-        "floor": "Outdoor",
-        "type": "facility",
-        "capacity": 1000,
-        "price_per_day": 8000.0,
-        "description": "Spacious open lawn for outdoor events and functions.",
-        "amenities": {"parking": True, "generator": True, "security": True},
+        "price_per_day": 400.0,
+        "description": "Economical non-AC room for outstation family members and visitors.",
+        "amenities": {"fan": True, "double_bed": True, "attached_bathroom": True},
         "is_available": True,
     },
 ]
@@ -234,7 +265,11 @@ ROOMS = [
 
 async def seed():
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-    print("\n[SEED] Starting database seed...\n")
+    print("\n[SEED] Starting fresh database schema recreation & seed...\n")
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
 
     async with SessionLocal() as db:
 
@@ -275,15 +310,17 @@ async def seed():
             db.add(user)
             await db.flush()
             user_objects.append(user)
-            print(f"    OK  [{udata['role'].upper()}] {udata['first_name']} {udata['surname']} | {udata['email']} | pw: {udata['password']}")
+            print(f"    OK  [{udata['role'].upper()}] {udata['first_name']} {udata['surname']} | {udata['email']}")
 
         admin_user = user_objects[0]
         member_user = user_objects[1]
         guest_user = user_objects[2]
+        sunil_user = user_objects[4]
 
         # Update family heads
         family_map["FAM001"].head_user_id = admin_user.user_id
         family_map["FAM002"].head_user_id = member_user.user_id
+        family_map["FAM003"].head_user_id = sunil_user.user_id
 
         # ── Events ────────────────────────────────
         print("\n[+] Creating events...")
@@ -316,73 +353,35 @@ async def seed():
 
         # ── Event Registrations ───────────────────
         print("\n[+] Creating event registrations...")
-        diwali_event = event_objects[0]
-        sports_event = event_objects[2]
+        jayanti_event = event_objects[0]
+        pooja_event = event_objects[1]
 
-        # Admin registered for Diwali (paid, verified)
         reg1 = EventRegistration(
-            user_id=admin_user.user_id,
-            event_id=diwali_event.event_id,
+            user_id=member_user.user_id,
+            event_id=jayanti_event.event_id,
             pass_count=4,
-            total_amount=2000.0,
+            total_amount=600.0,
             payment_mode=EventPaymentMode.PAY_ONLINE,
             payment_status=PaymentStatus.VERIFIED,
             attended=False,
         )
         db.add(reg1)
 
-        # Member registered for Diwali (paid, pending)
         reg2 = EventRegistration(
-            user_id=member_user.user_id,
-            event_id=diwali_event.event_id,
-            pass_count=2,
-            total_amount=1000.0,
+            user_id=sunil_user.user_id,
+            event_id=pooja_event.event_id,
+            pass_count=3,
+            total_amount=0.0,
             payment_mode=EventPaymentMode.PAY_AT_VENUE,
-            payment_status=PaymentStatus.PENDING,
-            attended=False,
-        )
-        db.add(reg2)
-
-        # Guest registered for Diwali (paid, pending)
-        reg3 = EventRegistration(
-            user_id=guest_user.user_id,
-            event_id=diwali_event.event_id,
-            pass_count=1,
-            total_amount=500.0,
-            payment_mode=EventPaymentMode.PAY_ONLINE,
             payment_status=PaymentStatus.PAID,
             attended=False,
         )
-        db.add(reg3)
+        db.add(reg2)
+        await db.commit()
 
-        # Admin & Member attended past Sports Day
-        reg4 = EventRegistration(
-            user_id=admin_user.user_id,
-            event_id=sports_event.event_id,
-            pass_count=2,
-            total_amount=200.0,
-            payment_mode=EventPaymentMode.PAY_ONLINE,
-            payment_status=PaymentStatus.VERIFIED,
-            attended=True,
-        )
-        db.add(reg4)
-
-        reg5 = EventRegistration(
-            user_id=member_user.user_id,
-            event_id=sports_event.event_id,
-            pass_count=1,
-            total_amount=100.0,
-            payment_mode=EventPaymentMode.PAY_AT_VENUE,
-            payment_status=PaymentStatus.VERIFIED,
-            attended=True,
-        )
-        db.add(reg5)
-
-        print("    OK  Admin  -> Diwali Mahotsav (4 passes, Rs.2000, VERIFIED)")
-        print("    OK  Member -> Diwali Mahotsav (2 passes, Rs.1000, PENDING)")
-        print("    OK  Guest  -> Diwali Mahotsav (1 pass,  Rs.500, PAID)")
-        print("    OK  Admin  -> Sports Day (2 passes, Rs.200, ATTENDED)")
-        print("    OK  Member -> Sports Day (1 pass,  Rs.100, ATTENDED)")
+        from app.services.whatsapp_service import generate_and_send_passes
+        await generate_and_send_passes(reg1.registration_id, force=True)
+        await generate_and_send_passes(reg2.registration_id, force=True)
 
         # ── Rooms ─────────────────────────────────
         print("\n[+] Creating rooms...")
@@ -406,81 +405,67 @@ async def seed():
 
         # ── Bookings ──────────────────────────────
         print("\n[+] Creating bookings...")
-        banquet_hall = room_objects[0]
-        conference_room = room_objects[1]
-        guest_room = room_objects[2]
+        ground_unit = room_objects[0]
+        first_unit = room_objects[1]
+        ac_room = room_objects[3]
 
         today = date.today()
 
-        # Admin booked banquet hall for next month (approved)
+        # Member booked Ground Floor Unit for Wedding (2 days)
         b1 = Booking(
-            user_id=admin_user.user_id,
-            room_id=banquet_hall.room_id,
-            start_date=today + timedelta(days=20),
-            end_date=today + timedelta(days=21),
-            total_amount=15000.0,
+            user_id=member_user.user_id,
+            room_id=ground_unit.room_id,
+            start_date=today + timedelta(days=15),
+            end_date=today + timedelta(days=17),
+            total_amount=21000.0,
             payment_mode=PaymentMode.UPI,
             payment_status=PaymentStatus.PAID,
             booking_status=BookingStatus.APPROVED,
-            notes="Family function — Mundan ceremony of Rohan Sharma",
+            notes="Purpose: wedding_saava | Agrawal Member: Yes | Family wedding ceremony",
         )
         db.add(b1)
 
-        # Member booked conference room (pending)
+        # Sunil Mittal booked First Floor Unit for Engagement (1 day)
         b2 = Booking(
-            user_id=member_user.user_id,
-            room_id=conference_room.room_id,
-            start_date=today + timedelta(days=7),
-            end_date=today + timedelta(days=7),
-            total_amount=3000.0,
+            user_id=sunil_user.user_id,
+            room_id=first_unit.room_id,
+            start_date=today + timedelta(days=30),
+            end_date=today + timedelta(days=31),
+            total_amount=6250.0,
             payment_mode=PaymentMode.CARD,
             payment_status=PaymentStatus.PENDING,
             booking_status=BookingStatus.PENDING,
-            notes="Business meeting — quarterly review",
+            notes="Purpose: engagement_birthday_party | Agrawal Member: Yes | Daughter engagement function",
         )
         db.add(b2)
 
-        # Guest booked guest room (approved)
+        # Guest booked AC Room for Hospital Patient Stay (3 days)
         b3 = Booking(
             user_id=guest_user.user_id,
-            room_id=guest_room.room_id,
-            start_date=today + timedelta(days=3),
-            end_date=today + timedelta(days=5),
-            total_amount=2400.0,  # 2 nights × ₹1200
+            room_id=ac_room.room_id,
+            start_date=today + timedelta(days=5),
+            end_date=today + timedelta(days=8),
+            total_amount=1800.0,
             payment_mode=PaymentMode.CASH,
             payment_status=PaymentStatus.NOT_APPLICABLE,
             booking_status=BookingStatus.APPROVED,
-            notes="Visiting from Jodhpur for samaj event",
+            notes="Purpose: Hospital visitor stay for Metro Mass patient family",
         )
         db.add(b3)
 
-        # Past booking - completed (member, rejected)
-        b4 = Booking(
-            user_id=member_user.user_id,
-            room_id=banquet_hall.room_id,
-            start_date=today - timedelta(days=10),
-            end_date=today - timedelta(days=9),
-            total_amount=15000.0,
-            payment_mode=PaymentMode.NETBANKING,
-            payment_status=PaymentStatus.REFUNDED,
-            booking_status=BookingStatus.REJECTED,
-            notes="Date conflict with samaj event — rejected and refunded",
-        )
-        db.add(b4)
-
-        print("    OK  Admin  -> Banquet Hall (20 days later, Rs.15000, APPROVED)")
-        print("    OK  Member -> Conference Room (7 days later, Rs.3000, PENDING)")
-        print("    OK  Guest  -> Guest Room (3-5 days later, Rs.2400, APPROVED)")
-        print("    OK  Member -> Banquet Hall (past, REJECTED + REFUNDED)")
+        print("    OK  Priya Gupta  -> First Unit (Ground Floor Hall) [15-17 days, APPROVED]")
+        print("    OK  Sunil Mittal -> Second Unit (First Floor Rooms) [30-31 days, PENDING]")
+        print("    OK  Amit Bansal  -> Individual AC Room [5-8 days, APPROVED]")
 
         await db.commit()
-        print("\n[DONE] Database seeded successfully!\n")
+        print("\n[DONE] Database seeded successfully with fresh Agrasen Bhawan dummy entries!\n")
         print("=" * 55)
         print("  LOGIN CREDENTIALS")
         print("=" * 55)
         print(f"  [SUPER]  {USERS[3]['email']} | {USERS[3]['password']}")
         print(f"  [ADMIN]  {USERS[0]['email']} | {USERS[0]['password']}")
         print(f"  [MEMBER] {USERS[1]['email']} | {USERS[1]['password']}")
+        print(f"  [MEMBER] {USERS[4]['email']} | {USERS[4]['password']}")
         print(f"  [GUEST]  {USERS[2]['email']} | {USERS[2]['password']}")
         print("=" * 55)
 

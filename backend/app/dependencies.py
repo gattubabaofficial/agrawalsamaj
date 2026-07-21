@@ -88,7 +88,7 @@ async def get_optional_current_user(
     try:
         user = await get_current_user(db=db, token=token)
         return user
-    except HTTPException:
+    except Exception:
         return None
 
 

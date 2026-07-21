@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle, Clock, XCircle, Search, Home, Plus, X, MapPin, Pencil, Trash2 } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
+import { formatDateDDMonthYYYY } from "@/utils/date";
 
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<any[]>([]);
@@ -184,7 +185,7 @@ export default function AdminBookingsPage() {
                         <p className="text-xs text-zinc-500">{b.user_mobile || "No Mobile"}</p>
                       </td>
                       <td className="px-6 py-4">
-                        <p className="text-zinc-900">{new Date(b.start_date).toLocaleDateString()} - {new Date(b.end_date).toLocaleDateString()}</p>
+                        <p className="text-zinc-900 font-medium">{formatDateDDMonthYYYY(b.start_date)} — {formatDateDDMonthYYYY(b.end_date)}</p>
                       </td>
                       <td className="px-6 py-4">
                         <p className="font-semibold text-zinc-900">₹{b.total_amount.toFixed(2)}</p>

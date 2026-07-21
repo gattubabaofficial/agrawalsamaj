@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { CalendarPlus, MapPin, Users, Edit, Trash2, Clock, Plus, X, AlertTriangle, ShieldAlert, List, ArrowLeft, Ticket, CheckCircle, Send } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
+import { formatDateDDMonthYYYY } from "@/utils/date";
 
 interface TimelineItem {
   time: string;
@@ -27,15 +28,11 @@ interface EventData {
 
 const formatDateTime12Hour = (dateTimeStr: string) => {
   if (!dateTimeStr) return "";
-  const date = new Date(dateTimeStr);
-  return date.toLocaleString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true
-  });
+  const dateFormatted = formatDateDDMonthYYYY(dateTimeStr);
+  const d = new Date(dateTimeStr);
+  if (isNaN(d.getTime())) return dateFormatted;
+  const timeFormatted = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+  return `${dateFormatted} (${timeFormatted})`;
 };
 
 export default function AdminEventsPage() {

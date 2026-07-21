@@ -10,30 +10,54 @@ import { getApiBaseUrl } from "@/utils/api";
 const mockFacilities = [
   {
     room_id: "1",
-    name: "Agrasen Maharaja AC Banquet Hall",
+    name: "First Unit (Ground Floor Hall & 5 Rooms)",
     type: "hall",
-    capacity: 500,
+    capacity: 600,
     price_per_day: 15000,
-    amenities: ["Centrally AC", "Stage Lighting", "Audio System", "Kitchen Facility", "Dining Area"],
-    description: "Spacious luxury air-conditioned banquet hall suitable for weddings, receptions, and large community functions.",
+    two_days_rate: 25000,
+    three_days_rate: 33000,
+    amenities: ["Ground Floor Hall", "5 Attached Rooms", "Outer Hall", "1 Commercial Kitchen"],
+    description: "Includes the main ground-floor hall, 5 guest rooms, outer hall, and dedicated commercial kitchen for grand wedding ceremonies and events.",
   },
   {
     room_id: "2",
-    name: "Premium Deluxe Guest Room (AC)",
+    name: "Second Unit (First Floor Rooms & Dormitories)",
     type: "room",
-    capacity: 3,
-    price_per_day: 1200,
-    amenities: ["Double Bed", "Flat Screen TV", "Attached Bathroom", "Free Wi-Fi", "Geyser"],
-    description: "Well-furnished comfortable guest room with clean linens and modular facilities for outstation guests.",
+    capacity: 200,
+    price_per_day: 14000,
+    two_days_rate: 21000,
+    three_days_rate: 27000,
+    amenities: ["11 First-Floor Rooms", "3 Large Dormitory Halls", "1 Kitchen"],
+    description: "Includes 11 furnished guest rooms on the 1st floor, 3 spacious dormitory halls, and 1 kitchen. Ideal for large family stay during functions.",
   },
   {
     room_id: "3",
-    name: "Community Meeting Hall",
+    name: "Third Unit (Basement Hall & Kitchen)",
     type: "hall",
-    capacity: 80,
+    capacity: 150,
     price_per_day: 4000,
-    amenities: ["AC", "Projector Screen", "Whiteboard", "PA Sound System", "Seating Chairs"],
-    description: "Ideal for committee meetings, business presentations, seminars, and family get-togethers.",
+    two_days_rate: 8000,
+    three_days_rate: 12000,
+    amenities: ["Basement Hall", "1 Kitchen", "Air Ventilation"],
+    description: "Includes spacious basement hall and 1 kitchen. Perfect for dining arrangements, exhibitions, or small gatherings.",
+  },
+  {
+    room_id: "4",
+    name: "Individual AC Guest Room",
+    type: "room",
+    capacity: 3,
+    price_per_day: 600,
+    amenities: ["Air Conditioned", "Double Bed", "Attached Bathroom", "Geyser"],
+    description: "Comfortable AC guest room. Intended primarily for outstation family members and hospital visitor stays.",
+  },
+  {
+    room_id: "5",
+    name: "Individual Non-AC Guest Room",
+    type: "room",
+    capacity: 4,
+    price_per_day: 400,
+    amenities: ["Ceiling Fan", "Double Bed", "Attached Bathroom"],
+    description: "Economical non-AC room for outstation family members and visitors.",
   }
 ];
 
@@ -60,12 +84,101 @@ export default function BhavanPage() {
         
         {/* Header */}
         <div className="text-center space-y-4">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-100 border border-amber-300 text-amber-800 text-xs font-bold uppercase tracking-wider">
+            <Building className="w-4 h-4" /> Agrasen Bhawan, Rajat Path, Mansarovar, Jaipur
+          </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 bg-clip-text text-transparent">
-            Bhavan Booking & Facilities
+            Official Bhavan Rate List & Facilities
           </h1>
-          <p className="max-w-xl mx-auto text-sm text-zinc-500">
-            Book halls, rooms, and catering facilities at subsidized community rates. Actual booking requires login.
+          <p className="max-w-2xl mx-auto text-sm text-zinc-500">
+            Effective from 01 January 2020. Book halls, basement, and guest rooms for weddings, social events, and family functions.
           </p>
+        </div>
+
+        {/* Official Rules & Guidelines */}
+        <div className="bg-white rounded-3xl border border-amber-200/80 p-6 sm:p-8 shadow-sm space-y-6">
+          <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
+            <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
+              <Info className="w-5 h-5 text-amber-600" /> Agrasen Bhawan Booking Guidelines
+            </h2>
+            <span className="text-xs font-semibold px-3 py-1 bg-amber-50 text-amber-800 rounded-full border border-amber-200">
+              Effective 01 January 2020
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+            <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-200 space-y-1">
+              <span className="font-bold text-zinc-900 block text-sm">Pure Vegetarian Only</span>
+              <p className="text-zinc-600">Strictly no non-vegetarian food, eggs, alcohol, smoking, or gambling allowed on premises.</p>
+            </div>
+            <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-200 space-y-1">
+              <span className="font-bold text-zinc-900 block text-sm">Check-in / Check-out</span>
+              <p className="text-zinc-600">Check-in: 12:00 PM | Check-out: 11:00 AM (Next Day). Music cutoff at 10:00 PM.</p>
+            </div>
+            <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-200 space-y-1">
+              <span className="font-bold text-zinc-900 block text-sm">Cleaning Charge</span>
+              <p className="text-zinc-600">Mandatory cleaning fee of ₹1,000 per unit per day applies to all facility bookings.</p>
+            </div>
+            <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-200 space-y-1">
+              <span className="font-bold text-zinc-900 block text-sm">Electricity Fee</span>
+              <p className="text-zinc-600">Electricity charged at ₹15 per kWh based on meter reading settled at the venue.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Rate List Table */}
+        <div className="bg-white rounded-3xl border border-zinc-200 p-6 sm:p-8 shadow-sm space-y-4">
+          <h3 className="text-lg font-bold text-zinc-900">Fixed Rate List for Wedding Saava Days</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-zinc-100 text-zinc-700 uppercase font-semibold">
+                  <th className="p-3 rounded-l-xl">Unit Description</th>
+                  <th className="p-3">First Day Rate</th>
+                  <th className="p-3">Two Days Rate</th>
+                  <th className="p-3">Three Days Rate</th>
+                  <th className="p-3 rounded-r-xl">Cleaning Charge</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 text-zinc-800 font-medium">
+                <tr>
+                  <td className="p-3 font-semibold text-zinc-900">First Unit (Ground Floor Hall + 5 Rooms)</td>
+                  <td className="p-3 text-amber-600 font-bold">₹15,000/-</td>
+                  <td className="p-3">₹25,000/-</td>
+                  <td className="p-3">₹33,000/-</td>
+                  <td className="p-3 text-zinc-500">₹1,000 / day</td>
+                </tr>
+                <tr>
+                  <td className="p-3 font-semibold text-zinc-900">Second Unit (First Floor 11 Rooms + 3 Dormitories)</td>
+                  <td className="p-3 text-amber-600 font-bold">₹14,000/-</td>
+                  <td className="p-3">₹21,000/-</td>
+                  <td className="p-3">₹27,000/-</td>
+                  <td className="p-3 text-zinc-500">₹1,000 / day</td>
+                </tr>
+                <tr>
+                  <td className="p-3 font-semibold text-zinc-900">Third Unit (Basement Hall)</td>
+                  <td className="p-3 text-amber-600 font-bold">₹4,000/-</td>
+                  <td className="p-3">₹8,000/-</td>
+                  <td className="p-3">₹12,000/-</td>
+                  <td className="p-3 text-zinc-500">₹1,000 / day</td>
+                </tr>
+                <tr>
+                  <td className="p-3 font-semibold text-zinc-900">Individual AC Room (Patient Family Stay)</td>
+                  <td className="p-3 text-amber-600 font-bold">₹600 / day</td>
+                  <td className="p-3">-</td>
+                  <td className="p-3">-</td>
+                  <td className="p-3 text-zinc-500">Included</td>
+                </tr>
+                <tr>
+                  <td className="p-3 font-semibold text-zinc-900">Individual Non-AC Room</td>
+                  <td className="p-3 text-amber-600 font-bold">₹400 / day</td>
+                  <td className="p-3">-</td>
+                  <td className="p-3">-</td>
+                  <td className="p-3 text-zinc-500">Included</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Facilities Grid */}
@@ -97,52 +210,39 @@ export default function BhavanPage() {
                 {/* Info List */}
                 <div className="space-y-2.5 text-sm text-zinc-500">
                   <p className="text-xs leading-relaxed line-clamp-3">{fac.description}</p>
-                  <div className="flex items-center gap-2 text-xs">
-                    <Users className="w-4 h-4 text-zinc-400 flex-shrink-0" />
-                    <span>Capacity: {fac.capacity} Persons</span>
+                  <div className="flex items-center gap-2 text-xs font-semibold text-zinc-700">
+                    <Users className="w-4 h-4 text-amber-500" />
+                    <span>Capacity: {fac.capacity || "N/A"} Persons</span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs">
-                    <CreditCard className="w-4 h-4 text-zinc-400 flex-shrink-0" />
-                    <span>Price: ₹{fac.price_per_day} / Day</span>
-                  </div>
+                  {(fac as any).deposit && (
+                    <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
+                      <Sparkles className="w-4 h-4 text-emerald-500" />
+                      <span>Security Deposit: ₹{(fac as any).deposit} (Refundable)</span>
+                    </div>
+                  )}
                 </div>
 
-                {/* Amenities Tags */}
-                <div className="space-y-2 pt-4 border-t border-zinc-100">
-                  <h4 className="text-2xs uppercase tracking-wider font-semibold text-zinc-400">Amenities</h4>
-                  <div className="flex flex-wrap gap-1.5">
-                    {fac.amenities && typeof fac.amenities === 'object' && !Array.isArray(fac.amenities)
-                      ? Object.entries(fac.amenities)
-                          .filter(([, val]) => val)
-                          .map(([amenity]) => (
-                            <span
-                              key={amenity}
-                              className="px-2 py-0.5 rounded-lg text-3xs font-medium bg-zinc-50 border border-zinc-100 text-zinc-500 capitalize"
-                            >
-                              {amenity.replace(/_/g, ' ')}
-                            </span>
-                          ))
-                      : Array.isArray(fac.amenities)
-                      ? fac.amenities.map((amenity: string) => (
-                          <span
-                            key={amenity}
-                            className="px-2 py-0.5 rounded-lg text-3xs font-medium bg-zinc-50 border border-zinc-100 text-zinc-500"
-                          >
-                            {amenity}
-                          </span>
-                        ))
-                      : null}
-                  </div>
+                {/* Amenities Badges */}
+                <div className="flex flex-wrap gap-1.5 pt-2">
+                  {fac.amenities && (Array.isArray(fac.amenities) ? fac.amenities : Object.keys(fac.amenities)).slice(0, 4).map((item: string, i: number) => (
+                    <span key={i} className="px-2.5 py-1 bg-zinc-100 text-zinc-600 text-3xs font-medium rounded-lg">
+                      {item}
+                    </span>
+                  ))}
                 </div>
               </div>
 
-              <div className="pt-8 mt-8 border-t border-zinc-100">
+              {/* Price & Action */}
+              <div className="pt-6 border-t border-zinc-100 flex items-center justify-between mt-6">
+                <div>
+                  <span className="text-3xs text-zinc-400 uppercase tracking-wider font-semibold block">Rent Rate</span>
+                  <span className="text-lg font-bold text-zinc-900">₹{fac.price_per_day} <span className="text-xs font-normal text-zinc-500">/ day</span></span>
+                </div>
                 <Link
                   href={`/bhavan/${fac.room_id}`}
-                  className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold shadow-md shadow-amber-500/10 hover:shadow-amber-500/20 transition-all hover:scale-[1.01]"
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
                 >
-                  Request Booking
-                  <ArrowRight className="w-4 h-4" />
+                  Book Facility <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
             </motion.div>

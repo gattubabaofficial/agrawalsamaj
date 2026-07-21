@@ -341,8 +341,8 @@ async def register_event(
     await db.commit()
     await db.refresh(registration)
     
-    if payment_status == PaymentStatus.NOT_APPLICABLE:
-        background_tasks.add_task(generate_and_send_passes, registration.registration_id)
+    # Trigger pass & QR generation immediately so passes are available in user dashboard
+    background_tasks.add_task(generate_and_send_passes, registration.registration_id)
     
     response = {
         "status": "success",

@@ -4,6 +4,7 @@ import { Calendar, MapPin, Ticket, Loader2, ShieldAlert, Plus, Minus, X, AlertCi
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
+import { formatDateDDMonthYYYY } from "@/utils/date";
 import PaymentGateway from "@/components/PaymentGateway";
 
 export default function UserEventsPage() {
@@ -21,6 +22,7 @@ export default function UserEventsPage() {
   // Registration Booking Modal State
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [attendeeType, setAttendeeType] = useState<"member" | "user">("member");
   const [passCount, setPassCount] = useState(1);
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [guestName, setGuestName] = useState("");
@@ -44,9 +46,9 @@ export default function UserEventsPage() {
       const token = localStorage.getItem("token");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-      const eventsPromise = axios.get(`${getApiBaseUrl()}/events/`, { headers })
+      const eventsPromise = axios.get(`${getApiBaseUrl()}/events`, { headers })
         .then(res => res.data)
-        .catch((err) => { console.error("Failed to fetch events", err); return []; });
+        .catch((err) => { console.error("Failed to fetch events", err); return null; });
 
       const regPromise = token
         ? axios.get(`${getApiBaseUrl()}/events/my-registrations`, { headers })
@@ -56,8 +58,12 @@ export default function UserEventsPage() {
 
       const [eventsData, regData] = await Promise.all([eventsPromise, regPromise]);
 
-      setEvents(eventsData);
-      setMyRegistrations(regData);
+      if (Array.isArray(eventsData) && eventsData.length > 0) {
+        setEvents(eventsData);
+      }
+      if (Array.isArray(regData)) {
+        setMyRegistrations(regData);
+      }
     } catch (error) {
       console.error("Failed to fetch events data", error);
     } finally {
@@ -186,18 +192,14 @@ export default function UserEventsPage() {
     return `${hours}:${minutes} ${ampm}`;
   };
 
-  // Format full Date and Time in 12-hour format
+  // Format full Date and Time in DD MonthName YYYY format
   const formatDateTime12Hour = (dateTimeStr: string) => {
     if (!dateTimeStr) return "";
-    const date = new Date(dateTimeStr);
-    return date.toLocaleString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true
-    });
+    const dateFormatted = formatDateDDMonthYYYY(dateTimeStr);
+    const d = new Date(dateTimeStr);
+    if (isNaN(d.getTime())) return dateFormatted;
+    const timeFormatted = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+    return `${dateFormatted} (${timeFormatted})`;
   };
 
   return (
@@ -355,6 +357,43 @@ export default function UserEventsPage() {
                 </div>
               </div>
 
+              {/* Member or Guest Selection */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block">Are you a Member or User?</label>
+                <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-100 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAttendeeType("member");
+                      if (userProfile) {
+                        const fullName = [userProfile.first_name, userProfile.surname].filter(Boolean).join(" ");
+                        setGuestName(fullName || userProfile.full_name || "");
+                        setWhatsappNumber(userProfile.mobile || "");
+                        setGuestEmail(userProfile.email || "");
+                      }
+                    }}
+                    className={`py-2 px-3 text-xs font-semibold rounded-lg transition-all ${
+                      attendeeType === "member"
+                        ? "bg-amber-500 text-white shadow-sm"
+                        : "text-zinc-600 hover:text-zinc-900"
+                    }`}
+                  >
+                    Registered Member
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAttendeeType("user")}
+                    className={`py-2 px-3 text-xs font-semibold rounded-lg transition-all ${
+                      attendeeType === "user"
+                        ? "bg-amber-500 text-white shadow-sm"
+                        : "text-zinc-600 hover:text-zinc-900"
+                    }`}
+                  >
+                    Guest / User
+                  </button>
+                </div>
+              </div>
+
               {/* Ticket Quantity Selector */}
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-zinc-800 block">Select Ticket Quantity</label>
@@ -384,6 +423,16 @@ export default function UserEventsPage() {
               <div className="space-y-4">
                 <h4 className="font-semibold text-zinc-900 text-sm border-b border-zinc-100 pb-1">Contact Information</h4>
                 
+                {attendeeType === "member" && userProfile && (
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1">
+                    <p className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
+                      ✓ Member Details Loaded from DB
+                    </p>
+                    <p className="text-xs text-zinc-700 font-medium">Name: <span className="font-semibold">{guestName || `${userProfile.first_name} ${userProfile.surname}`}</span></p>
+                    <p className="text-xs text-zinc-700 font-medium">Mobile: <span className="font-semibold">{whatsappNumber || userProfile.mobile}</span></p>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-zinc-700">Full Name *</label>
@@ -653,6 +702,15 @@ export default function UserEventsPage() {
                     </div>
                   </div>
                 )}
+                <div className="flex items-start gap-2.5 sm:col-span-2 pt-2 border-t border-zinc-200/60">
+                  <Ticket className="w-4 h-4 text-amber-500 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-semibold text-zinc-800">Pass Price</p>
+                    <p className="text-xs font-bold text-amber-600">
+                      {viewingDetailsEvent.pass_price > 0 ? `₹${viewingDetailsEvent.pass_price} per pass` : "Free Entry"}
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {viewingDetailsEvent.timeline && viewingDetailsEvent.timeline.length > 0 && (
@@ -670,24 +728,13 @@ export default function UserEventsPage() {
               )}
             </div>
 
-            <div className="px-6 py-4 border-t border-zinc-100 bg-zinc-50/50 flex items-center justify-end gap-3">
+            <div className="px-6 py-4 border-t border-zinc-100 bg-zinc-50/50 flex items-center justify-end">
               <button
                 type="button"
                 onClick={() => setViewingDetailsEvent(null)}
-                className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold text-sm rounded-xl transition-all"
+                className="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-semibold text-sm rounded-xl transition-all shadow-sm"
               >
                 Close
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const evt = viewingDetailsEvent;
-                  setViewingDetailsEvent(null);
-                  handleRegisterClick(evt);
-                }}
-                className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm rounded-xl transition-all shadow-md flex items-center gap-2"
-              >
-                <Ticket className="w-4 h-4" /> Book a Ticket
               </button>
             </div>
           </div>

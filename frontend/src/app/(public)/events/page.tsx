@@ -6,6 +6,7 @@ import { Calendar, MapPin, Tag, Clock, Search, ArrowRight, Info, Ticket } from "
 import { motion } from "framer-motion";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
+import { formatDateDDMonthYYYY } from "@/utils/date";
 
 // Mock data as fallback
 const mockEvents = [
@@ -53,7 +54,7 @@ export default function EventsPage() {
         const response = await axios.get(`${getApiBaseUrl()}/events`, {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
-        if (response.data && response.data.length > 0) {
+        if (Array.isArray(response.data) && response.data.length > 0) {
           setEvents(response.data);
         }
       } catch (err) {
@@ -146,7 +147,7 @@ export default function EventsPage() {
                 <div className="space-y-2 pt-2 border-t border-zinc-100 text-xs text-zinc-500">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-zinc-400" />
-                    <span>{new Date(evt.start_datetime).toLocaleDateString("en-US", { dateStyle: "medium" })}</span>
+                    <span>{formatDateDDMonthYYYY(evt.start_datetime)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-zinc-400" />
@@ -182,7 +183,7 @@ export default function EventsPage() {
                   <Info className="w-4 h-4 text-amber-500" /> View Details
                 </Link>
                 <Link
-                  href={`/events/${evt.event_id}`}
+                  href={`/events/${evt.event_id}?book=true`}
                   className="flex-1 py-2.5 px-3 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl transition-all text-center flex items-center justify-center gap-1.5 shadow-sm"
                 >
                   <Ticket className="w-4 h-4 text-amber-400" /> Book a Ticket

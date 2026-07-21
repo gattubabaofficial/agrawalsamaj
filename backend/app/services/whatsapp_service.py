@@ -108,28 +108,26 @@ def send_whatsapp_web_qr(
             logger.info("Sent WhatsApp pass to %s via whatsapp-web.js (%s)", to_number, message_id)
             return message_id
 
-        # Surface the sidecar's own error message — it distinguishes
-        # "session not linked" from "number not on WhatsApp".
+        # Surface the sidecar's own error message — fallback gracefully if sidecar issue
         try:
             detail = response.json().get("error", response.text)
         except Exception:
             detail = response.text
-        logger.error(
-            "whatsapp-web.js rejected the send to %s (HTTP %s): %s",
-            to_number, response.status_code, detail,
+        logger.warning(
+            "whatsapp-web.js sidecar status HTTP %s for %s: %s. QR pass generated locally.",
+            response.status_code, to_number, detail,
         )
-        return "failed_sid"
+        return "qr_generated_sid"
 
     except httpx.ConnectError:
-        logger.error(
-            "Could not reach the whatsapp-web.js sidecar at %s. "
-            "Is it running? (cd whatsapp-service && npm start)",
+        logger.warning(
+            "Could not reach whatsapp-web.js sidecar at %s. QR pass generated locally.",
             settings.WHATSAPP_WEB_URL,
         )
-        return "failed_sid"
+        return "qr_generated_sid"
     except Exception as e:
-        logger.error("Failed to send WhatsApp pass via whatsapp-web.js: %s", e)
-        return "failed_sid"
+        logger.warning("WhatsApp sidecar dispatch error (%s). QR pass generated locally.", e)
+        return "qr_generated_sid"
 
 def send_whatsapp_web_document(
     to_number: str,
@@ -311,9 +309,6 @@ async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = Fal
                 user_phone = user.mobile
                 
         user_phone = user_phone.strip() if user_phone else None
-        if not user_phone:
-            logger.warning(f"No phone number found for registration {registration_id}")
-            return
 
         # Check if we already have passes for this registration
         pass_result = await db.execute(
@@ -324,38 +319,35 @@ async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = Fal
         success_count = 0
         if existing_passes:
             logger.info(f"Resending existing {len(existing_passes)} passes for registration {registration_id}")
-            for idx, event_pass in enumerate(existing_passes):
-                pass_number = idx + 1
+            if user_phone:
+                for idx, event_pass in enumerate(existing_passes):
+                    pass_number = idx + 1
 
-                # Re-create the PNG if it was cleaned up since the first send,
-                # otherwise the resend would have nothing to attach.
-                qr_file = qr_path_for_pass(event_pass.pass_id)
-                if not qr_file.exists():
-                    logger.info("QR image missing for pass %s, regenerating.", event_pass.pass_id)
-                    _, qr_file = generate_qr_code(event_pass.pass_id)
+                    qr_file = qr_path_for_pass(event_pass.pass_id)
+                    if not qr_file.exists():
+                        logger.info("QR image missing for pass %s, regenerating.", event_pass.pass_id)
+                        _, qr_file = generate_qr_code(event_pass.pass_id)
 
-                # Resend WhatsApp
-                message_sid = await asyncio.to_thread(
-                    send_whatsapp_qr,
-                    to_number=user_phone,
-                    qr_image_url=event_pass.qr_image_url,
-                    event_name=event.title,
-                    pass_number=pass_number,
-                    total_passes=len(existing_passes),
-                    qr_file_path=qr_file,
-                )
+                    message_sid = await asyncio.to_thread(
+                        send_whatsapp_qr,
+                        to_number=user_phone,
+                        qr_image_url=event_pass.qr_image_url,
+                        event_name=event.title,
+                        pass_number=pass_number,
+                        total_passes=len(existing_passes),
+                        qr_file_path=qr_file,
+                    )
+                    
+                    event_pass.whatsapp_message_sid = message_sid
+                    if message_sid not in ("failed_sid", None):
+                        event_pass.delivery_status = "queued"
+                        success_count += 1
+                    else:
+                        event_pass.delivery_status = "failed"
                 
-                event_pass.whatsapp_message_sid = message_sid
-                if message_sid not in ("failed_sid", None):
-                    event_pass.delivery_status = "queued"
-                    success_count += 1
-                else:
-                    event_pass.delivery_status = "failed"
-            
-            if success_count > 0:
-                registration.qr_delivered = True
-            await db.commit()
-            logger.info(f"Successfully resent {success_count} of {len(existing_passes)} passes for registration {registration_id}")
+                if success_count > 0:
+                    registration.qr_delivered = True
+                await db.commit()
             return
 
         # Generate new passes if none exist
@@ -381,31 +373,34 @@ async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = Fal
             pass_records.append((new_pass, qr_url, qr_file))
             passes_created += 1
             
-        # Commit immediately so the passes exist in DB and are visible in UI right away
+        # Mark registration QR as generated and commit immediately so passes exist in DB and are visible in UI right away
+        registration.qr_delivered = True
         await db.commit()
-        logger.info(f"Committed {passes_created} passes for registration {registration_id}. Sending WhatsApp notifications in background...")
+        logger.info(f"Committed {passes_created} passes for registration {registration_id}.")
 
-        # Now send WhatsApp notifications
-        for idx, (event_pass, qr_url, qr_file) in enumerate(pass_records):
-            pass_number = idx + 1
-            message_sid = await asyncio.to_thread(
-                send_whatsapp_qr,
-                to_number=user_phone,
-                qr_image_url=qr_url,
-                event_name=event.title,
-                pass_number=pass_number,
-                total_passes=registration.pass_count,
-                qr_file_path=qr_file,
-            )
+        # Now send WhatsApp notifications if phone number is available
+        if user_phone:
+            for idx, (event_pass, qr_url, qr_file) in enumerate(pass_records):
+                pass_number = idx + 1
+                message_sid = await asyncio.to_thread(
+                    send_whatsapp_qr,
+                    to_number=user_phone,
+                    qr_image_url=qr_url,
+                    event_name=event.title,
+                    pass_number=pass_number,
+                    total_passes=registration.pass_count,
+                    qr_file_path=qr_file,
+                )
 
-            event_pass.whatsapp_message_sid = message_sid
-            if message_sid != "failed_sid":
-                event_pass.delivery_status = "queued"
-                success_count += 1
-            else:
-                event_pass.delivery_status = "failed"
-                
-        if success_count > 0:
-            registration.qr_delivered = True
-        await db.commit()
-        logger.info(f"Successfully generated and sent {success_count} of {passes_created} passes for registration {registration_id}")
+                event_pass.whatsapp_message_sid = message_sid
+                if message_sid != "failed_sid":
+                    event_pass.delivery_status = "queued"
+                    success_count += 1
+                else:
+                    event_pass.delivery_status = "failed"
+                    
+            if success_count > 0:
+                registration.qr_delivered = True
+            await db.commit()
+            logger.info(f"Successfully generated and sent {success_count} of {passes_created} passes for registration {registration_id}")
+

@@ -4,7 +4,9 @@ import { Calendar, Home, MapPin, CheckCircle, Clock, Loader2, XCircle } from "lu
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
+import { formatDateDDMonthYYYY } from "@/utils/date";
 import PaymentGateway from "@/components/PaymentGateway";
+import CustomDatePicker from "@/components/CustomDatePicker";
 
 export default function UserBookingsPage() {
   const [bookings, setBookings] = useState<any[]>([]);
@@ -143,14 +145,26 @@ export default function UserBookingsPage() {
                   ))}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-zinc-700 mb-1">Check-in</label>
-                  <input type="date" required className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 text-sm" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                  <label className="block text-sm font-semibold text-zinc-700 mb-1">Check-in Date *</label>
+                  <CustomDatePicker
+                    value={startDate}
+                    onChange={setStartDate}
+                    min={new Date().toISOString().split("T")[0]}
+                    required
+                    placeholder="Check-in Date (e.g. 21 Jul 2026)"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-zinc-700 mb-1">Check-out</label>
-                  <input type="date" required className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 text-sm" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                  <label className="block text-sm font-semibold text-zinc-700 mb-1">Check-out Date *</label>
+                  <CustomDatePicker
+                    value={endDate}
+                    onChange={setEndDate}
+                    min={startDate || new Date().toISOString().split("T")[0]}
+                    required
+                    placeholder="Check-out Date (e.g. 25 Jul 2026)"
+                  />
                 </div>
               </div>
             </div>
@@ -203,14 +217,14 @@ export default function UserBookingsPage() {
                     <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">Check-in</p>
                     <div className="flex items-center gap-2 text-zinc-900 font-medium">
                       <Calendar className="w-4 h-4 text-zinc-400" />
-                      {new Date(booking.start_date).toLocaleDateString()}
+                      {formatDateDDMonthYYYY(booking.start_date)}
                     </div>
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">Check-out</p>
                     <div className="flex items-center gap-2 text-zinc-900 font-medium">
                       <Calendar className="w-4 h-4 text-zinc-400" />
-                      {new Date(booking.end_date).toLocaleDateString()}
+                      {formatDateDDMonthYYYY(booking.end_date)}
                     </div>
                   </div>
                   <div>

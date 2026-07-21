@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Calendar, Users, MapPin, ArrowLeft, CheckCircle, Clock, User, Phone, Ticket, X } from "lucide-react";
+import { Calendar, Users, MapPin, ArrowLeft, CheckCircle, Clock, User, Phone, Ticket, X, Sparkles } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
+import { formatDateDDMonthYYYY } from "@/utils/date";
 import Link from "next/link";
 import PaymentGateway from "@/components/PaymentGateway";
+import CustomDatePicker from "@/components/CustomDatePicker";
 
 export default function RoomBookingPage() {
   const params = useParams();
@@ -33,7 +35,6 @@ export default function RoomBookingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successStatus, setSuccessStatus] = useState<"none" | "pending_venue" | "verified">("none");
   const [showPaymentGateway, setShowPaymentGateway] = useState(false);
-  const [totalAmount, setTotalAmount] = useState(0);
 
   // Voucher
   const [voucherCode, setVoucherCode] = useState("");
@@ -43,14 +44,31 @@ export default function RoomBookingPage() {
     code: string; discountAmount: number; finalAmount: number; forAmount: number;
   } | null>(null);
 
-  // A voucher's discount was computed against a specific totalAmount — if the
-  // dates change afterward, treat it as stale rather than silently keeping a
-  // discount that no longer matches the new total.
-  const voucherIsStale = appliedVoucher !== null && appliedVoucher.forAmount !== totalAmount;
-  const payableAmount = appliedVoucher && !voucherIsStale ? appliedVoucher.finalAmount : totalAmount;
+  // Event Purpose Selector
+  const [eventPurpose, setEventPurpose] = useState<string>("wedding_saava");
+  // Agrawal Member Toggle
+  const [isAgrawalMember, setIsAgrawalMember] = useState(true);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   useEffect(() => {
-    setIsLoggedIn(!!localStorage.getItem("token"));
+    const token = localStorage.getItem("token");
+    setIsLoggedIn(!!token);
+
+    if (token) {
+      axios.get(`${getApiBaseUrl()}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => {
+        if (res.data) {
+          setUserProfile(res.data);
+          const fullName = [res.data.first_name, res.data.surname].filter(Boolean).join(" ");
+          setGuestName(fullName || res.data.full_name || "");
+          setGuestPhone(res.data.mobile || res.data.phone || "");
+        }
+      })
+      .catch(() => {});
+    }
 
     const fetchRoom = async () => {
       try {
@@ -65,21 +83,88 @@ export default function RoomBookingPage() {
     if (roomId) fetchRoom();
   }, [roomId]);
 
-  // Calculate total amount when dates change
-  useEffect(() => {
-    if (startDate && endDate && room) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      const diffTime = end.getTime() - start.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
-      if (diffDays > 0) {
-        setTotalAmount(diffDays * room.price_per_day);
-      } else {
-        setTotalAmount(0);
-      }
+  // Compute exact official 2020 rate list breakdown
+  const computeOfficialQuote = () => {
+    if (!startDate || !endDate || !room) {
+      return { days: 0, baseFixedRent: 0, purposeRent: 0, memberDiscount: 0, netRent: 0, cleaningCharge: 0, totalPayable: 0 };
     }
-  }, [startDate, endDate, room]);
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = end.getTime() - start.getTime();
+    const days = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+
+    const roomName = (room.name || "").toLowerCase();
+
+    // 1. Calculate Base Fixed Rent based on Multi-Day Slab
+    let baseFixedRent = 0;
+    if (roomName.includes("first unit") || roomName.includes("ground floor")) {
+      if (days === 1) baseFixedRent = 15000;
+      else if (days === 2) baseFixedRent = 25000;
+      else if (days === 3) baseFixedRent = 33000;
+      else baseFixedRent = 33000 + (days - 3) * 11000;
+    } else if (roomName.includes("second unit") || roomName.includes("first floor")) {
+      if (days === 1) baseFixedRent = 14000;
+      else if (days === 2) baseFixedRent = 21000;
+      else if (days === 3) baseFixedRent = 27000;
+      else baseFixedRent = 27000 + (days - 3) * 9000;
+    } else if (roomName.includes("third unit") || roomName.includes("basement")) {
+      if (days === 1) baseFixedRent = 4000;
+      else if (days === 2) baseFixedRent = 8000;
+      else if (days === 3) baseFixedRent = 12000;
+      else baseFixedRent = 12000 + (days - 3) * 4000;
+    } else if (roomName.includes("ac room")) {
+      baseFixedRent = days * 600;
+    } else if (roomName.includes("non-ac")) {
+      baseFixedRent = days * 400;
+    } else {
+      baseFixedRent = days * room.price_per_day;
+    }
+
+    // 2. Apply Event Purpose Discount Multiplier
+    let purposeRent = baseFixedRent;
+    if (eventPurpose === "wedding_non_saava") {
+      purposeRent = baseFixedRent * 0.75;
+    } else if (eventPurpose === "engagement_birthday_party") {
+      purposeRent = baseFixedRent * 0.50;
+    } else if (eventPurpose === "religious_spiritual_social") {
+      // 20% of first day rate per day
+      const day1Rate = baseFixedRent / days;
+      purposeRent = days * (day1Rate * 0.20);
+    } else if (eventPurpose === "charitable_free_service") {
+      purposeRent = 0; // FREE
+    }
+
+    // 3. Apply Agrawal Community Member 25% Extra Discount
+    let memberDiscount = 0;
+    if (isAgrawalMember && purposeRent > 0) {
+      memberDiscount = Math.round(purposeRent * 0.25);
+    }
+
+    const netRent = Math.max(0, purposeRent - memberDiscount);
+
+    // 4. Mandatory Cleaning Charge (₹1,000 per day for units; included for individual rooms)
+    const isIndividualRoom = roomName.includes("ac room") || roomName.includes("non-ac");
+    const cleaningCharge = isIndividualRoom ? 0 : days * 1000;
+
+    const totalPayable = netRent + cleaningCharge;
+
+    return {
+      days,
+      baseFixedRent,
+      purposeRent,
+      memberDiscount,
+      netRent,
+      cleaningCharge,
+      totalPayable,
+    };
+  };
+
+  const quote = computeOfficialQuote();
+  const totalAmount = quote.totalPayable;
+
+  const voucherIsStale = appliedVoucher !== null && appliedVoucher.forAmount !== totalAmount;
+  const payableAmount = appliedVoucher && !voucherIsStale ? appliedVoucher.finalAmount : totalAmount;
 
   const handleApplyVoucher = async () => {
     if (!voucherCode.trim() || totalAmount <= 0) return;
@@ -114,8 +199,13 @@ export default function RoomBookingPage() {
   const handleBook = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (totalAmount <= 0) {
+    if (quote.days <= 0) {
       setError("End date must be after start date.");
+      return;
+    }
+
+    if (!agreedToTerms) {
+      setError("Please agree to Agrasen Bhawan Mansarovar Terms & Rules before proceeding.");
       return;
     }
 
@@ -136,7 +226,7 @@ export default function RoomBookingPage() {
         start_date: startDate,
         end_date: endDate,
         payment_mode: paymentMode,
-        notes: notes || undefined
+        notes: `Purpose: ${eventPurpose} | Agrawal Member: ${isAgrawalMember ? 'Yes' : 'No'} | ${notes || ''}`
       };
 
       if (!isLoggedIn) {
@@ -238,44 +328,49 @@ export default function RoomBookingPage() {
                 </div>
                 
                 <h1 className="text-3xl sm:text-4xl font-bold text-zinc-900 mb-4">{room.name}</h1>
-                <p className="text-zinc-600 leading-relaxed mb-8">{room.description}</p>
+                <p className="text-zinc-600 leading-relaxed mb-6">{room.description}</p>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 bg-zinc-50 rounded-2xl border border-zinc-100 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-6 bg-zinc-50 rounded-2xl border border-zinc-100 mb-6 text-sm">
                   <div className="flex items-start gap-3">
                     <Users className="w-5 h-5 text-amber-500 flex-shrink-0" />
                     <div>
-                      <p className="text-sm font-semibold text-zinc-900">Capacity</p>
-                      <p className="text-sm text-zinc-500">{room.capacity || "N/A"} Persons</p>
+                      <p className="font-semibold text-zinc-900">Capacity</p>
+                      <p className="text-zinc-500">{room.capacity || "N/A"} Persons</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <Clock className="w-5 h-5 text-amber-500 flex-shrink-0" />
                     <div>
-                      <p className="text-sm font-semibold text-zinc-900">Price per Day</p>
-                      <p className="text-sm text-zinc-500">₹{room.price_per_day}</p>
+                      <p className="font-semibold text-zinc-900">Rent Rate</p>
+                      <p className="text-zinc-500">₹{room.price_per_day} / day</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 sm:col-span-2 pt-3 border-t border-zinc-200/60">
+                    <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-zinc-900">Mandatory Cleaning Charge</p>
+                      <p className="text-emerald-700 font-bold">₹1,000 / unit / day (Included in final calculation)</p>
                     </div>
                   </div>
                 </div>
 
-                {room.amenities && room.amenities.features && room.amenities.features.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider mb-4">Amenities</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {room.amenities.features.map((feature: string, idx: number) => (
-                        <span key={idx} className="px-3 py-1.5 bg-white border border-zinc-200 text-zinc-600 text-sm font-medium rounded-lg shadow-sm">
-                          {feature}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {/* Agrasen Bhawan Official Rules */}
+                <div className="space-y-3 pt-6 border-t border-zinc-100">
+                  <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider">Agrasen Bhawan Mansarowar Booking Terms</h3>
+                  <ul className="space-y-2 text-xs text-zinc-600 list-disc pl-4 leading-relaxed">
+                    <li><strong className="text-zinc-900">Pure Vegetarian Only:</strong> Non-vegetarian food, eggs, alcohol, smoking, or gambling strictly prohibited.</li>
+                    <li><strong className="text-zinc-900">Check-in / Check-out:</strong> Check-in at 12:00 PM; Check-out at 11:00 AM (Next Day).</li>
+                    <li><strong className="text-zinc-900">Sound & Loudspeaker:</strong> DJ/Loudspeakers prohibited after 10:00 PM per government regulations.</li>
+                    <li><strong className="text-zinc-900">Cancellation Refund:</strong> 90% refund if cancelled &gt;30 days prior, 75% for 15-30 days, 50% for 7-14 days, 0% refund for &lt;7 days.</li>
+                  </ul>
+                </div>
               </div>
             </div>
 
             {/* Booking Form Card */}
             <div className="md:col-span-1">
               <div className="bg-white rounded-3xl border border-zinc-200 shadow-sm p-6 sticky top-24">
-                <h3 className="text-xl font-bold text-zinc-900 mb-6 flex items-center gap-2">
+                <h3 className="text-xl font-bold text-zinc-900 mb-5 flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-amber-500" /> Book Facility
                 </h3>
                 
@@ -286,87 +381,109 @@ export default function RoomBookingPage() {
                     </div>
                   )}
 
+                  {/* Step 1: Event Purpose Selector */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block">1. Event / Booking Purpose *</label>
+                    <select
+                      value={eventPurpose}
+                      onChange={e => setEventPurpose(e.target.value)}
+                      className="w-full px-3 py-2.5 bg-white border border-zinc-200 rounded-xl text-xs font-semibold text-zinc-800 focus:outline-none focus:border-amber-500"
+                    >
+                      <option value="wedding_saava">Wedding (Auspicious Saava Date)</option>
+                      <option value="wedding_non_saava">Wedding (Other / General Date)</option>
+                      <option value="engagement_birthday_party">Engagement / Birthday / Retirement / Function</option>
+                      <option value="religious_spiritual_social">Religious / Spiritual / Social Gathering</option>
+                      <option value="charitable_free_service">Charitable Camp / Eye Camp / Teeya (Condolence)</option>
+                    </select>
+                  </div>
+
+                  {/* Step 2: Agrawal Member Selection */}
+                  <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl space-y-1.5">
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-amber-600" /> Agrawal Community Member?
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={isAgrawalMember}
+                        onChange={e => setIsAgrawalMember(e.target.checked)}
+                        className="w-4 h-4 text-amber-600 focus:ring-amber-500 rounded cursor-pointer"
+                      />
+                    </label>
+                    <p className="text-[11px] text-zinc-600">
+                      Subsidized Agrawal community rates automatically applied.
+                    </p>
+                  </div>
+
+                  {/* Step 3: Contact Details */}
                   {!isLoggedIn && (
-                    <div className="space-y-4 pb-4 border-b border-zinc-100">
-                      <p className="text-xs text-zinc-500">
-                        Booking as a guest. Have an account?{" "}
-                        <Link href={`/login?next=/bhavan/${roomId}`} className="text-amber-600 font-semibold hover:underline">
-                          Sign in
-                        </Link>
-                      </p>
-                      <div className="space-y-2">
-                        <label className="text-sm font-semibold text-zinc-700">Your Name *</label>
-                        <div className="relative">
-                          <User className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="text"
-                            required
-                            placeholder="Full name"
-                            value={guestName}
-                            onChange={e => setGuestName(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-amber-500"
-                          />
-                        </div>
+                    <div className="space-y-3 pt-1 border-t border-zinc-100">
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-zinc-700">Full Name *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Your Name"
+                          value={guestName}
+                          onChange={e => setGuestName(e.target.value)}
+                          className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-amber-500"
+                        />
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-semibold text-zinc-700">WhatsApp Number *</label>
-                        <div className="relative">
-                          <Phone className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="tel"
-                            required
-                            placeholder="10-digit mobile number"
-                            value={guestPhone}
-                            onChange={e => setGuestPhone(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-amber-500"
-                          />
-                        </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-zinc-700">WhatsApp Mobile *</label>
+                        <input
+                          type="tel"
+                          required
+                          placeholder="10-digit mobile number"
+                          value={guestPhone}
+                          onChange={e => setGuestPhone(e.target.value)}
+                          className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-amber-500"
+                        />
                       </div>
                     </div>
                   )}
 
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-zinc-700">Start Date *</label>
-                      <input 
-                        type="date" 
-                        required 
+                  {/* Step 4: Booking Dates */}
+                  <div className="space-y-3 pt-2 border-t border-zinc-100">
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-zinc-700">Start Date *</label>
+                      <CustomDatePicker
+                        value={startDate}
+                        onChange={setStartDate}
                         min={new Date().toISOString().split("T")[0]}
-                        value={startDate} 
-                        onChange={e => setStartDate(e.target.value)} 
-                        className="w-full px-4 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-amber-500" 
+                        required
+                        placeholder="Select Start Date (e.g. 21 Jul 2026)"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-zinc-700">End Date *</label>
-                      <input 
-                        type="date" 
-                        required 
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-zinc-700">End Date *</label>
+                      <CustomDatePicker
+                        value={endDate}
+                        onChange={setEndDate}
                         min={startDate || new Date().toISOString().split("T")[0]}
-                        value={endDate} 
-                        onChange={e => setEndDate(e.target.value)} 
-                        className="w-full px-4 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-amber-500" 
+                        required
+                        placeholder="Select End Date (e.g. 25 Jul 2026)"
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-zinc-700">Additional Notes</label>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">Event Function Notes</label>
                     <textarea 
                       value={notes} 
                       onChange={e => setNotes(e.target.value)} 
                       rows={2} 
-                      placeholder="Any special requests?" 
-                      className="w-full px-4 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-amber-500" 
+                      placeholder="e.g. Wedding function, Committee meeting" 
+                      className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-amber-500" 
                     />
                   </div>
 
                   {totalAmount > 0 && (
-                    <div className="space-y-2 pt-4 border-t border-zinc-100">
-                      <label className="text-sm font-semibold text-zinc-700">Have a Voucher?</label>
+                    <div className="space-y-2 pt-3 border-t border-zinc-100">
+                      <label className="text-xs font-semibold text-zinc-700">Have a Voucher Code?</label>
                       {appliedVoucher && !voucherIsStale ? (
                         <div className="flex items-center justify-between p-3 rounded-xl border border-emerald-200 bg-emerald-50">
-                          <span className="text-sm font-semibold text-emerald-800 flex items-center gap-2">
+                          <span className="text-xs font-semibold text-emerald-800 flex items-center gap-2">
                             <Ticket className="w-4 h-4" /> {appliedVoucher.code} applied — ₹{appliedVoucher.discountAmount} off
                           </span>
                           <button type="button" onClick={handleRemoveVoucher} className="text-emerald-700 hover:text-emerald-900">
@@ -380,15 +497,15 @@ export default function RoomBookingPage() {
                             placeholder="Enter voucher code"
                             value={voucherCode}
                             onChange={(e) => { setVoucherCode(e.target.value.toUpperCase()); setVoucherError(""); }}
-                            className="flex-1 px-4 py-2 border border-zinc-200 rounded-xl text-sm font-mono focus:outline-none focus:border-amber-500"
+                            className="flex-1 px-3 py-2 border border-zinc-200 rounded-xl text-sm font-mono focus:outline-none focus:border-amber-500"
                           />
                           <button
                             type="button"
                             onClick={handleApplyVoucher}
                             disabled={voucherChecking || !voucherCode.trim()}
-                            className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl disabled:opacity-50 transition-colors"
+                            className="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl disabled:opacity-50 transition-colors"
                           >
-                            {voucherChecking ? "Checking..." : "Apply"}
+                            {voucherChecking ? "..." : "Apply"}
                           </button>
                         </div>
                       )}
@@ -399,43 +516,60 @@ export default function RoomBookingPage() {
                     </div>
                   )}
 
-                  <div className="space-y-3 pt-4 border-t border-zinc-100">
-                    {appliedVoucher && !voucherIsStale ? (
-                      <div className="space-y-1 mb-2">
-                        <div className="flex items-center justify-between text-sm text-zinc-500">
-                          <span>Subtotal</span>
-                          <span>₹{totalAmount}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm text-emerald-600 font-semibold">
-                          <span>Voucher Discount</span>
-                          <span>-₹{appliedVoucher.discountAmount}</span>
-                        </div>
-                        <div className="flex items-center justify-between font-bold text-zinc-900 pt-1">
-                          <span>Total Amount</span>
-                          <span className="text-xl text-emerald-600">₹{payableAmount}</span>
-                        </div>
+                  {/* Official User Side Calculation Summary */}
+                  {quote.days > 0 && (
+                    <div className="space-y-2 p-3.5 bg-zinc-50 rounded-xl border border-zinc-200 text-xs">
+                      <div className="flex justify-between text-zinc-600 font-medium">
+                        <span>Duration</span>
+                        <span>{quote.days} Day(s)</span>
                       </div>
-                    ) : (
-                      <div className="flex items-center justify-between font-bold text-zinc-900 mb-2">
-                        <span>Total Amount</span>
-                        <span className="text-xl text-emerald-600">₹{payableAmount}</span>
+                      <div className="flex justify-between text-zinc-600 font-medium">
+                        <span>Facility Rent</span>
+                        <span>₹{quote.netRent}</span>
                       </div>
-                    )}
+                      {quote.cleaningCharge > 0 && (
+                        <div className="flex justify-between text-zinc-600 font-medium">
+                          <span>Mandatory Cleaning Charge</span>
+                          <span>+₹{quote.cleaningCharge}</span>
+                        </div>
+                      )}
+                      <p className="text-[10px] text-zinc-400 italic pt-1">
+                        * Electricity @ ₹15/kWh based on meter reading settled at venue.
+                      </p>
+                      <div className="flex justify-between font-bold text-zinc-900 pt-2 border-t border-zinc-200 text-sm">
+                        <span>Total Payable</span>
+                        <span className="text-amber-600 font-extrabold text-base">₹{payableAmount}</span>
+                      </div>
+                    </div>
+                  )}
 
+                  <div className="space-y-3 pt-3 border-t border-zinc-100">
                     <div className="space-y-2">
                       <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${paymentMode === "upi" ? "border-amber-500 bg-amber-50" : "border-zinc-200 hover:bg-zinc-50"}`}>
                         <input type="radio" name="payment_mode" value="upi" checked={paymentMode === "upi"} onChange={() => setPaymentMode("upi")} className="text-amber-500 focus:ring-amber-500" />
-                        <span className="text-sm font-semibold text-zinc-800">Pay Online Now</span>
+                        <span className="text-xs font-semibold text-zinc-800">Pay Online Now</span>
                       </label>
                       <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${paymentMode === "cash" ? "border-amber-500 bg-amber-50" : "border-zinc-200 hover:bg-zinc-50"}`}>
                         <input type="radio" name="payment_mode" value="cash" checked={paymentMode === "cash"} onChange={() => setPaymentMode("cash")} className="text-amber-500 focus:ring-amber-500" />
-                        <span className="text-sm font-semibold text-zinc-800">Pay at Venue (Cash)</span>
+                        <span className="text-xs font-semibold text-zinc-800">Pay at Venue (Cash)</span>
                       </label>
                     </div>
+
+                    <label className="flex items-start gap-2.5 cursor-pointer pt-1">
+                      <input
+                        type="checkbox"
+                        checked={agreedToTerms}
+                        onChange={e => setAgreedToTerms(e.target.checked)}
+                        className="mt-0.5 text-amber-500 focus:ring-amber-500 rounded"
+                      />
+                      <span className="text-[11px] text-zinc-600 leading-tight">
+                        I agree to Agrasen Bhawan Mansarovar rules (Pure Vegetarian, No Alcohol/Smoking, Music cutoff at 10PM, Check-in 12PM / Check-out 11AM).
+                      </span>
+                    </label>
                   </div>
 
-                  <button disabled={isSubmitting || totalAmount <= 0} type="submit" className="w-full py-3 mt-6 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-colors disabled:opacity-50">
-                    {isSubmitting ? "Processing..." : (paymentMode === "upi" ? `Pay ₹${payableAmount}` : "Submit Request")}
+                  <button disabled={isSubmitting || quote.days <= 0 || !agreedToTerms} type="submit" className="w-full py-3.5 mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm rounded-xl transition-colors disabled:opacity-50 shadow-md">
+                    {isSubmitting ? "Processing..." : (paymentMode === "upi" ? `Pay ₹${payableAmount}` : "Submit Booking Request")}
                   </button>
                 </form>
               </div>
