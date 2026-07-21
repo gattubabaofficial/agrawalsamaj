@@ -49,7 +49,10 @@ export default function EventsPage() {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await axios.get(`${getApiBaseUrl()}/events`);
+        const token = localStorage.getItem("token");
+        const response = await axios.get(`${getApiBaseUrl()}/events`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
         if (response.data && response.data.length > 0) {
           setEvents(response.data);
         }
@@ -125,7 +128,7 @@ export default function EventsPage() {
                   <span className="inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold uppercase bg-amber-500/10 text-amber-600 border border-amber-500/20">
                     {evt.category}
                   </span>
-                  {evt.is_members_only && (
+                  {evt.visibility === "members_only" && (
                     <span className="inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold uppercase bg-rose-500/10 text-rose-600 border border-rose-500/20">
                       Members Only
                     </span>

@@ -4,13 +4,15 @@ import string
 import uuid
 from datetime import datetime, timedelta
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi.security import OAuth2PasswordRequestForm
 
+from app.config import settings
 from app.dependencies import get_db, get_current_user
 from app.models.user import User, Family, OtpLog, OtpType, UserRole, PhoneOTPRequest, EmailOTPRequest
 from app.models.requests import MembershipRequest
@@ -20,8 +22,37 @@ from app.services.email_service import send_email
 import hashlib
 import os
 import asyncio
+import time
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
+
+# In-memory brute-force guard for password login. Unlike the OTP endpoints
+# (which persist attempts to the DB), this resets on restart and doesn't
+# span multiple worker processes — acceptable for this single-instance
+# deployment, but the first thing to replace with a persisted/shared store
+# if this is ever run behind more than one process.
+_login_attempts: dict[str, list[float]] = {}
+_LOGIN_MAX_ATTEMPTS = int(os.getenv("LOGIN_MAX_ATTEMPTS", "5"))
+_LOGIN_LOCKOUT_SECONDS = int(os.getenv("LOGIN_LOCKOUT_SECONDS", "300"))
+
+
+def _check_login_rate_limit(key: str):
+    now = time.time()
+    attempts = [t for t in _login_attempts.get(key, []) if now - t < _LOGIN_LOCKOUT_SECONDS]
+    _login_attempts[key] = attempts
+    if len(attempts) >= _LOGIN_MAX_ATTEMPTS:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many failed login attempts. Please try again in a few minutes.",
+        )
+
+
+def _record_login_failure(key: str):
+    _login_attempts.setdefault(key, []).append(time.time())
+
+
+def _clear_login_failures(key: str):
+    _login_attempts.pop(key, None)
 
 
 class SendOtpRequest(BaseModel):
@@ -102,27 +133,33 @@ async def login(
     """
     id_type, normalized_val = parse_identifier(form_data.username)
 
+    _check_login_rate_limit(normalized_val)
+
     if id_type == "email":
         user_result = await db.execute(select(User).where(User.email == normalized_val))
     else:
         user_result = await db.execute(select(User).where(User.mobile == normalized_val))
-        
+
     user = user_result.scalars().first()
-    
+
     if not user or not user.password_hash:
+        _record_login_failure(normalized_val)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-        
+
     if not verify_password(form_data.password, user.password_hash):
+        _record_login_failure(normalized_val)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-        
+
+    _clear_login_failures(normalized_val)
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -605,8 +642,21 @@ async def verify_otp_and_register(
 @router.post("/register/oauth")
 async def register_oauth(
     payload: OAuthRegisterRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    x_internal_secret: Optional[str] = Header(None, alias="X-Internal-Secret"),
 ):
+    # This endpoint trusts the caller's `email` + `provider_id` outright — it's
+    # meant to be called only by the Next.js server, after NextAuth has already
+    # verified the OAuth handshake with Google/Yahoo. Without this check, anyone
+    # could POST an arbitrary existing user's email here and walk away with a
+    # valid access token for that account (see NextAuth's signIn callback for
+    # the legitimate caller).
+    if settings.INTERNAL_API_SECRET and x_internal_secret != settings.INTERNAL_API_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized OAuth bridge call.",
+        )
+
     # 1. Validate provider
     provider = payload.provider.strip().lower()
     if provider not in ["google", "yahoo"]:
@@ -789,9 +839,31 @@ async def update_my_profile(
             raise HTTPException(status_code=400, detail="Mobile and Email are compulsory for non-students.")
 
     update_data = payload.dict(exclude_unset=True)
+
+    # email/mobile are unique columns — check before committing so a collision
+    # surfaces as a clean 400 instead of an unhandled IntegrityError (500).
+    if update_data.get("email") and update_data["email"] != current_user.email:
+        clash = await db.execute(
+            select(User).where(User.email == update_data["email"], User.user_id != current_user.user_id)
+        )
+        if clash.scalars().first():
+            raise HTTPException(status_code=400, detail="This email address is already in use.")
+
+    if update_data.get("mobile") and update_data["mobile"] != current_user.mobile:
+        clash = await db.execute(
+            select(User).where(User.mobile == update_data["mobile"], User.user_id != current_user.user_id)
+        )
+        if clash.scalars().first():
+            raise HTTPException(status_code=400, detail="This mobile number is already in use.")
+
     for key, value in update_data.items():
         setattr(current_user, key, value)
-        
-    await db.commit()
+
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Email or mobile number is already in use.")
+
     await db.refresh(current_user)
     return current_user

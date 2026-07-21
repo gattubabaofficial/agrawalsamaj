@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import Optional
@@ -10,27 +10,6 @@ from app.models.user import User, UserRole
 from app.models.event import EventPass, PassStatus
 
 router = APIRouter(prefix="/api/v1/passes", tags=["Passes & Webhooks"])
-
-@router.post("/webhooks/twilio/status")
-async def twilio_status_webhook(request: Request, db: AsyncSession = Depends(get_db)):
-    """Webhook to receive message delivery status from Twilio."""
-    # Twilio sends data as form-urlencoded
-    form_data = await request.form()
-    
-    message_sid = form_data.get("MessageSid")
-    message_status = form_data.get("MessageStatus")
-    
-    if not message_sid or not message_status:
-        return {"status": "ignored"}
-        
-    result = await db.execute(select(EventPass).filter(EventPass.whatsapp_message_sid == message_sid))
-    event_pass = result.scalar_one_or_none()
-    
-    if event_pass:
-        event_pass.delivery_status = message_status
-        await db.commit()
-        
-    return {"status": "success"}
 
 from sqlalchemy.orm import joinedload
 from app.models.event import EventRegistration

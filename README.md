@@ -114,28 +114,36 @@ RAZORPAY_KEY_SECRET="rzp_test_secret"
 FROM_EMAIL="noreply@agrawalsamaj.org"
 SENDGRID_API_KEY=""
 
-# Twilio Configuration (WhatsApp QR Tickets & SMS)
+# Twilio Configuration (SMS OTP only)
 TWILIO_ACCOUNT_SID="your-account-sid"
 TWILIO_AUTH_TOKEN="your-auth-token"
-TWILIO_WHATSAPP_FROM="whatsapp:+14155238886"
-TWILIO_CONTENT_SID=""
-TWILIO_STATUS_CALLBACK_URL="http://yourdomain.com/api/v1/passes/webhooks/twilio/status"
+TWILIO_PHONE_NUMBER="+1xxxxxxxxxx"
+
+# WhatsApp delivery (QR tickets & booking receipts) — whatsapp-web.js sidecar
+WHATSAPP_PROVIDER="whatsapp_web"
+WHATSAPP_WEB_URL="http://localhost:3001"
+WHATSAPP_WEB_API_KEY="a-long-random-shared-secret"
 ```
 
-### 📱 Twilio WhatsApp Setup Guide
+### 📱 WhatsApp Setup Guide
 
-The application uses Twilio to send automated QR code tickets to users on WhatsApp when their event payment is verified. 
+The application sends automated QR code tickets and Bhavan booking receipts over
+WhatsApp using a small Node.js sidecar (`whatsapp-service/`) built on
+`whatsapp-web.js` — **not Twilio**. Twilio's WhatsApp API required a publicly
+downloadable media URL, which a `localhost` deployment can never provide, so
+it was removed; Twilio is still used for SMS OTP only.
 
-**For Development / Testing (Sandbox):**
-1. Go to your Twilio Console -> Messaging -> Try it out -> Send a WhatsApp message.
-2. Twilio provides a shared sandbox number (e.g. `whatsapp:+14155238886`). Put this in `TWILIO_WHATSAPP_FROM`.
-3. **Important:** Every person who wants to receive a ticket in development *must* send a join code (like "join fast-fox") from their personal WhatsApp to the Sandbox number first!
-4. You do not need a `TWILIO_CONTENT_SID` in the sandbox. The system will fallback to a default text message with the QR image attached.
+1. `cd whatsapp-service && npm install` (first run also downloads Chromium).
+2. `cp .env.example .env` and set `WHATSAPP_API_KEY` to the **same** value as
+   `WHATSAPP_WEB_API_KEY` in `backend/.env` — this shared secret is what
+   authenticates the backend's requests to the sidecar. If either `.env` is
+   missing or the values don't match, the sidecar either rejects every send
+   (mismatch) or silently accepts unauthenticated ones (missing key, dev-only
+   fallback) — check both files if WhatsApp sends stop working.
+3. `npm start`, then open `http://localhost:3001/qr` and scan it from the
+   WhatsApp account that should send tickets/receipts (Settings → Linked
+   devices → Link a device). The session persists in `.wwebjs_auth/` so this
+   is a one-time step per machine.
 
-**For Production:**
-1. You must register your own Twilio WhatsApp Sender (a business number) and get it approved by Meta.
-2. Create a Content Template in Twilio (Messaging -> Content Template Builder) with an image header and body variables:
-   * **Header:** Image
-   * **Body:** "Your ticket for {{1}} — pass {{2}} of {{3}}. See you there!"
-3. Submit the template to Meta for approval. Once approved, put the SID (starts with `HX...`) in your `TWILIO_CONTENT_SID`.
-4. Ensure your server is publicly accessible (e.g., deployed or using Ngrok) and set `DOMAIN_URL` properly so Twilio can download the QR images served from `/static/qr/`.
+See `whatsapp-service/README.md` for the full endpoint reference and
+troubleshooting table.

@@ -67,10 +67,12 @@ class Booking(Base, TimestampMixin):
         primary_key=True,
         default=uuid.uuid4
     )
-    user_id: Mapped[uuid.UUID] = mapped_column(
+    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("users.user_id", ondelete="CASCADE"),
-        nullable=False
+        nullable=True
     )
+    guest_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    guest_phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     room_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("rooms.room_id", ondelete="CASCADE"),
         nullable=False
@@ -97,6 +99,11 @@ class Booking(Base, TimestampMixin):
     razorpay_payment_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
 
+    # Voucher applied at checkout, if any. total_amount above is already net
+    # of this discount; discount_amount is kept for display/audit purposes.
+    voucher_code: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    discount_amount: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), nullable=True)
+
     # Approver tracking (admin who approved/verified the payment)
     approved_by: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("users.user_id", ondelete="SET NULL"),
@@ -106,7 +113,7 @@ class Booking(Base, TimestampMixin):
 
     # Relationships
     room: Mapped[Room] = relationship("Room", back_populates="bookings")
-    user: Mapped["User"] = relationship("User", back_populates="bookings", foreign_keys=[user_id])
+    user: Mapped[Optional["User"]] = relationship("User", back_populates="bookings", foreign_keys=[user_id])
     approver: Mapped[Optional["User"]] = relationship("User", foreign_keys=[approved_by])
 
 

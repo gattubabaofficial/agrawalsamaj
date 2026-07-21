@@ -66,7 +66,10 @@ export default function AdminEventsPage() {
 
   const fetchEvents = async () => {
     try {
-      const res = await axios.get(`${getApiBaseUrl()}/events`);
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`${getApiBaseUrl()}/events`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       setEvents(res.data);
     } catch (error) {
       console.error("Failed to fetch events", error);

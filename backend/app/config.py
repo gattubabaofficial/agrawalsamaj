@@ -11,6 +11,13 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
+    # Shared secret the Next.js server must present (via X-Internal-Secret) when
+    # bridging an already-verified OAuth sign-in to /auth/register/oauth. Without
+    # this, that endpoint would trust a client-supplied email + provider_id with
+    # no proof the caller ever authenticated with Google/Yahoo — letting anyone
+    # hijack an existing account by email. Empty = open (dev only).
+    INTERNAL_API_SECRET: str = ""
+
     # Database
     # Default to sqlite locally if postgres is not configured
     DATABASE_URL: str = "sqlite+aiosqlite:///./test.db"
@@ -22,14 +29,12 @@ class Settings(BaseSettings):
     RAZORPAY_KEY_ID: str = "rzp_test_123"
     RAZORPAY_KEY_SECRET: str = "rzp_test_secret"
 
-    # Twilio Settings
+    # Twilio Settings (SMS OTP only — WhatsApp delivery uses the whatsapp-web.js
+    # sidecar below; the old Twilio WhatsApp path was removed since it couldn't
+    # reach localhost media and its "auth" was Account SID/Token, not a real key)
     TWILIO_ACCOUNT_SID: str = ""
     TWILIO_AUTH_TOKEN: str = ""
     TWILIO_PHONE_NUMBER: Optional[str] = None
-    TWILIO_WHATSAPP_NUMBER: Optional[str] = None
-    TWILIO_WHATSAPP_FROM: str = "whatsapp:+14155238886"
-    TWILIO_CONTENT_SID: str = ""
-    TWILIO_STATUS_CALLBACK_URL: str = ""
 
     # Public base URL of THIS backend — used to build /static/... media links.
     DOMAIN_URL: str = "http://localhost:8000"
@@ -39,8 +44,9 @@ class Settings(BaseSettings):
     # when serving over a network.
     FRONTEND_URL: str = "http://localhost:3000"
 
-    # WhatsApp provider: 'whatsapp_web' (whatsapp-web.js sidecar), 'twilio',
-    # or 'dummy' (just logs, no actual send)
+    # WhatsApp provider: 'whatsapp_web' (whatsapp-web.js sidecar) or 'dummy'
+    # (just logs, no actual send). Twilio WhatsApp support was removed — see
+    # whatsapp-service/README.md for why.
     WHATSAPP_PROVIDER: str = "whatsapp_web"
 
     # whatsapp-web.js sidecar (see /whatsapp-service)

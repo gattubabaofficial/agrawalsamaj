@@ -247,6 +247,11 @@ class EventRegistration(Base, TimestampMixin):
     qr_code: Mapped[Optional[str]] = mapped_column(String(255), unique=True, index=True, nullable=True)
     qr_delivered: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
+    # Voucher applied at checkout, if any. total_amount above is already net
+    # of this discount; discount_amount is kept for display/audit purposes.
+    voucher_code: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    discount_amount: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), nullable=True)
+
     # Approver tracking (admin who approved/verified a cash / pay-at-venue payment)
     approved_by: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("users.user_id", ondelete="SET NULL"),

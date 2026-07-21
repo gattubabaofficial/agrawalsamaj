@@ -563,26 +563,3 @@ async def upload_family_photo(
     with open(filepath, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     return {"photo_url": f"/static/profile_photos/{filename}"}
-
-# Admin route
-@router.get("/all")
-async def get_all_families(
-    current_admin: User = Depends(get_current_admin),
-    db: AsyncSession = Depends(get_db_session)
-):
-    result = await db.execute(select(Family))
-    families = result.scalars().all()
-    
-    families_data = []
-    for fam in families:
-        members_result = await db.execute(select(User).where(User.family_id == fam.family_id))
-        members = members_result.scalars().all()
-        
-        families_data.append({
-            "family_id": str(fam.family_id),
-            "family_code": fam.family_code,
-            "family_name": fam.family_name,
-            "head_user_id": str(fam.head_user_id) if fam.head_user_id else None,
-            "member_count": len(members)
-        })
-    return families_data

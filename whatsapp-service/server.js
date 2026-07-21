@@ -37,6 +37,34 @@ const state = {
   me: null,
 };
 
+// Guards against overlapping reinitialize attempts. whatsapp-web.js can emit
+// "disconnected" more than once for the same event (observed with LOGOUT),
+// and two concurrent client.initialize() calls fight over the same Chrome
+// profile directory — that's what produced "browser is already running" /
+// EBUSY crashes.
+let isRecovering = false;
+
+/**
+ * Delete a directory, retrying past transient Windows file locks (EBUSY /
+ * EPERM) left behind by a Chrome process that hasn't fully released its
+ * profile files yet.
+ */
+async function removeDirWithRetry(dir, attempts = 5, delayMs = 1000) {
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      await fs.promises.rm(dir, { recursive: true, force: true });
+      return true;
+    } catch (e) {
+      if (i === attempts) {
+        console.error(`[whatsapp] Could not remove session dir after ${attempts} attempts:`, e.message);
+        return false;
+      }
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  return false;
+}
+
 const client = new Client({
   authStrategy: new LocalAuth({ dataPath: SESSION_DIR }),
   puppeteer: {
@@ -82,12 +110,59 @@ client.on("auth_failure", (msg) => {
 client.on("disconnected", (reason) => {
   state.status = "disconnected";
   state.lastError = String(reason);
-  console.warn("[whatsapp] Disconnected:", reason, "— attempting to reinitialize.");
-  // LocalAuth keeps the session on disk, so a re-init usually reconnects
-  // without a fresh QR scan.
-  setTimeout(() => {
-    client.initialize().catch((e) => console.error("[whatsapp] Reinit failed:", e));
-  }, 5000);
+  console.warn("[whatsapp] Disconnected:", reason);
+
+  if (isRecovering) {
+    console.warn("[whatsapp] Recovery already in progress, ignoring duplicate disconnect event.");
+    return;
+  }
+  isRecovering = true;
+
+  setTimeout(async () => {
+    try {
+      // Always try to fully close the old browser first — reinitializing
+      // (or deleting session files) while it's still holding the profile
+      // directory open is exactly what caused the EBUSY crash.
+      try {
+        await client.destroy();
+      } catch (e) {
+        console.warn("[whatsapp] destroy() during recovery raised (ignoring):", e.message);
+      }
+
+      if (reason === "LOGOUT") {
+        // LOGOUT means the phone unlinked this device — the saved session is
+        // permanently invalid, not just disconnected. Reusing it would just
+        // reproduce the same crash, so wipe it and come back up needing a
+        // fresh QR scan instead of guessing at a silent reconnect.
+        console.warn("[whatsapp] Session was logged out on the phone. Clearing local session, a new QR scan will be required.");
+        await removeDirWithRetry(SESSION_DIR);
+      }
+
+      state.status = "starting";
+      await client.initialize();
+    } catch (e) {
+      state.status = "auth_failure";
+      state.lastError = String(e);
+      console.error("[whatsapp] Recovery failed:", e);
+    } finally {
+      isRecovering = false;
+    }
+  }, 3000);
+});
+
+// A crash anywhere inside whatsapp-web.js's internals (e.g. a rejected
+// promise during its own session cleanup) must not take the whole HTTP API
+// down with it — /status and /qr need to stay reachable so the outage is
+// visible and recoverable instead of silent.
+process.on("unhandledRejection", (reason) => {
+  console.error("[whatsapp] Unhandled rejection (server staying up):", reason);
+  state.status = "auth_failure";
+  state.lastError = String(reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("[whatsapp] Uncaught exception (server staying up):", err);
+  state.status = "auth_failure";
+  state.lastError = String(err);
 });
 
 // ─────────────────────────── Helpers ───────────────────────────
@@ -249,8 +324,17 @@ app.post("/send-media", requireApiKey, requireReady, async (req, res) => {
     const sent = await client.sendMessage(chatId, messageMedia, {
       caption: caption || undefined,
     });
-    console.log(`[whatsapp] Sent media to ${chatId} (${sent.id._serialized})`);
-    return res.json({ success: true, message_id: sent.id._serialized, chat_id: chatId });
+    // whatsapp-web.js can resolve sendMessage() to undefined — e.g. when the
+    // page's internal store hasn't fully hydrated yet right after "ready" —
+    // even though the message was actually delivered. Don't crash on that;
+    // just report we couldn't confirm the id.
+    const messageId = sent && sent.id ? sent.id._serialized : null;
+    if (messageId) {
+      console.log(`[whatsapp] Sent media to ${chatId} (${messageId})`);
+    } else {
+      console.warn(`[whatsapp] Sent media to ${chatId}, but whatsapp-web.js returned no message id (likely still delivered).`);
+    }
+    return res.json({ success: true, message_id: messageId || "sent_unconfirmed", chat_id: chatId });
   } catch (e) {
     console.error("[whatsapp] send-media failed:", e);
     return res.status(500).json({ success: false, error: e.message });
@@ -273,8 +357,13 @@ app.post("/send-text", requireApiKey, requireReady, async (req, res) => {
       });
     }
     const sent = await client.sendMessage(chatId, message);
-    console.log(`[whatsapp] Sent text to ${chatId} (${sent.id._serialized})`);
-    return res.json({ success: true, message_id: sent.id._serialized, chat_id: chatId });
+    const messageId = sent && sent.id ? sent.id._serialized : null;
+    if (messageId) {
+      console.log(`[whatsapp] Sent text to ${chatId} (${messageId})`);
+    } else {
+      console.warn(`[whatsapp] Sent text to ${chatId}, but whatsapp-web.js returned no message id (likely still delivered).`);
+    }
+    return res.json({ success: true, message_id: messageId || "sent_unconfirmed", chat_id: chatId });
   } catch (e) {
     console.error("[whatsapp] send-text failed:", e);
     return res.status(500).json({ success: false, error: e.message });

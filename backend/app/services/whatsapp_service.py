@@ -1,6 +1,5 @@
 import os
 import uuid
-import json
 import base64
 import logging
 import qrcode
@@ -8,7 +7,6 @@ import asyncio
 from pathlib import Path
 
 import httpx
-from twilio.rest import Client
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -133,6 +131,110 @@ def send_whatsapp_web_qr(
         logger.error("Failed to send WhatsApp pass via whatsapp-web.js: %s", e)
         return "failed_sid"
 
+def send_whatsapp_web_document(
+    to_number: str,
+    file_path: Path,
+    caption: str,
+    filename: str,
+    mimetype: str = "application/pdf",
+) -> str:
+    """Send an arbitrary document (e.g. a receipt PDF) through the whatsapp-web.js
+    sidecar. Same transport as send_whatsapp_web_qr, generalized beyond QR PNGs."""
+    if not file_path or not Path(file_path).exists():
+        logger.error("Document not found at %s; cannot send.", file_path)
+        return "failed_sid"
+
+    try:
+        encoded = base64.b64encode(Path(file_path).read_bytes()).decode("ascii")
+    except Exception as e:
+        logger.error("Could not read document %s: %s", file_path, e)
+        return "failed_sid"
+
+    headers = {"Content-Type": "application/json"}
+    if settings.WHATSAPP_WEB_API_KEY:
+        headers["x-api-key"] = settings.WHATSAPP_WEB_API_KEY
+
+    payload = {
+        "phone": to_number,
+        "caption": caption,
+        "media": {
+            "base64": encoded,
+            "mimetype": mimetype,
+            "filename": filename,
+        },
+    }
+
+    url = f"{settings.WHATSAPP_WEB_URL.rstrip('/')}/send-media"
+    try:
+        with httpx.Client(timeout=settings.WHATSAPP_WEB_TIMEOUT) as client:
+            response = client.post(url, json=payload, headers=headers)
+
+        if response.status_code == 200:
+            data = response.json()
+            message_id = data.get("message_id", "sent")
+            logger.info("Sent WhatsApp document to %s via whatsapp-web.js (%s)", to_number, message_id)
+            return message_id
+
+        try:
+            detail = response.json().get("error", response.text)
+        except Exception:
+            detail = response.text
+        logger.error(
+            "whatsapp-web.js rejected the document send to %s (HTTP %s): %s",
+            to_number, response.status_code, detail,
+        )
+        return "failed_sid"
+
+    except httpx.ConnectError:
+        logger.error(
+            "Could not reach the whatsapp-web.js sidecar at %s. "
+            "Is it running? (cd whatsapp-service && npm start)",
+            settings.WHATSAPP_WEB_URL,
+        )
+        return "failed_sid"
+    except Exception as e:
+        logger.error("Failed to send WhatsApp document via whatsapp-web.js: %s", e)
+        return "failed_sid"
+
+
+def send_whatsapp_document(
+    to_number: str,
+    file_path: Path | None,
+    caption: str,
+    filename: str,
+    mimetype: str = "application/pdf",
+) -> str:
+    """Deliver an arbitrary document (e.g. a receipt PDF) over WhatsApp using the
+    configured provider. Mirrors send_whatsapp_qr's provider branching.
+
+    Returns a provider message id, or ``"failed_sid"`` on failure.
+    """
+    if not to_number:
+        logger.error("Recipient phone number is empty.")
+        return "failed_sid"
+
+    whatsapp_provider = getattr(settings, "WHATSAPP_PROVIDER", "whatsapp_web").lower()
+
+    if whatsapp_provider == "dummy":
+        logger.info(f"[WHATSAPP DUMMY] To: {to_number} | Document: {filename} | {caption}")
+        return "dummy_sid"
+
+    if whatsapp_provider not in ("whatsapp_web", "whatsapp-web", "whatsappweb"):
+        logger.error(
+            "Unknown WHATSAPP_PROVIDER=%r (expected 'whatsapp_web' or 'dummy'). "
+            "Skipping WhatsApp document send.", whatsapp_provider,
+        )
+        return "failed_sid"
+
+    return send_whatsapp_web_document(
+        to_number=to_number,
+        file_path=file_path,
+        caption=caption,
+        filename=filename,
+        mimetype=mimetype,
+    )
+
+
 def send_whatsapp_qr(
     to_number: str,
     qr_image_url: str,
@@ -159,70 +261,20 @@ def send_whatsapp_qr(
         )
         return "dummy_sid"
 
-    if whatsapp_provider in ("whatsapp_web", "whatsapp-web", "whatsappweb"):
-        return send_whatsapp_web_qr(
-            to_number=to_number,
-            qr_file_path=qr_file_path,
-            event_name=event_name,
-            pass_number=pass_number,
-            total_passes=total_passes,
+    if whatsapp_provider not in ("whatsapp_web", "whatsapp-web", "whatsappweb"):
+        logger.error(
+            "Unknown WHATSAPP_PROVIDER=%r (expected 'whatsapp_web' or 'dummy'). "
+            "Skipping WhatsApp send.", whatsapp_provider,
         )
-
-    if not settings.TWILIO_ACCOUNT_SID or not settings.TWILIO_AUTH_TOKEN:
-        logger.warning("Twilio credentials not configured. Skipping WhatsApp send.")
-        return "mock_sid"
-
-    try:
-        client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
-        
-        # Ensure number is E.164 formatted for WhatsApp (e.g., whatsapp:+919876543210)
-        formatted_number = to_number.strip()
-        if not formatted_number.startswith("whatsapp:"):
-            if not formatted_number.startswith("+"):
-                formatted_number = f"+91{formatted_number}" # Assuming India default if no country code
-            formatted_number = f"whatsapp:{formatted_number}"
-
-        # Check if local address (localhost / 127.0.0.1) is used for media URL
-        # Twilio cannot download media from localhost, so we omit media_url and include link in body text
-        is_local = "localhost" in qr_image_url or "127.0.0.1" in qr_image_url
-
-        whatsapp_from = settings.TWILIO_WHATSAPP_FROM or "whatsapp:+14155238886"
-
-        message_kwargs = {
-            "from_": whatsapp_from,
-            "to": formatted_number
-        }
-
-        if not is_local:
-            message_kwargs["media_url"] = [qr_image_url]
-        else:
-            logger.info("Local environment detected. Omitted media_url to avoid Twilio 400 error.")
-
-        # If a Content SID is provided, use it (required for production/out-of-session)
-        if settings.TWILIO_CONTENT_SID:
-            message_kwargs["content_sid"] = settings.TWILIO_CONTENT_SID
-            message_kwargs["content_variables"] = json.dumps({
-                "1": event_name,
-                "2": str(pass_number),
-                "3": str(total_passes)
-            })
-        else:
-            # Fallback for sandbox testing without approved template
-            body_text = f"Your ticket for {event_name} - pass {pass_number} of {total_passes}. See you there!"
-            if is_local:
-                body_text += f"\nView Ticket QR code: {qr_image_url}"
-            message_kwargs["body"] = body_text
-
-        if settings.TWILIO_STATUS_CALLBACK_URL:
-            message_kwargs["status_callback"] = settings.TWILIO_STATUS_CALLBACK_URL
-
-        message = client.messages.create(**message_kwargs)
-        logger.info(f"Sent WhatsApp QR to {formatted_number}, SID: {message.sid}")
-        return message.sid
-
-    except Exception as e:
-        logger.error(f"Failed to send WhatsApp message: {str(e)}")
         return "failed_sid"
+
+    return send_whatsapp_web_qr(
+        to_number=to_number,
+        qr_file_path=qr_file_path,
+        event_name=event_name,
+        pass_number=pass_number,
+        total_passes=total_passes,
+    )
 
 from app.database import SessionLocal
 

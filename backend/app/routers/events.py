@@ -17,6 +17,7 @@ from app.models.event import (
 from app.models.receipt import ReceiptType
 from app.services.whatsapp_service import generate_and_send_passes
 from app.services.receipt_service import create_receipt
+from app.services.voucher_service import apply_voucher, redeem_voucher
 
 
 async def _issue_event_receipt(db, registration, *, is_offline, issuer=None):
@@ -46,6 +47,17 @@ async def _issue_event_receipt(db, registration, *, is_offline, issuer=None):
     )
 
 router = APIRouter(prefix="/api/v1/events", tags=["Events"])
+
+
+def _can_view_members_only(user: Optional[User]) -> bool:
+    """Members-only events should be invisible to guests and anonymous
+    visitors, not just blocked at registration. Admin-level staff and
+    volunteers can still see everything for operational purposes."""
+    if not user:
+        return False
+    if is_admin_level(user):
+        return True
+    return user.role == UserRole.MEMBER or user.is_member or user.role == UserRole.VOLUNTEER
 
 # Schemas
 class EventCreate(BaseModel):
@@ -104,6 +116,7 @@ class EventRegistrationRequest(BaseModel):
     guest_phone: Optional[str] = None
     guest_email: Optional[str] = None
     payment_mode: Optional[EventPaymentMode] = None
+    voucher_code: Optional[str] = None
 
 class PaymentVerifyRequest(BaseModel):
     razorpay_payment_id: Optional[str] = None
@@ -141,9 +154,15 @@ async def create_event(
     return new_event
 
 @router.get("/", response_model=List[EventResponse])
-async def list_events(db: AsyncSession = Depends(get_db)):
+async def list_events(
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+):
     result = await db.execute(select(Event).order_by(Event.start_datetime))
-    return result.scalars().all()
+    events = result.scalars().all()
+    if _can_view_members_only(current_user):
+        return events
+    return [e for e in events if e.visibility != EventVisibility.MEMBERS_ONLY]
 
 @router.get("/my-registrations")
 async def get_my_registrations(
@@ -218,10 +237,18 @@ async def get_all_registrations(
     return registrations
 
 @router.get("/{event_id}", response_model=EventResponse)
-async def get_event(event_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def get_event(
+    event_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+):
     result = await db.execute(select(Event).filter(Event.event_id == event_id))
     event = result.scalar_one_or_none()
     if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    # Pretend it doesn't exist for non-members — same as list_events, but here
+    # it also stops someone reaching the detail page directly via a shared link.
+    if event.visibility == EventVisibility.MEMBERS_ONLY and not _can_view_members_only(current_user):
         raise HTTPException(status_code=404, detail="Event not found")
     return event
 
@@ -249,6 +276,8 @@ async def register_event(
     if event.visibility == EventVisibility.MEMBERS_ONLY:
         if not current_user:
             raise HTTPException(status_code=401, detail="This event is for members only. Please log in.")
+        if not _can_view_members_only(current_user):
+            raise HTTPException(status_code=403, detail="This event is for registered Samaj members only.")
     else:
         if not current_user and not (reg_data.guest_name and reg_data.guest_phone and reg_data.guest_email):
             raise HTTPException(status_code=400, detail="Guest name, phone, and email are required for non-logged in users")
@@ -260,6 +289,9 @@ async def register_event(
     payment_mode = None
     total_amount = float(event.pass_price) * reg_data.pass_count
 
+    voucher = None
+    discount_amount = None
+
     if event.pricing_type == EventPricingType.FREE:
         payment_status = PaymentStatus.NOT_APPLICABLE
         payment_mode = None
@@ -267,13 +299,19 @@ async def register_event(
     else:
         if not reg_data.payment_mode:
             raise HTTPException(status_code=400, detail="Payment mode is required for paid events")
-            
+
         payment_mode = reg_data.payment_mode
-        
+
         if payment_mode == EventPaymentMode.PAY_AT_VENUE:
             payment_status = PaymentStatus.PENDING
         elif payment_mode == EventPaymentMode.PAY_ONLINE:
             payment_status = PaymentStatus.PENDING
+
+        if reg_data.voucher_code:
+            voucher, discount_amount, voucher_err = await apply_voucher(db, reg_data.voucher_code, total_amount, "event")
+            if voucher_err:
+                raise HTTPException(status_code=400, detail=voucher_err)
+            total_amount = round(total_amount - discount_amount, 2)
 
     # Store entered contact details, or fallback to current user's profile details
     guest_name = reg_data.guest_name or (f"{current_user.first_name} {current_user.surname}" if current_user else None)
@@ -288,14 +326,18 @@ async def register_event(
         event_id=event.event_id,
         pass_count=reg_data.pass_count,
         total_amount=total_amount,
+        voucher_code=voucher.code if voucher else None,
+        discount_amount=discount_amount,
         payment_mode=payment_mode,
         payment_status=payment_status,
         qr_delivered=False
     )
     
     event.passes_sold += reg_data.pass_count
-    
+
     db.add(registration)
+    if voucher:
+        redeem_voucher(voucher)
     await db.commit()
     await db.refresh(registration)
     
@@ -303,11 +345,13 @@ async def register_event(
         background_tasks.add_task(generate_and_send_passes, registration.registration_id)
     
     response = {
-        "status": "success", 
-        "message": "Successfully registered", 
+        "status": "success",
+        "message": "Successfully registered",
         "registration_id": registration.registration_id,
         "payment_status": payment_status,
-        "payment_mode": payment_mode
+        "payment_mode": payment_mode,
+        "total_amount": total_amount,
+        "discount_amount": discount_amount,
     }
     
     # Simulate Razorpay order if online

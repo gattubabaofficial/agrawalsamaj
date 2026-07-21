@@ -10,16 +10,16 @@ import {
   Home, 
   Heart, 
   MessageCircle, 
-  Settings, 
-  LogOut, 
-  UserPlus, 
-  Component,
+  Settings,
+  LogOut,
+  UserPlus,
   Shield,
   ChevronDown,
   ChevronRight,
   Contact,
   BookOpen,
-  QrCode
+  QrCode,
+  Ticket
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -83,15 +83,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     ...(isSuperAdmin ? [{ name: "Admin Management", href: "/admin/admins", icon: Shield }] : []),
     ...(isSuperAdmin || isAdmin ? [
       { name: "Membership Requests", href: "/admin/requests", icon: UserPlus },
-      { name: "Families Directory", href: "/admin/families", icon: Component },
       { name: "Members Directory", href: "/admin/members", icon: Contact },
-      { name: "Users Directory", href: "/admin/users", icon: Users },
       { name: "Events Management", href: "/admin/events", icon: Calendar },
     ] : []),
     { name: "Pass Verification", href: "/admin/scan", icon: QrCode },
     ...(isSuperAdmin || isAdmin ? [
       { name: "Bhavan Bookings", href: "/admin/bookings", icon: Home },
       { name: "Room Pricing & Rules", href: "/admin/pricing", icon: Settings },
+      { name: "Vouchers", href: "/admin/vouchers", icon: Ticket },
       { name: "Donations Management", href: "/admin/donations", icon: Heart },
       { name: "Receipts", href: "/admin/receipts", icon: BookOpen },
       { name: "Blog Management", href: "/admin/blog", icon: BookOpen },

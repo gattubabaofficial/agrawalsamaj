@@ -9,6 +9,7 @@ from app.models.chat import Group, GroupMember, Message, GroupType
 from app.models.audit import AuditLog, Notification, NotificationType
 from app.models.requests import MembershipRequest, FamilyJoinRequest, RequestStatus
 from app.models.blog import Blog, BlogComment, BlogLike, BlogStatus
+from app.models.voucher import Voucher, DiscountType, VoucherScope
 
 # Ensure all models are exported
 __all__ = [
@@ -54,4 +55,7 @@ __all__ = [
     "BlogComment",
     "BlogLike",
     "BlogStatus",
+    "Voucher",
+    "DiscountType",
+    "VoucherScope",
 ]

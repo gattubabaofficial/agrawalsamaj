@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Calendar, MapPin, Clock, ArrowLeft, Ticket, CheckCircle, ShieldAlert } from "lucide-react";
+import { Calendar, MapPin, Clock, ArrowLeft, Ticket, CheckCircle, ShieldAlert, X } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
 import Link from "next/link";
@@ -31,6 +31,14 @@ export default function EventDetailsPage() {
   const [showPaymentGateway, setShowPaymentGateway] = useState(false);
   const [pendingRegistrationId, setPendingRegistrationId] = useState<string | null>(null);
 
+  // Voucher
+  const [voucherCode, setVoucherCode] = useState("");
+  const [voucherChecking, setVoucherChecking] = useState(false);
+  const [voucherError, setVoucherError] = useState("");
+  const [appliedVoucher, setAppliedVoucher] = useState<{
+    code: string; discountAmount: number; finalAmount: number; forAmount: number;
+  } | null>(null);
+
   useEffect(() => {
     // Check login status
     const token = localStorage.getItem("token");
@@ -38,9 +46,13 @@ export default function EventDetailsPage() {
 
     const fetchEvent = async () => {
       try {
-        const res = await axios.get(`${getApiBaseUrl()}/events/${eventId}`);
+        const res = await axios.get(`${getApiBaseUrl()}/events/${eventId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
         setEvent(res.data);
       } catch (err: any) {
+        // A members-only event 404s for non-members on purpose — it should
+        // read the same as "doesn't exist", not reveal that it's gated.
         setError("Event not found or failed to load");
       } finally {
         setLoading(false);
@@ -48,6 +60,36 @@ export default function EventDetailsPage() {
     };
     if (eventId) fetchEvent();
   }, [eventId]);
+
+  const handleApplyVoucher = async () => {
+    if (!voucherCode.trim() || totalAmount <= 0) return;
+    setVoucherChecking(true);
+    setVoucherError("");
+    try {
+      const res = await axios.post(`${getApiBaseUrl()}/vouchers/validate`, {
+        code: voucherCode.trim(),
+        amount: totalAmount,
+        scope: "event",
+      });
+      setAppliedVoucher({
+        code: res.data.code,
+        discountAmount: res.data.discount_amount,
+        finalAmount: res.data.final_amount,
+        forAmount: totalAmount,
+      });
+    } catch (err: any) {
+      setAppliedVoucher(null);
+      setVoucherError(err.response?.data?.detail || "Invalid voucher code.");
+    } finally {
+      setVoucherChecking(false);
+    }
+  };
+
+  const handleRemoveVoucher = () => {
+    setAppliedVoucher(null);
+    setVoucherCode("");
+    setVoucherError("");
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,13 +100,17 @@ export default function EventDetailsPage() {
       const token = localStorage.getItem("token");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-      const payload = {
+      const payload: any = {
         pass_count: passCount,
         guest_name: guestName || undefined,
         guest_phone: guestPhone || undefined,
         guest_email: guestEmail || undefined,
         payment_mode: event.pricing_type === "paid" ? paymentMode : undefined
       };
+
+      if (event.pricing_type === "paid" && appliedVoucher && !voucherIsStale) {
+        payload.voucher_code = appliedVoucher.code;
+      }
 
       const res = await axios.post(`${getApiBaseUrl()}/events/${eventId}/register`, payload, { headers });
       
@@ -111,6 +157,8 @@ export default function EventDetailsPage() {
   if (!event) return null;
 
   const totalAmount = event.pass_price * passCount;
+  const voucherIsStale = appliedVoucher !== null && appliedVoucher.forAmount !== totalAmount;
+  const payableAmount = appliedVoucher && !voucherIsStale ? appliedVoucher.finalAmount : totalAmount;
 
   return (
     <div className="py-20 px-4 sm:px-6 lg:px-8 bg-zinc-50 min-h-screen">
@@ -127,7 +175,7 @@ export default function EventDetailsPage() {
             <div>
               <h2 className="text-3xl font-bold text-zinc-900">Registration Successful!</h2>
               {successStatus === "pending_venue" ? (
-                <p className="text-zinc-500 mt-2">Your spot is reserved. Please pay ₹{totalAmount} at the venue to collect your tickets.</p>
+                <p className="text-zinc-500 mt-2">Your spot is reserved. Please pay ₹{payableAmount} at the venue to collect your tickets.</p>
               ) : (
                 <p className="text-zinc-500 mt-2">Your tickets have been confirmed and will be sent to you shortly.</p>
               )}
@@ -187,16 +235,11 @@ export default function EventDetailsPage() {
                   <Ticket className="w-5 h-5 text-amber-500" /> Book Passes
                 </h3>
                 
-                {event.visibility === "members_only" && !isLoggedIn ? (
-                  <div className="text-center p-6 bg-rose-50 rounded-2xl border border-rose-100 space-y-4">
-                    <ShieldAlert className="w-8 h-8 text-rose-500 mx-auto" />
-                    <p className="text-sm text-rose-900 font-semibold">This event is for registered Samaj members only.</p>
-                    <Link href={`/login?next=/events/${eventId}`} className="block w-full py-2.5 bg-rose-600 text-white text-sm font-bold rounded-xl hover:bg-rose-700 transition-colors">
-                      Log In to Book
-                    </Link>
-                  </div>
-                ) : (
-                  <form onSubmit={handleRegister} className="space-y-5">
+                {/* A members-only event only ever reaches this page for a viewer
+                    the backend already deemed eligible (member, volunteer, or
+                    admin) — anyone else gets a 404 on fetch, above — so there's
+                    nothing left to gate here. */}
+                <form onSubmit={handleRegister} className="space-y-5">
                     {error && (
                       <div className="p-3 bg-rose-50 text-rose-600 text-sm rounded-xl border border-rose-100">
                         {error}
@@ -234,11 +277,65 @@ export default function EventDetailsPage() {
                     {event.pricing_type === "paid" && (
                       <div className="space-y-3 pt-4 border-t border-zinc-100">
                         <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Payment Details</p>
-                        <div className="flex items-center justify-between font-semibold text-zinc-900 mb-4">
-                          <span>Total Amount</span>
-                          <span>₹{totalAmount}</span>
+
+                        <div className="space-y-2">
+                          <label className="text-xs font-semibold text-zinc-700">Have a Voucher?</label>
+                          {appliedVoucher && !voucherIsStale ? (
+                            <div className="flex items-center justify-between p-3 rounded-xl border border-emerald-200 bg-emerald-50">
+                              <span className="text-sm font-semibold text-emerald-800 flex items-center gap-2">
+                                <Ticket className="w-4 h-4" /> {appliedVoucher.code} applied — ₹{appliedVoucher.discountAmount} off
+                              </span>
+                              <button type="button" onClick={handleRemoveVoucher} className="text-emerald-700 hover:text-emerald-900">
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                placeholder="Enter voucher code"
+                                value={voucherCode}
+                                onChange={(e) => { setVoucherCode(e.target.value.toUpperCase()); setVoucherError(""); }}
+                                className="flex-1 px-3 py-2 border border-zinc-200 rounded-lg text-sm font-mono focus:outline-none focus:border-amber-500"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleApplyVoucher}
+                                disabled={voucherChecking || !voucherCode.trim()}
+                                className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl disabled:opacity-50 transition-colors"
+                              >
+                                {voucherChecking ? "Checking..." : "Apply"}
+                              </button>
+                            </div>
+                          )}
+                          {voucherIsStale && (
+                            <p className="text-xs text-amber-600">Pass count changed — please re-apply your voucher.</p>
+                          )}
+                          {voucherError && <p className="text-xs text-rose-600">{voucherError}</p>}
                         </div>
-                        
+
+                        {appliedVoucher && !voucherIsStale ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-sm text-zinc-500">
+                              <span>Subtotal</span>
+                              <span>₹{totalAmount}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm text-emerald-600 font-semibold">
+                              <span>Voucher Discount</span>
+                              <span>-₹{appliedVoucher.discountAmount}</span>
+                            </div>
+                            <div className="flex items-center justify-between font-bold text-zinc-900 pt-1">
+                              <span>Total Amount</span>
+                              <span>₹{payableAmount}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between font-semibold text-zinc-900">
+                            <span>Total Amount</span>
+                            <span>₹{payableAmount}</span>
+                          </div>
+                        )}
+
                         <div className="space-y-2">
                           <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${paymentMode === "pay_online" ? "border-amber-500 bg-amber-50" : "border-zinc-200 hover:bg-zinc-50"}`}>
                             <input type="radio" name="payment_mode" value="pay_online" checked={paymentMode === "pay_online"} onChange={() => setPaymentMode("pay_online")} className="text-amber-500 focus:ring-amber-500" />
@@ -261,10 +358,9 @@ export default function EventDetailsPage() {
                     )}
 
                     <button disabled={isSubmitting} type="submit" className="w-full py-3 mt-6 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-colors disabled:opacity-50">
-                      {isSubmitting ? "Processing..." : (event.pricing_type === "paid" && paymentMode === "pay_online" ? `Pay ₹${totalAmount}` : "Confirm Registration")}
+                      {isSubmitting ? "Processing..." : (event.pricing_type === "paid" && paymentMode === "pay_online" ? `Pay ₹${payableAmount}` : "Confirm Registration")}
                     </button>
-                  </form>
-                )}
+                </form>
               </div>
             </div>
           </div>
@@ -272,9 +368,9 @@ export default function EventDetailsPage() {
       </div>
 
       {showPaymentGateway && (
-        <PaymentGateway 
-          amount={totalAmount} 
-          purpose={`Passes for ${event.title}`} 
+        <PaymentGateway
+          amount={payableAmount}
+          purpose={`Passes for ${event.title}`}
           onSuccess={handlePaymentSuccess} 
           onCancel={handlePaymentCancel} 
         />

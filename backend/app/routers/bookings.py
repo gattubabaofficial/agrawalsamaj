@@ -1,21 +1,42 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import List, Optional
 from datetime import date, datetime, timedelta
+from pathlib import Path
+import asyncio
 import uuid
 from pydantic import BaseModel, Field
 
-from app.dependencies import get_db, get_current_user, is_admin_level
+from app.dependencies import get_db, get_current_user, get_optional_current_user, is_admin_level
 from app.models.user import User, UserRole
 from app.models.booking import (
     Room, Booking, BookingStatus, PaymentMode, PaymentStatus,
     RoomPricingRule, RoomBookingRule,
 )
-from app.models.receipt import ReceiptType
+from app.models.receipt import Receipt, ReceiptType
 from app.services.receipt_service import create_receipt
+from app.services.whatsapp_service import send_whatsapp_document
+from app.services.voucher_service import apply_voucher, redeem_voucher
 
 router = APIRouter(prefix="/api/v1/bookings", tags=["Bookings"])
+
+
+async def _deliver_booking_receipt_whatsapp(receipt: Receipt, phone: Optional[str], room_name: str, amount: float):
+    """Send the receipt PDF to the booker's WhatsApp number, if we have one."""
+    if not phone or not receipt.pdf_url:
+        return
+    file_path = Path("static/receipts") / f"{receipt.receipt_number}.pdf"
+    await asyncio.to_thread(
+        send_whatsapp_document,
+        to_number=phone,
+        file_path=file_path,
+        caption=(
+            f"🧾 *Agrawal Samaj Bhavan Booking*\n\n"
+            f"Your receipt for {room_name} (₹{amount:,.2f}) is attached. Thank you!"
+        ),
+        filename=f"{receipt.receipt_number}.pdf",
+    )
 
 
 # ───────────── Pricing / min-stay helpers ─────────────
@@ -118,6 +139,9 @@ class BookingCreate(BaseModel):
     end_date: date
     payment_mode: PaymentMode = PaymentMode.UPI
     notes: Optional[str] = None
+    guest_name: Optional[str] = None
+    guest_phone: Optional[str] = None
+    voucher_code: Optional[str] = None
 
 class BookingResponse(BaseModel):
     booking_id: uuid.UUID
@@ -129,12 +153,16 @@ class BookingResponse(BaseModel):
     payment_status: PaymentStatus
     booking_status: BookingStatus
     notes: Optional[str]
-    
+    guest_name: Optional[str] = None
+    guest_phone: Optional[str] = None
+    voucher_code: Optional[str] = None
+    discount_amount: Optional[float] = None
+
     class Config:
         from_attributes = True
 
 class AdminBookingResponse(BookingResponse):
-    user_id: uuid.UUID
+    user_id: Optional[uuid.UUID]
     user_name: str
     user_mobile: Optional[str]
     room_name: str
@@ -213,7 +241,7 @@ async def delete_room(
 async def create_booking(
     booking_data: BookingCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_optional_current_user)
 ):
     # Fetch room
     result = await db.execute(select(Room).filter(Room.room_id == booking_data.room_id))
@@ -221,16 +249,35 @@ async def create_booking(
     if not room or not room.is_available:
         raise HTTPException(status_code=400, detail="Room not available")
 
+    if not current_user and not (booking_data.guest_name and booking_data.guest_phone):
+        raise HTTPException(status_code=400, detail="Guest name and WhatsApp number are required for non-logged in users")
+
     # Enforce minimum-stay rules for the requested window
     await _enforce_min_stay(db, room, booking_data.start_date, booking_data.end_date)
 
     # Dynamic, date-range aware pricing
     total_amount, days, _breakdown = await _quote(db, room, booking_data.start_date, booking_data.end_date)
 
+    # Voucher, if provided — validated fresh here so a stale/expired code
+    # can't slip through even if the frontend's earlier preview allowed it.
+    voucher = None
+    discount_amount = None
+    if booking_data.voucher_code:
+        voucher, discount_amount, voucher_err = await apply_voucher(db, booking_data.voucher_code, total_amount, "booking")
+        if voucher_err:
+            raise HTTPException(status_code=400, detail=voucher_err)
+        total_amount = round(total_amount - discount_amount, 2)
+
     payment_status = PaymentStatus.PENDING
-    
+
+    # Store entered contact details, or fall back to the logged-in user's profile
+    guest_name = booking_data.guest_name or (f"{current_user.first_name} {current_user.surname}" if current_user else None)
+    guest_phone = booking_data.guest_phone or (current_user.mobile if current_user else None)
+
     new_booking = Booking(
-        user_id=current_user.user_id,
+        user_id=current_user.user_id if current_user else None,
+        guest_name=guest_name,
+        guest_phone=guest_phone,
         room_id=room.room_id,
         start_date=booking_data.start_date,
         end_date=booking_data.end_date,
@@ -238,13 +285,17 @@ async def create_booking(
         payment_mode=booking_data.payment_mode,
         payment_status=payment_status,
         booking_status=BookingStatus.PENDING,
-        notes=booking_data.notes
+        notes=booking_data.notes,
+        voucher_code=voucher.code if voucher else None,
+        discount_amount=discount_amount,
     )
-    
+
     db.add(new_booking)
+    if voucher:
+        redeem_voucher(voucher)
     await db.commit()
     await db.refresh(new_booking)
-    
+
     response = BookingResponse.from_orm(new_booking).dict()
     
     if booking_data.payment_mode != PaymentMode.CASH:
@@ -278,11 +329,11 @@ async def list_all_bookings(
         
     result = await db.execute(
         select(Booking, User, Room)
-        .join(User, Booking.user_id == User.user_id)
+        .outerjoin(User, Booking.user_id == User.user_id)
         .join(Room, Booking.room_id == Room.room_id)
         .order_by(Booking.start_date.desc())
     )
-    
+
     bookings_data = []
     for booking, user, room in result.all():
         data = {
@@ -295,9 +346,11 @@ async def list_all_bookings(
             "payment_status": booking.payment_status,
             "booking_status": booking.booking_status,
             "notes": booking.notes,
-            "user_id": user.user_id,
-            "user_name": f"{user.first_name} {user.surname}",
-            "user_mobile": user.mobile,
+            "guest_name": booking.guest_name,
+            "guest_phone": booking.guest_phone,
+            "user_id": user.user_id if user else None,
+            "user_name": f"{user.first_name} {user.surname}" if user else (booking.guest_name or "Guest"),
+            "user_mobile": user.mobile if user else booking.guest_phone,
             "room_name": room.name
         }
         bookings_data.append(data)
@@ -329,6 +382,7 @@ async def cancel_booking(
 @router.post("/{booking_id}/approve")
 async def approve_booking(
     booking_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -349,8 +403,10 @@ async def approve_booking(
     await db.commit()
 
     # Fetch payer for receipt
-    user_result = await db.execute(select(User).where(User.user_id == booking.user_id))
-    payer = user_result.scalar_one_or_none()
+    payer = None
+    if booking.user_id:
+        user_result = await db.execute(select(User).where(User.user_id == booking.user_id))
+        payer = user_result.scalar_one_or_none()
     room_result = await db.execute(select(Room).where(Room.room_id == booking.room_id))
     room = room_result.scalar_one_or_none()
 
@@ -359,7 +415,7 @@ async def approve_booking(
         db,
         receipt_type=ReceiptType.BOOKING,
         amount=float(booking.total_amount),
-        payer_name=f"{payer.first_name} {payer.surname}" if payer else "Guest",
+        payer_name=f"{payer.first_name} {payer.surname}" if payer else (booking.guest_name or "Guest"),
         payment_mode=booking.payment_mode.value if hasattr(booking.payment_mode, "value") else str(booking.payment_mode),
         is_offline=(booking.payment_mode == PaymentMode.CASH),
         description=f"Bhavan booking: {room.name if room else 'Room'}",
@@ -373,6 +429,12 @@ async def approve_booking(
             ("Check-out", booking.end_date.isoformat()),
         ],
     )
+
+    background_tasks.add_task(
+        _deliver_booking_receipt_whatsapp,
+        receipt, booking.guest_phone, room.name if room else "your booking", float(booking.total_amount),
+    )
+
     return {
         "message": "Booking approved and marked as paid",
         "receipt_number": receipt.receipt_number,
@@ -389,16 +451,23 @@ class BookingPaymentVerify(BaseModel):
 async def verify_booking_payment(
     booking_id: uuid.UUID,
     data: BookingPaymentVerify,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ):
     """Confirm an ONLINE (razorpay) Bhavan booking payment and issue the receipt."""
     result = await db.execute(select(Booking).filter(Booking.booking_id == booking_id))
     booking = result.scalar_one_or_none()
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
-    if booking.user_id != current_user.user_id and not is_admin_level(current_user):
-        raise HTTPException(status_code=403, detail="Not authorized")
+
+    # Guest bookings (user_id is None) have no account to authenticate as, so
+    # this call is trusted the same way the guest event-pass flow is: only the
+    # unguessable booking_id gates it. Logged-in bookings still require the
+    # owner or an admin.
+    if booking.user_id is not None:
+        if not current_user or (booking.user_id != current_user.user_id and not is_admin_level(current_user)):
+            raise HTTPException(status_code=403, detail="Not authorized")
 
     booking.payment_status = PaymentStatus.PAID
     booking.booking_status = BookingStatus.APPROVED
@@ -406,13 +475,15 @@ async def verify_booking_payment(
         booking.razorpay_payment_id = data.razorpay_payment_id
     await db.commit()
 
-    payer = (await db.execute(select(User).where(User.user_id == booking.user_id))).scalar_one_or_none()
+    payer = None
+    if booking.user_id:
+        payer = (await db.execute(select(User).where(User.user_id == booking.user_id))).scalar_one_or_none()
     room = (await db.execute(select(Room).where(Room.room_id == booking.room_id))).scalar_one_or_none()
     receipt = await create_receipt(
         db,
         receipt_type=ReceiptType.BOOKING,
         amount=float(booking.total_amount),
-        payer_name=f"{payer.first_name} {payer.surname}" if payer else "Guest",
+        payer_name=f"{payer.first_name} {payer.surname}" if payer else (booking.guest_name or "Guest"),
         payment_mode=booking.payment_mode.value if hasattr(booking.payment_mode, "value") else str(booking.payment_mode),
         is_offline=False,
         description=f"Bhavan booking: {room.name if room else 'Room'}",
@@ -424,6 +495,12 @@ async def verify_booking_payment(
             ("Check-out", booking.end_date.isoformat()),
         ],
     )
+
+    background_tasks.add_task(
+        _deliver_booking_receipt_whatsapp,
+        receipt, booking.guest_phone, room.name if room else "your booking", float(booking.total_amount),
+    )
+
     return {
         "status": "success",
         "receipt_number": receipt.receipt_number,

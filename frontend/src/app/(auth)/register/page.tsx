@@ -30,13 +30,6 @@ export default function RegisterPage() {
   const [devOtp, setDevOtp] = useState<string | null>(null); // For developer convenience in dev mode
   const [resendCountdown, setResendCountdown] = useState(0);
 
-  // OAuth Simulation States
-  const [showOAuthModal, setShowOAuthModal] = useState(false);
-  const [oauthProvider, setOauthProvider] = useState<"google" | "yahoo" | null>(null);
-  const [oauthEmail, setOauthEmail] = useState("");
-  const [oauthFirstName, setOauthFirstName] = useState("");
-  const [oauthSurname, setOauthSurname] = useState("");
-
   // Countdown timer to redirect to login on success
   useEffect(() => {
     if (!success) return;
@@ -178,55 +171,6 @@ export default function RegisterPage() {
     } catch (err: any) {
       console.error("Register error:", err);
       setError(err.response?.data?.detail || "Registration failed.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSocialClick = (provider: "google" | "yahoo") => {
-    setOauthProvider(provider);
-    setOauthEmail("");
-    setOauthFirstName("");
-    setOauthSurname("");
-    setError(null);
-    setShowOAuthModal(true);
-  };
-
-  const handleOAuthSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!oauthProvider) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    const mockProviderId = `${oauthProvider}_id_${Math.floor(100000 + Math.random() * 900000)}`;
-
-    try {
-      const payload: any = {
-        first_name: oauthFirstName.trim(),
-        surname: oauthSurname.trim(),
-        email: oauthEmail.trim(),
-        provider: oauthProvider,
-        provider_id: mockProviderId,
-      };
-
-      if (familyCode.trim()) {
-        payload.family_code = familyCode.trim();
-        payload.family_relation = familyRelation || "Member";
-      }
-
-      const response = await axios.post(`${getApiBaseUrl()}/auth/register/oauth`, payload);
-
-      if (response.data.status === "success" || response.status === 201) {
-        setShowOAuthModal(false);
-        setSuccess(true);
-      }
-    } catch (err: any) {
-      console.error("Social register error:", err);
-      const errorMsg =
-        err.response?.data?.detail ||
-        "Social registration failed. This account may already be registered.";
-      setError(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -483,116 +427,6 @@ export default function RegisterPage() {
           </>
         )}
       </div>
-
-      {/* SOCIAL OAUTH SIMULATOR MODAL */}
-      {showOAuthModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-white border border-zinc-200/80 p-6 rounded-3xl shadow-2xl space-y-6">
-            <div className="text-center space-y-2">
-              <div className="inline-flex p-3 rounded-full bg-zinc-100 text-zinc-800 mb-1">
-                {oauthProvider === "google" ? (
-                  <svg className="w-6 h-6 text-rose-500" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12.24 10.285V14.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.866-3.577-7.866-8s3.536-8 7.866-8c2.46 0 4.105 1.025 5.047 1.926l3.227-3.11C18.422 2.106 15.607 1 12.24 1 5.48 1 0 6.48 0 13.24s5.48 12.24 12.24 12.24c7.058 0 11.755-4.965 11.755-11.96 0-.807-.087-1.427-.193-2.023l-11.562-.212z"/>
-                  </svg>
-                ) : (
-                  <span className="font-extrabold text-purple-600 italic text-xl">Yahoo!</span>
-                )}
-              </div>
-              <h3 className="text-lg font-bold text-zinc-900 capitalize">
-                Authorize {oauthProvider} registration
-              </h3>
-              <p className="text-xs text-zinc-500">
-                Simulator: Provide mock profile details to register in the portal.
-              </p>
-            </div>
-
-            <form onSubmit={handleOAuthSubmit} className="space-y-4 text-sm">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="font-semibold text-zinc-700">First Name</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="John"
-                    value={oauthFirstName}
-                    onChange={(e) => setOauthFirstName(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-zinc-200 bg-transparent text-zinc-950 focus:outline-none focus:ring-1 focus:ring-amber-500"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="font-semibold text-zinc-700">Surname</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Doe"
-                    value={oauthSurname}
-                    onChange={(e) => setOauthSurname(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-zinc-200 bg-transparent text-zinc-950 focus:outline-none focus:ring-1 focus:ring-amber-500"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-semibold text-zinc-700">Email Address</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="john.doe@gmail.com"
-                  value={oauthEmail}
-                  onChange={(e) => setOauthEmail(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-zinc-200 bg-transparent text-zinc-950 focus:outline-none focus:ring-1 focus:ring-amber-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="font-semibold text-zinc-700">Family Code (Optional)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. FAM-P4E40W"
-                    value={familyCode}
-                    onChange={(e) => setFamilyCode(e.target.value.toUpperCase())}
-                    className="w-full px-4 py-2 rounded-xl border border-zinc-200 bg-transparent text-zinc-950 focus:outline-none focus:ring-1 focus:ring-amber-500 font-mono"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="font-semibold text-zinc-700">Relation to Head</label>
-                  <select
-                    value={familyRelation}
-                    onChange={(e) => setFamilyRelation(e.target.value)}
-                    required={familyCode.trim().length > 0}
-                    className="w-full px-4 py-2 rounded-xl border border-zinc-200 bg-white text-zinc-950 focus:outline-none focus:ring-1 focus:ring-amber-500"
-                  >
-                    <option value="">Select Relation...</option>
-                    <option value="Spouse">Spouse</option>
-                    <option value="Son">Son</option>
-                    <option value="Daughter">Daughter</option>
-                    <option value="Parent">Parent</option>
-                    <option value="Sibling">Sibling</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowOAuthModal(false)}
-                  className="flex-1 py-2.5 rounded-xl border border-zinc-200 text-zinc-750 text-xs font-semibold hover:bg-zinc-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-xs font-semibold transition-colors"
-                >
-                  Authorize & Sign Up
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

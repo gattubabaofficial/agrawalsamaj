@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { Calendar, Users, MapPin, ArrowLeft, CheckCircle, Clock } from "lucide-react";
+import { useParams } from "next/navigation";
+import { Calendar, Users, MapPin, ArrowLeft, CheckCircle, Clock, User, Phone, Ticket, X } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
 import Link from "next/link";
@@ -10,32 +10,47 @@ import PaymentGateway from "@/components/PaymentGateway";
 
 export default function RoomBookingPage() {
   const params = useParams();
-  const router = useRouter();
   const roomId = params.id as string;
 
   const [room, setRoom] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [bookingId, setBookingId] = useState<string | null>(null);
+
+  // Guest contact details (only asked when not logged in)
+  const [guestName, setGuestName] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
+
   // Date State
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [notes, setNotes] = useState("");
-  
+
   const [paymentMode, setPaymentMode] = useState<"upi" | "cash">("upi");
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successStatus, setSuccessStatus] = useState<"none" | "pending_venue" | "verified">("none");
   const [showPaymentGateway, setShowPaymentGateway] = useState(false);
   const [totalAmount, setTotalAmount] = useState(0);
 
+  // Voucher
+  const [voucherCode, setVoucherCode] = useState("");
+  const [voucherChecking, setVoucherChecking] = useState(false);
+  const [voucherError, setVoucherError] = useState("");
+  const [appliedVoucher, setAppliedVoucher] = useState<{
+    code: string; discountAmount: number; finalAmount: number; forAmount: number;
+  } | null>(null);
+
+  // A voucher's discount was computed against a specific totalAmount — if the
+  // dates change afterward, treat it as stale rather than silently keeping a
+  // discount that no longer matches the new total.
+  const voucherIsStale = appliedVoucher !== null && appliedVoucher.forAmount !== totalAmount;
+  const payableAmount = appliedVoucher && !voucherIsStale ? appliedVoucher.finalAmount : totalAmount;
+
   useEffect(() => {
-    // Check login status first!
-    const token = localStorage.getItem("token");
-    if (!token) {
-      router.push(`/login?next=/bhavan/${roomId}`);
-      return;
-    }
+    setIsLoggedIn(!!localStorage.getItem("token"));
 
     const fetchRoom = async () => {
       try {
@@ -48,7 +63,7 @@ export default function RoomBookingPage() {
       }
     };
     if (roomId) fetchRoom();
-  }, [roomId, router]);
+  }, [roomId]);
 
   // Calculate total amount when dates change
   useEffect(() => {
@@ -66,11 +81,46 @@ export default function RoomBookingPage() {
     }
   }, [startDate, endDate, room]);
 
+  const handleApplyVoucher = async () => {
+    if (!voucherCode.trim() || totalAmount <= 0) return;
+    setVoucherChecking(true);
+    setVoucherError("");
+    try {
+      const res = await axios.post(`${getApiBaseUrl()}/vouchers/validate`, {
+        code: voucherCode.trim(),
+        amount: totalAmount,
+        scope: "booking",
+      });
+      setAppliedVoucher({
+        code: res.data.code,
+        discountAmount: res.data.discount_amount,
+        finalAmount: res.data.final_amount,
+        forAmount: totalAmount,
+      });
+    } catch (err: any) {
+      setAppliedVoucher(null);
+      setVoucherError(err.response?.data?.detail || "Invalid voucher code.");
+    } finally {
+      setVoucherChecking(false);
+    }
+  };
+
+  const handleRemoveVoucher = () => {
+    setAppliedVoucher(null);
+    setVoucherCode("");
+    setVoucherError("");
+  };
+
   const handleBook = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (totalAmount <= 0) {
       setError("End date must be after start date.");
+      return;
+    }
+
+    if (!isLoggedIn && (!guestName.trim() || !guestPhone.trim())) {
+      setError("Please enter your name and WhatsApp number.");
       return;
     }
 
@@ -79,9 +129,9 @@ export default function RoomBookingPage() {
 
     try {
       const token = localStorage.getItem("token");
-      const headers = { Authorization: `Bearer ${token}` };
+      const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
 
-      const payload = {
+      const payload: any = {
         room_id: roomId,
         start_date: startDate,
         end_date: endDate,
@@ -89,10 +139,20 @@ export default function RoomBookingPage() {
         notes: notes || undefined
       };
 
+      if (!isLoggedIn) {
+        payload.guest_name = guestName.trim();
+        payload.guest_phone = guestPhone.trim();
+      }
+
+      if (appliedVoucher && !voucherIsStale) {
+        payload.voucher_code = appliedVoucher.code;
+      }
+
       const res = await axios.post(`${getApiBaseUrl()}/bookings/`, payload, { headers });
-      
-      const { payment_status, razorpay_order_id } = res.data;
-      
+
+      const { booking_id, razorpay_order_id } = res.data;
+      setBookingId(booking_id);
+
       if (paymentMode !== "cash" && razorpay_order_id) {
         setShowPaymentGateway(true);
       } else {
@@ -105,9 +165,18 @@ export default function RoomBookingPage() {
     }
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async (paymentId?: string) => {
     setShowPaymentGateway(false);
-    setSuccessStatus("verified");
+    try {
+      if (bookingId) {
+        await axios.post(`${getApiBaseUrl()}/bookings/${bookingId}/verify-payment`, {
+          razorpay_payment_id: paymentId
+        });
+      }
+      setSuccessStatus("verified");
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Payment was received but verification failed. Please contact the office.");
+    }
   };
 
   const handlePaymentCancel = () => {
@@ -134,14 +203,18 @@ export default function RoomBookingPage() {
             <div>
               <h2 className="text-3xl font-bold text-zinc-900">Booking Requested Successfully!</h2>
               {successStatus === "pending_venue" ? (
-                <p className="text-zinc-500 mt-2">Your request is pending admin approval. Please pay ₹{totalAmount} at the venue.</p>
+                <p className="text-zinc-500 mt-2">Your request is pending admin approval. Please pay ₹{payableAmount} at the venue.</p>
               ) : (
                 <p className="text-zinc-500 mt-2">Your booking has been confirmed. The admin will verify and approve it shortly.</p>
               )}
             </div>
-            <Link href="/dashboard/bookings" className="inline-block mt-8 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl">
-              View My Bookings
-            </Link>
+            {isLoggedIn ? (
+              <Link href="/dashboard/bookings" className="inline-block mt-8 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl">
+                View My Bookings
+              </Link>
+            ) : (
+              <p className="text-sm text-zinc-500 mt-4">We'll reach out on WhatsApp with confirmation details.</p>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -213,6 +286,45 @@ export default function RoomBookingPage() {
                     </div>
                   )}
 
+                  {!isLoggedIn && (
+                    <div className="space-y-4 pb-4 border-b border-zinc-100">
+                      <p className="text-xs text-zinc-500">
+                        Booking as a guest. Have an account?{" "}
+                        <Link href={`/login?next=/bhavan/${roomId}`} className="text-amber-600 font-semibold hover:underline">
+                          Sign in
+                        </Link>
+                      </p>
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-zinc-700">Your Name *</label>
+                        <div className="relative">
+                          <User className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            required
+                            placeholder="Full name"
+                            value={guestName}
+                            onChange={e => setGuestName(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-amber-500"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-zinc-700">WhatsApp Number *</label>
+                        <div className="relative">
+                          <Phone className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="tel"
+                            required
+                            placeholder="10-digit mobile number"
+                            value={guestPhone}
+                            onChange={e => setGuestPhone(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-amber-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-zinc-700">Start Date *</label>
@@ -249,12 +361,67 @@ export default function RoomBookingPage() {
                     />
                   </div>
 
-                  <div className="space-y-3 pt-4 border-t border-zinc-100">
-                    <div className="flex items-center justify-between font-bold text-zinc-900 mb-2">
-                      <span>Total Amount</span>
-                      <span className="text-xl text-emerald-600">₹{totalAmount}</span>
+                  {totalAmount > 0 && (
+                    <div className="space-y-2 pt-4 border-t border-zinc-100">
+                      <label className="text-sm font-semibold text-zinc-700">Have a Voucher?</label>
+                      {appliedVoucher && !voucherIsStale ? (
+                        <div className="flex items-center justify-between p-3 rounded-xl border border-emerald-200 bg-emerald-50">
+                          <span className="text-sm font-semibold text-emerald-800 flex items-center gap-2">
+                            <Ticket className="w-4 h-4" /> {appliedVoucher.code} applied — ₹{appliedVoucher.discountAmount} off
+                          </span>
+                          <button type="button" onClick={handleRemoveVoucher} className="text-emerald-700 hover:text-emerald-900">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Enter voucher code"
+                            value={voucherCode}
+                            onChange={(e) => { setVoucherCode(e.target.value.toUpperCase()); setVoucherError(""); }}
+                            className="flex-1 px-4 py-2 border border-zinc-200 rounded-xl text-sm font-mono focus:outline-none focus:border-amber-500"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleApplyVoucher}
+                            disabled={voucherChecking || !voucherCode.trim()}
+                            className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl disabled:opacity-50 transition-colors"
+                          >
+                            {voucherChecking ? "Checking..." : "Apply"}
+                          </button>
+                        </div>
+                      )}
+                      {voucherIsStale && (
+                        <p className="text-xs text-amber-600">Dates changed — please re-apply your voucher.</p>
+                      )}
+                      {voucherError && <p className="text-xs text-rose-600">{voucherError}</p>}
                     </div>
-                    
+                  )}
+
+                  <div className="space-y-3 pt-4 border-t border-zinc-100">
+                    {appliedVoucher && !voucherIsStale ? (
+                      <div className="space-y-1 mb-2">
+                        <div className="flex items-center justify-between text-sm text-zinc-500">
+                          <span>Subtotal</span>
+                          <span>₹{totalAmount}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm text-emerald-600 font-semibold">
+                          <span>Voucher Discount</span>
+                          <span>-₹{appliedVoucher.discountAmount}</span>
+                        </div>
+                        <div className="flex items-center justify-between font-bold text-zinc-900 pt-1">
+                          <span>Total Amount</span>
+                          <span className="text-xl text-emerald-600">₹{payableAmount}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between font-bold text-zinc-900 mb-2">
+                        <span>Total Amount</span>
+                        <span className="text-xl text-emerald-600">₹{payableAmount}</span>
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${paymentMode === "upi" ? "border-amber-500 bg-amber-50" : "border-zinc-200 hover:bg-zinc-50"}`}>
                         <input type="radio" name="payment_mode" value="upi" checked={paymentMode === "upi"} onChange={() => setPaymentMode("upi")} className="text-amber-500 focus:ring-amber-500" />
@@ -268,7 +435,7 @@ export default function RoomBookingPage() {
                   </div>
 
                   <button disabled={isSubmitting || totalAmount <= 0} type="submit" className="w-full py-3 mt-6 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-colors disabled:opacity-50">
-                    {isSubmitting ? "Processing..." : (paymentMode === "upi" ? `Pay ₹${totalAmount}` : "Submit Request")}
+                    {isSubmitting ? "Processing..." : (paymentMode === "upi" ? `Pay ₹${payableAmount}` : "Submit Request")}
                   </button>
                 </form>
               </div>
@@ -278,9 +445,9 @@ export default function RoomBookingPage() {
       </div>
 
       {showPaymentGateway && (
-        <PaymentGateway 
-          amount={totalAmount} 
-          purpose={`Booking for ${room.name}`} 
+        <PaymentGateway
+          amount={payableAmount}
+          purpose={`Booking for ${room.name}`}
           onSuccess={handlePaymentSuccess} 
           onCancel={handlePaymentCancel} 
         />
