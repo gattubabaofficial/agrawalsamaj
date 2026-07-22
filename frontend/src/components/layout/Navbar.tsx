@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Menu, X, Heart, Calendar, Building, Info, Home,
-  BookOpen, LayoutDashboard, LogOut, User, ChevronDown, Shield, QrCode
+  BookOpen, LayoutDashboard, LogOut, User, ChevronDown, Shield, QrCode, Users
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getApiBaseUrl } from "@/utils/api";
@@ -13,11 +13,13 @@ import { getApiBaseUrl } from "@/utils/api";
 const navItems = [
   { name: "Home", href: "/", icon: Home },
   { name: "About Us", href: "/about", icon: Info },
+  { name: "Members", href: "/members", icon: Users },
   { name: "Events", href: "/events", icon: Calendar },
   { name: "Blog", href: "/blog", icon: BookOpen },
   { name: "Bhavan Booking", href: "/bhavan", icon: Building },
   { name: "Donations", href: "/donate", icon: Heart },
 ];
+
 
 interface AuthUser {
   name: string;

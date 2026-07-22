@@ -25,6 +25,21 @@ app = FastAPI(
     version="1.0.0",
 )
 
+
+@app.on_event("startup")
+async def on_startup():
+    from app.database import engine, Base
+    import app.models.user
+    import app.models.requests
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE users ADD COLUMN father_name VARCHAR(100)"))
+        except Exception:
+            pass
+
+
 # CORS middleware configuration
 local_origin_regex = r"https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?"
 
@@ -74,5 +89,5 @@ async def root():
 async def health_check():
     return {
         "status": "healthy",
-        "database": "connected"  # Simple health check endpoint
+        "database": "connected"
     }

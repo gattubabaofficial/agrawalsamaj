@@ -2,26 +2,112 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import uuid
 import json
 import random
 import string
+import hashlib
+from datetime import datetime, timedelta
 
 from app.database import get_db_session
-from app.models.user import User, UserRole, Family
-from app.models.requests import MembershipRequest, RequestStatus, FamilyCreationRequest
-from app.dependencies import get_current_user, get_current_admin
+from app.models.user import User, UserRole, Family, PhoneOTPRequest
+from app.models.requests import MembershipRequest, RequestStatus, FamilyCreationRequest, ProfileUpdateRequest
+from app.dependencies import get_current_user, get_current_admin, get_optional_current_user
 
 router = APIRouter(prefix="/api/v1/membership", tags=["membership"])
 
 # Roles an admin may assign through the generic role-update endpoint below.
-# Admin/super_admin promotion goes through the dedicated admin-account flow in routers/admin.py.
 ASSIGNABLE_ROLES = {UserRole.GUEST, UserRole.MEMBER, UserRole.VOLUNTEER}
 
 
 class RoleUpdateRequest(BaseModel):
     role: str
+
+
+class ApplyWithOtpRequest(BaseModel):
+    first_name: str
+    surname: str
+    father_name: Optional[str] = None
+    mobile: str
+    email: Optional[str] = None
+    profession: Optional[str] = None
+    address: Optional[str] = None
+    otp: str
+
+
+class SendMemberEditOtpPayload(BaseModel):
+    user_id: Optional[str] = None
+    identifier: Optional[str] = None
+
+
+class VerifyMemberEditOtpPayload(BaseModel):
+    user_id: Optional[str] = None
+    identifier: Optional[str] = None
+    otp: str
+
+
+class ProfileUpdateRequestPayload(BaseModel):
+    user_id: str
+    mobile: Optional[str] = None
+    otp: str
+    first_name: str
+    surname: str
+    father_name: Optional[str] = None
+    profession: Optional[str] = None
+    email: Optional[str] = None
+    address: Optional[str] = None
+    profile_photo: Optional[str] = None
+    mobile_private: bool = False
+    email_private: bool = False
+    address_private: bool = False
+
+
+class ContactMemberPayload(BaseModel):
+    recipient_user_id: str
+    sender_name: str
+    sender_mobile: str
+    sender_email: Optional[str] = None
+    reason: str
+    message: str
+
+
+
+
+def mask_phone_number(mobile: Optional[str]) -> Optional[str]:
+    if not mobile:
+        return None
+    clean = mobile.strip()
+    if len(clean) <= 3:
+        return clean
+    return "X" * (len(clean) - 3) + clean[-3:]
+
+
+def hash_otp(otp: str) -> str:
+    return hashlib.sha256(otp.encode()).hexdigest()
+
+
+async def verify_otp_internal(db: AsyncSession, mobile: str, otp: str) -> bool:
+    clean_mobile = mobile.strip()
+    if not clean_mobile:
+        return False
+    result = await db.execute(
+        select(PhoneOTPRequest)
+        .where(PhoneOTPRequest.phone == clean_mobile)
+        .order_by(PhoneOTPRequest.created_at.desc())
+        .limit(1)
+    )
+    otp_req = result.scalars().first()
+    if not otp_req:
+        return False
+    if otp_req.verified:
+        return True
+    if hash_otp(otp) == otp_req.otp_hash:
+        otp_req.verified = True
+        await db.commit()
+        return True
+    return False
+
 
 
 def generate_family_code():
@@ -288,7 +374,7 @@ async def reject_membership(
 
 @router.get("/members")
 async def list_members(
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db_session)
 ):
     # Fetch all users who are members
@@ -299,36 +385,385 @@ async def list_members(
     )
     users = result.scalars().all()
     
-    is_admin = current_user.role == UserRole.ADMIN
+    is_admin = (current_user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN)) if current_user else False
     
     data = []
     for u in users:
-        family_name = None
-        family_code = None
-        if u.family_id:
-            fam_res = await db.execute(select(Family).where(Family.family_id == u.family_id))
-            fam = fam_res.scalars().first()
-            if fam:
-                family_name = fam.family_name
-                family_code = fam.family_code
+        # Email, address, mobile privacy handling
+        if is_admin:
+            email_val = u.email
+            mobile_val = u.mobile
+            address_val = u.address
+        else:
+            email_val = None if u.email_private else u.email
+            address_val = None if u.address_private else u.address
+            # Mask phone string: replace all digits except last 3 with X
+            mobile_val = None if u.mobile_private else mask_phone_number(u.mobile)
 
         data.append({
             "user_id": str(u.user_id),
             "samaj_id": u.samaj_id,
             "first_name": u.first_name,
             "surname": u.surname,
+            "father_name": u.father_name,
             "profession": u.profession,
             "profile_photo": u.profile_photo,
             "family_relation": u.family_relation,
-            "family_name": family_name,
-            "family_code": family_code,
-            "email": u.email if is_admin else None,
-            "mobile": u.mobile if is_admin else None,
-            "address": u.address if is_admin else None,
-            "role": u.role,
+            "email": email_val,
+            "mobile": mobile_val,
+            "mobile_masked": mask_phone_number(u.mobile),
+            "address": address_val,
+            "mobile_private": u.mobile_private,
+            "email_private": u.email_private,
+            "address_private": u.address_private,
+            "role": u.role.value if hasattr(u.role, "value") else str(u.role),
             "is_member": u.is_member
         })
     return data
+
+
+@router.post("/contact-member")
+async def contact_member(
+    payload: ContactMemberPayload,
+    db: AsyncSession = Depends(get_db_session)
+):
+    try:
+        u_uuid = uuid.UUID(payload.recipient_user_id)
+        res = await db.execute(select(User).where(User.user_id == u_uuid))
+        recipient = res.scalars().first()
+    except ValueError:
+        recipient = None
+
+    if not recipient:
+        raise HTTPException(status_code=404, detail="Recipient member not found.")
+
+    # Dispatch WhatsApp message to recipient's registered mobile number
+    if recipient.mobile:
+        from app.services.whatsapp_service import send_whatsapp_text
+        from app.services.sms_service import send_sms
+
+        formatted_msg = (
+            f"📩 *New Contact Request from Agrawal Samaj Portal*\n\n"
+            f"👤 *Sender Name:* {payload.sender_name}\n"
+            f"📞 *Sender Mobile:* {payload.sender_mobile}\n"
+            f"📧 *Sender Email:* {payload.sender_email or 'Not provided'}\n"
+            f"📋 *Reason:* {payload.reason}\n\n"
+            f"💬 *Message Details:*\n{payload.message}\n\n"
+            f"— Agrawal Samaj Community Portal"
+        )
+        res_sid = send_whatsapp_text(recipient.mobile, formatted_msg)
+        
+        # Fallback to SMS if WhatsApp sidecar is unlinked or failed
+        if res_sid in ("failed_sid", None):
+            await send_sms(recipient.mobile, f"Agrawal Samaj: New contact request from {payload.sender_name} ({payload.sender_mobile}): {payload.message}")
+
+    return {
+        "status": "success",
+        "message": f"Your message request has been sent to {recipient.first_name} {recipient.surname}. They will review your contact details and get back to you."
+    }
+
+
+@router.post("/apply-with-otp", status_code=status.HTTP_201_CREATED)
+async def apply_for_membership_with_otp(
+    payload: ApplyWithOtpRequest,
+    db: AsyncSession = Depends(get_db_session)
+):
+    # 1. Verify OTP
+    otp_valid = await verify_otp_internal(db, payload.mobile, payload.otp)
+    if not otp_valid:
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP code.")
+
+    # 2. Check if mobile already exists
+    user_res = await db.execute(select(User).where(User.mobile == payload.mobile.strip()))
+    user = user_res.scalars().first()
+    
+    if not user:
+        user = User(
+            first_name=payload.first_name.strip(),
+            surname=payload.surname.strip(),
+            mobile=payload.mobile.strip(),
+            email=payload.email.strip().lower() if payload.email else None,
+            profession=payload.profession.strip() if payload.profession else None,
+            address=payload.address.strip() if payload.address else None,
+            role=UserRole.GUEST,
+            is_active=True,
+            is_member=False
+        )
+        db.add(user)
+        await db.flush()
+
+    # 3. Create pending MembershipRequest
+    new_req = MembershipRequest(
+        user_id=user.user_id,
+        message=f"Registration application from public members directory. Profession: {payload.profession or 'N/A'}, Address: {payload.address or 'N/A'}"
+    )
+    db.add(new_req)
+    await db.commit()
+    return {"message": "Membership application submitted successfully. Pending admin approval."}
+
+
+@router.post("/send-member-edit-otp")
+async def send_member_edit_otp(
+    payload: SendMemberEditOtpPayload,
+    db: AsyncSession = Depends(get_db_session)
+):
+    user = None
+    if payload.user_id:
+        try:
+            u_uuid = uuid.UUID(payload.user_id)
+            res = await db.execute(select(User).where(User.user_id == u_uuid))
+            user = res.scalars().first()
+        except ValueError:
+            pass
+
+    if not user and payload.identifier:
+        ident = payload.identifier.strip()
+        res = await db.execute(
+            select(User).where(
+                (User.samaj_id == ident) | (User.mobile == ident)
+            )
+        )
+        user = res.scalars().first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="Member account not found in Samaj database.")
+
+    if not user.mobile:
+        raise HTTPException(status_code=400, detail="No registered mobile number on record for this member. Please contact Samaj Admin.")
+
+    target_mobile = user.mobile.strip()
+
+    # Generate 6-digit OTP code and send to registered mobile
+    otp_code = "".join(random.choices(string.digits, k=6))
+    otp_hash = hash_otp(otp_code)
+    expires_at = datetime.utcnow() + timedelta(minutes=5)
+
+    otp_req = PhoneOTPRequest(
+        phone=target_mobile,
+        otp_hash=otp_hash,
+        expires_at=expires_at,
+        attempts=0,
+        verified=False
+    )
+    db.add(otp_req)
+    await db.commit()
+
+    return {
+        "status": "success",
+        "user_id": str(user.user_id),
+        "samaj_id": user.samaj_id,
+        "member_name": f"{user.first_name} {user.surname}",
+        "masked_phone": mask_phone_number(target_mobile),
+        "message": f"Verification code sent to registered mobile number ending in ...{target_mobile[-3:]}"
+    }
+
+
+@router.post("/verify-member-edit-otp")
+async def verify_member_edit_otp(
+    payload: VerifyMemberEditOtpPayload,
+    db: AsyncSession = Depends(get_db_session)
+):
+    user = None
+    if payload.user_id:
+        try:
+            u_uuid = uuid.UUID(payload.user_id)
+            res = await db.execute(select(User).where(User.user_id == u_uuid))
+            user = res.scalars().first()
+        except ValueError:
+            pass
+
+    if not user and payload.identifier:
+        ident = payload.identifier.strip()
+        res = await db.execute(
+            select(User).where(
+                (User.samaj_id == ident) | (User.mobile == ident)
+            )
+        )
+        user = res.scalars().first()
+
+    if not user or not user.mobile:
+        raise HTTPException(status_code=404, detail="Member account not found.")
+
+    otp_valid = await verify_otp_internal(db, user.mobile, payload.otp)
+    if not otp_valid:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification code.")
+
+    return {
+        "status": "success",
+        "message": "OTP verified successfully.",
+        "user": {
+            "user_id": str(user.user_id),
+            "samaj_id": user.samaj_id,
+            "first_name": user.first_name,
+            "surname": user.surname,
+            "father_name": user.father_name,
+            "profession": user.profession,
+            "email": user.email,
+            "mobile": user.mobile,
+            "mobile_masked": mask_phone_number(user.mobile),
+            "address": user.address,
+            "profile_photo": user.profile_photo,
+            "mobile_private": user.mobile_private,
+            "email_private": user.email_private,
+            "address_private": user.address_private,
+        }
+    }
+
+
+@router.post("/update-profile/request", status_code=status.HTTP_201_CREATED)
+async def submit_profile_update_request(
+    payload: ProfileUpdateRequestPayload,
+    db: AsyncSession = Depends(get_db_session)
+):
+    # 1. Verify user exists
+    try:
+        user_uuid = uuid.UUID(payload.user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid user ID format.")
+
+    user_res = await db.execute(select(User).where(User.user_id == user_uuid))
+    user = user_res.scalars().first()
+    if not user or not user.mobile:
+        raise HTTPException(status_code=404, detail="Member account not found.")
+
+    # 2. Verify OTP against user.mobile (the registered mobile number stored in DB!)
+    otp_valid = await verify_otp_internal(db, user.mobile, payload.otp)
+    if not otp_valid:
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP code.")
+
+    # 3. Construct old and new details
+    old_details = {
+        "first_name": user.first_name,
+        "surname": user.surname,
+        "father_name": user.father_name,
+        "profession": user.profession,
+        "email": user.email,
+        "mobile": user.mobile,
+        "address": user.address,
+        "profile_photo": user.profile_photo,
+        "mobile_private": user.mobile_private,
+        "email_private": user.email_private,
+        "address_private": user.address_private,
+    }
+
+    new_details = {
+        "first_name": payload.first_name.strip(),
+        "surname": payload.surname.strip(),
+        "father_name": payload.father_name.strip() if payload.father_name else None,
+        "profession": payload.profession.strip() if payload.profession else None,
+        "email": payload.email.strip().lower() if payload.email else None,
+        "mobile": user.mobile,  # Registered mobile number remains fixed!
+        "address": payload.address.strip() if payload.address else None,
+        "profile_photo": payload.profile_photo.strip() if payload.profile_photo else None,
+        "mobile_private": payload.mobile_private,
+        "email_private": payload.email_private,
+        "address_private": payload.address_private,
+    }
+
+    req = ProfileUpdateRequest(
+        user_id=user.user_id,
+        old_details_json=json.dumps(old_details),
+        new_details_json=json.dumps(new_details),
+        status=RequestStatus.PENDING
+    )
+    db.add(req)
+    await db.commit()
+    return {"message": "Profile update request submitted successfully. Pending admin approval."}
+
+
+@router.get("/update-profile/requests")
+async def get_profile_update_requests(
+    current_admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db_session)
+):
+    result = await db.execute(
+        select(ProfileUpdateRequest, User)
+        .join(User, ProfileUpdateRequest.user_id == User.user_id)
+        .where(ProfileUpdateRequest.status == RequestStatus.PENDING)
+        .order_by(ProfileUpdateRequest.created_at.desc())
+    )
+    requests_data = []
+    for req, user in result.all():
+        old_details = json.loads(req.old_details_json) if req.old_details_json else {}
+        new_details = json.loads(req.new_details_json) if req.new_details_json else {}
+        requests_data.append({
+            "request_id": str(req.request_id),
+            "created_at": req.created_at,
+            "status": req.status,
+            "user": {
+                "id": str(user.user_id),
+                "samaj_id": user.samaj_id,
+                "name": f"{user.first_name} {user.surname}"
+            },
+            "old_details": old_details,
+            "new_details": new_details
+        })
+    return requests_data
+
+
+@router.post("/update-profile/requests/{request_id}/approve")
+async def approve_profile_update(
+    request_id: str,
+    current_admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db_session)
+):
+    try:
+        req_uuid = uuid.UUID(request_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid request ID format.")
+
+    result = await db.execute(select(ProfileUpdateRequest).where(ProfileUpdateRequest.request_id == req_uuid))
+    req = result.scalars().first()
+    if not req or req.status != RequestStatus.PENDING:
+        raise HTTPException(status_code=404, detail="Pending profile update request not found.")
+
+    user_res = await db.execute(select(User).where(User.user_id == req.user_id))
+    user = user_res.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User account not found.")
+
+    new_details = json.loads(req.new_details_json)
+    user.first_name = new_details.get("first_name", user.first_name)
+    user.surname = new_details.get("surname", user.surname)
+    user.father_name = new_details.get("father_name", user.father_name)
+    user.profession = new_details.get("profession", user.profession)
+    if "email" in new_details:
+        user.email = new_details["email"]
+    if "mobile" in new_details:
+        user.mobile = new_details["mobile"]
+    if "address" in new_details:
+        user.address = new_details["address"]
+    if "profile_photo" in new_details:
+        user.profile_photo = new_details["profile_photo"]
+    user.mobile_private = new_details.get("mobile_private", False)
+    user.email_private = new_details.get("email_private", False)
+    user.address_private = new_details.get("address_private", False)
+
+    req.status = RequestStatus.APPROVED
+    await db.commit()
+    return {"message": "Profile update approved and applied successfully."}
+
+
+@router.post("/update-profile/requests/{request_id}/reject")
+async def reject_profile_update(
+    request_id: str,
+    current_admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db_session)
+):
+    try:
+        req_uuid = uuid.UUID(request_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid request ID format.")
+
+    result = await db.execute(select(ProfileUpdateRequest).where(ProfileUpdateRequest.request_id == req_uuid))
+    req = result.scalars().first()
+    if not req or req.status != RequestStatus.PENDING:
+        raise HTTPException(status_code=404, detail="Pending profile update request not found.")
+
+    req.status = RequestStatus.REJECTED
+    await db.commit()
+    return {"message": "Profile update request rejected."}
+
 
 
 @router.patch("/users/{user_id}/role")

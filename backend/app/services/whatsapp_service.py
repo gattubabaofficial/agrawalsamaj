@@ -233,6 +233,59 @@ def send_whatsapp_document(
     )
 
 
+def send_whatsapp_text(to_number: str, message: str) -> str:
+    """Deliver a text message over WhatsApp using whatsapp-web.js sidecar or dummy mode."""
+    if not to_number:
+        logger.error("Recipient phone number is empty.")
+        return "failed_sid"
+
+    whatsapp_provider = getattr(settings, "WHATSAPP_PROVIDER", "whatsapp_web").lower()
+
+    if whatsapp_provider == "dummy":
+        logger.info(f"[WHATSAPP DUMMY] To: {to_number} | Message: {message}")
+        return "dummy_sid"
+
+    headers = {"Content-Type": "application/json"}
+    if settings.WHATSAPP_WEB_API_KEY:
+        headers["x-api-key"] = settings.WHATSAPP_WEB_API_KEY
+
+    payload = {
+        "phone": to_number,
+        "message": message,
+    }
+
+    url = f"{settings.WHATSAPP_WEB_URL.rstrip('/')}/send-text"
+    try:
+        with httpx.Client(timeout=settings.WHATSAPP_WEB_TIMEOUT) as client:
+            response = client.post(url, json=payload, headers=headers)
+
+        if response.status_code == 200:
+            data = response.json()
+            message_id = data.get("message_id", "sent")
+            logger.info("Sent WhatsApp text to %s via whatsapp-web.js (%s)", to_number, message_id)
+            return message_id
+
+        try:
+            detail = response.json().get("error", response.text)
+        except Exception:
+            detail = response.text
+        logger.warning(
+            "whatsapp-web.js rejected text send to %s (HTTP %s): %s",
+            to_number, response.status_code, detail,
+        )
+        return "failed_sid"
+
+    except httpx.ConnectError:
+        logger.warning(
+            "Could not reach whatsapp-web.js sidecar at %s.",
+            settings.WHATSAPP_WEB_URL,
+        )
+        return "failed_sid"
+    except Exception as e:
+        logger.warning("WhatsApp sidecar dispatch error: %s", e)
+        return "failed_sid"
+
+
 def send_whatsapp_qr(
     to_number: str,
     qr_image_url: str,

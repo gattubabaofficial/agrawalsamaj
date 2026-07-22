@@ -58,6 +58,7 @@ class User(Base, TimestampMixin):
     family_relation: Mapped[Optional[str]] = mapped_column(String(50), nullable=True) # Relation to head
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     surname: Mapped[str] = mapped_column(String(100), nullable=False)
+    father_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True) # Father's / Husband's name
     mobile: Mapped[Optional[str]] = mapped_column(String(15), unique=True, index=True, nullable=True)
     email: Mapped[Optional[str]] = mapped_column(String(255), unique=True, index=True, nullable=True)
     password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)

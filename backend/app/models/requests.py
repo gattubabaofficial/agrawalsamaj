@@ -137,3 +137,39 @@ class FamilyCreationRequest(Base):
     )
 
     user: Mapped["User"] = relationship("User")
+
+
+class ProfileUpdateRequest(Base):
+    """Stores a pending member profile update submission awaiting admin approval."""
+    __tablename__ = "profile_update_requests"
+
+    request_id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=False
+    )
+    old_details_json: Mapped[str] = mapped_column(Text, nullable=False)
+    new_details_json: Mapped[str] = mapped_column(Text, nullable=False)
+
+    status: Mapped[RequestStatus] = mapped_column(
+        Enum(RequestStatus, name="profile_update_request_status"),
+        default=RequestStatus.PENDING,
+        nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )
+
+    user: Mapped["User"] = relationship("User")
+

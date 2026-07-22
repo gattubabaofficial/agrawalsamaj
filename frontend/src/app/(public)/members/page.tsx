@@ -1,0 +1,1292 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { 
+  Search, Mail, Phone, MapPin, Lock, Award, FileUser, Edit3, UserPlus, 
+  CheckCircle2, AlertCircle, ShieldCheck, X, Send, KeyRound, UserCheck, RefreshCw, Eye, MessageSquare, User
+} from "lucide-react";
+import axios from "axios";
+import { getApiBaseUrl } from "@/utils/api";
+import { motion, AnimatePresence } from "framer-motion";
+
+interface Member {
+  user_id: string;
+  samaj_id: string | null;
+  first_name: string;
+  surname: string;
+  father_name: string | null;
+  profession: string | null;
+  profile_photo: string | null;
+  family_relation: string | null;
+  email: string | null;
+  mobile: string | null;
+  mobile_masked: string | null;
+  address: string | null;
+  mobile_private: boolean;
+  email_private: boolean;
+  address_private: boolean;
+  role: string;
+  is_member: boolean;
+}
+
+export default function PublicMembersPage() {
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Modals state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [viewMemberModal, setViewMemberModal] = useState<Member | null>(null);
+  const [messageMemberModal, setMessageMemberModal] = useState<Member | null>(null);
+
+  // Contact Message Form State
+  const [senderName, setSenderName] = useState("");
+  const [senderMobile, setSenderMobile] = useState("");
+  const [senderEmail, setSenderEmail] = useState("");
+  const [messageReason, setMessageReason] = useState("General Inquiry");
+  const [messageText, setMessageText] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [messageSuccessMsg, setMessageSuccessMsg] = useState("");
+  const [messageError, setMessageError] = useState("");
+
+  // OTP Edit Flow State
+  const [editStep, setEditStep] = useState<"phone" | "otp" | "form">("phone");
+  const [editPhone, setEditPhone] = useState("");
+  const [editOtp, setEditOtp] = useState("");
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [otpSentMessage, setOtpSentMessage] = useState("");
+  const [otpError, setOtpError] = useState("");
+  
+  // Selected Member for Edit & Identifier Input
+  const [targetMember, setTargetMember] = useState<Member | null>(null);
+  const [identifierInput, setIdentifierInput] = useState("");
+  
+  // Form fields for Profile Edit
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editSurname, setEditSurname] = useState("");
+  const [editFatherName, setEditFatherName] = useState("");
+  const [editProfession, setEditProfession] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+  const [editPhotoUrl, setEditPhotoUrl] = useState("");
+  const [editMobilePrivate, setEditMobilePrivate] = useState(false);
+  const [editEmailPrivate, setEditEmailPrivate] = useState(false);
+  const [editAddressPrivate, setEditAddressPrivate] = useState(false);
+  const [submittingEdit, setSubmittingEdit] = useState(false);
+  const [editSuccessMsg, setEditSuccessMsg] = useState("");
+
+  // Registration Modal State (Apply for unlisted member)
+  const [regStep, setRegStep] = useState<"details" | "otp">("details");
+  const [regFirstName, setRegFirstName] = useState("");
+  const [regSurname, setRegSurname] = useState("");
+  const [regFatherName, setRegFatherName] = useState("");
+  const [regMobile, setRegMobile] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regProfession, setRegProfession] = useState("");
+  const [regAddress, setRegAddress] = useState("");
+  const [regOtp, setRegOtp] = useState("");
+  const [regSendingOtp, setRegSendingOtp] = useState(false);
+  const [regSubmitting, setRegSubmitting] = useState(false);
+  const [regError, setRegError] = useState("");
+  const [regSuccessMsg, setRegSuccessMsg] = useState("");
+
+  useEffect(() => {
+    fetchMembers();
+  }, []);
+
+  const fetchMembers = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${getApiBaseUrl()}/membership/members`);
+      setMembers(res.data);
+    } catch (error) {
+      console.error("Failed to fetch members directory", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Multi-keyword / multi-field search logic
+  const filteredMembers = members.filter((m) => {
+    if (!searchQuery.trim()) return true;
+    const terms = searchQuery.toLowerCase().trim().split(/\s+/);
+    
+    const searchableText = [
+      m.first_name,
+      m.surname,
+      `${m.first_name} ${m.surname}`,
+      m.father_name || "",
+      m.samaj_id || "",
+      m.profession || "",
+      m.address || "",
+      m.mobile || "",
+      m.mobile_masked || "",
+      m.email || "",
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return terms.every((term) => searchableText.includes(term));
+  });
+
+  // Handle Edit Profile button click on card
+  const handleOpenEdit = (member?: Member) => {
+    setShowEditModal(true);
+    setEditStep("phone");
+    setOtpError("");
+    setOtpSentMessage("");
+    setEditSuccessMsg("");
+    setEditPhone("");
+    setEditOtp("");
+    setIdentifierInput("");
+    if (member) {
+      setTargetMember(member);
+    } else {
+      setTargetMember(null);
+    }
+  };
+
+  // Step 1: Send OTP to target member's registered mobile number in DB
+  const handleSendEditOtp = async () => {
+    setSendingOtp(true);
+    setOtpError("");
+    try {
+      const payload = targetMember
+        ? { user_id: targetMember.user_id }
+        : { identifier: identifierInput.trim() };
+
+      if (!targetMember && !identifierInput.trim()) {
+        setOtpError("Please enter your Member ID or registered phone number.");
+        setSendingOtp(false);
+        return;
+      }
+
+      const res = await axios.post(`${getApiBaseUrl()}/membership/send-member-edit-otp`, payload);
+      setOtpSentMessage(res.data.message || `Verification code sent to registered mobile number.`);
+      
+      if (res.data.user_id) {
+        const found = members.find(m => m.user_id === res.data.user_id);
+        if (found) setTargetMember(found);
+      }
+
+      setEditStep("otp");
+    } catch (err: any) {
+      setOtpError(err.response?.data?.detail || "Failed to send OTP. Please verify member details.");
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  // Step 2: Verify OTP for Edit
+  const handleVerifyEditOtp = async () => {
+    if (!editOtp.trim() || editOtp.trim().length !== 6) {
+      setOtpError("Please enter the 6-digit OTP code.");
+      return;
+    }
+    setVerifyingOtp(true);
+    setOtpError("");
+    try {
+      const payload = targetMember
+        ? { user_id: targetMember.user_id, otp: editOtp.trim() }
+        : { identifier: identifierInput.trim(), otp: editOtp.trim() };
+
+      const res = await axios.post(`${getApiBaseUrl()}/membership/verify-member-edit-otp`, payload);
+      const user = res.data.user;
+
+      if (user) {
+        const found = members.find(m => m.user_id === user.user_id) || targetMember;
+        if (found) setTargetMember(found);
+
+        setEditFirstName(user.first_name || "");
+        setEditSurname(user.surname || "");
+        setEditFatherName(user.father_name || "");
+        setEditProfession(user.profession || "");
+        setEditEmail(user.email || "");
+        setEditAddress(user.address || "");
+        setEditPhotoUrl(user.profile_photo || "");
+        setEditMobilePrivate(user.mobile_private || false);
+        setEditEmailPrivate(user.email_private || false);
+        setEditAddressPrivate(user.address_private || false);
+      }
+
+      setEditStep("form");
+    } catch (err: any) {
+      setOtpError(err.response?.data?.detail || "Invalid or expired OTP code.");
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
+  // Step 3: Submit Profile Update Request
+  const handleSubmitProfileEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!targetMember) {
+      setOtpError("Target member session invalid. Please start again.");
+      return;
+    }
+    if (!editFirstName.trim() || !editSurname.trim()) {
+      setOtpError("First name and Surname are compulsory.");
+      return;
+    }
+    setSubmittingEdit(true);
+    setOtpError("");
+    try {
+      await axios.post(`${getApiBaseUrl()}/membership/update-profile/request`, {
+        user_id: targetMember.user_id,
+        otp: editOtp.trim(),
+        first_name: editFirstName.trim(),
+        surname: editSurname.trim(),
+        father_name: editFatherName.trim() || null,
+        profession: editProfession.trim() || null,
+        email: editEmail.trim() || null,
+        address: editAddress.trim() || null,
+        profile_photo: editPhotoUrl.trim() || null,
+        mobile_private: editMobilePrivate,
+        email_private: editEmailPrivate,
+        address_private: editAddressPrivate,
+      });
+
+      setEditSuccessMsg("Your profile updates have been submitted to Agrawal Samaj Admin for verification! Once approved by Admin, your updated details will appear on the live website.");
+    } catch (err: any) {
+      setOtpError(err.response?.data?.detail || "Failed to submit profile update request.");
+    } finally {
+      setSubmittingEdit(false);
+    }
+  };
+
+  // Submit Contact Message Form
+  const handleSubmitMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!messageMemberModal) return;
+    if (!senderName.trim() || !senderMobile.trim() || !messageText.trim()) {
+      setMessageError("Your Name, Contact Mobile, and Message are required.");
+      return;
+    }
+    setSendingMessage(true);
+    setMessageError("");
+    try {
+      const res = await axios.post(`${getApiBaseUrl()}/membership/contact-member`, {
+        recipient_user_id: messageMemberModal.user_id,
+        sender_name: senderName.trim(),
+        sender_mobile: senderMobile.trim(),
+        sender_email: senderEmail.trim() || null,
+        reason: messageReason,
+        message: messageText.trim(),
+      });
+      setMessageSuccessMsg(res.data.message || `Your message request has been sent to ${messageMemberModal.first_name} ${messageMemberModal.surname}.`);
+    } catch (err: any) {
+      setMessageError(err.response?.data?.detail || "Failed to send message request.");
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
+  // Registration Modal - Send OTP
+  const handleRegSendOtp = async () => {
+    if (!regFirstName.trim() || !regSurname.trim() || !regMobile.trim()) {
+      setRegError("First name, Surname, and Mobile number are required.");
+      return;
+    }
+    setRegSendingOtp(true);
+    setRegError("");
+    try {
+      await axios.post(`${getApiBaseUrl()}/auth/phone/send-otp`, { phone: regMobile.trim() });
+      setRegStep("otp");
+    } catch (err: any) {
+      setRegError(err.response?.data?.detail || "Failed to send OTP.");
+    } finally {
+      setRegSendingOtp(false);
+    }
+  };
+
+  // Registration Modal - Submit Application with OTP
+  const handleRegSubmit = async () => {
+    if (!regOtp.trim() || regOtp.trim().length !== 6) {
+      setRegError("Please enter the 6-digit OTP code.");
+      return;
+    }
+    setRegSubmitting(true);
+    setRegError("");
+    try {
+      await axios.post(`${getApiBaseUrl()}/membership/apply-with-otp`, {
+        first_name: regFirstName.trim(),
+        surname: regSurname.trim(),
+        father_name: regFatherName.trim() || null,
+        mobile: regMobile.trim(),
+        email: regEmail.trim() || null,
+        profession: regProfession.trim() || null,
+        address: regAddress.trim() || null,
+        otp: regOtp.trim(),
+      });
+      setRegSuccessMsg("Registration application submitted successfully! Our executive committee will verify your details and approve your membership.");
+    } catch (err: any) {
+      setRegError(err.response?.data?.detail || "Failed to submit registration application.");
+    } finally {
+      setRegSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-zinc-50/50 pb-20">
+      {/* Hero Banner Header */}
+      <div className="relative bg-gradient-to-br from-amber-600 via-orange-600 to-rose-700 text-white overflow-hidden py-16 px-4 sm:px-6 lg:px-8">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-400/20 via-transparent to-black/30 pointer-events-none" />
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-3 max-w-2xl">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-amber-200 text-xs font-semibold backdrop-blur-md border border-white/10">
+                <ShieldCheck className="w-4 h-4" /> Verified Samaj Directory
+              </span>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight">
+                Agrawal Samaj Members Directory
+              </h1>
+              <p className="text-amber-100 text-sm sm:text-base leading-relaxed">
+                Explore, search, and connect with registered members of Agrawal Samaj. Search by name, phone number, member ID, address, or profession.
+              </p>
+            </div>
+
+            {/* Quick Actions Header Button */}
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => {
+                  setShowRegisterModal(true);
+                  setRegStep("details");
+                  setRegError("");
+                  setRegSuccessMsg("");
+                }}
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-white text-orange-600 font-bold text-sm shadow-lg hover:bg-amber-50 hover:scale-105 active:scale-95 transition-all"
+              >
+                <UserPlus className="w-4 h-4" /> Apply for Membership
+              </button>
+            </div>
+          </div>
+
+          {/* Search Bar Input */}
+          <div className="mt-8 max-w-3xl bg-white/95 backdrop-blur-md p-2 rounded-2xl shadow-xl border border-white/30 flex flex-col sm:flex-row items-center gap-2">
+            <div className="relative flex-1 w-full">
+              <Search className="w-5 h-5 text-zinc-400 absolute left-4 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search by name, phone number, Samaj ID, address... (e.g. '901' or 'Rajeshji Shipra Path')"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 text-zinc-800 placeholder-zinc-400 bg-transparent text-sm sm:text-base focus:outline-none"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <div className="px-4 py-2 bg-amber-50 rounded-xl text-xs font-bold text-amber-700 whitespace-nowrap border border-amber-200/50">
+              Total Members: {filteredMembers.length}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Directory Body */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
+        {loading ? (
+          <div className="p-16 text-center text-zinc-500 flex flex-col items-center justify-center gap-3">
+            <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-medium">Loading verified member directory...</p>
+          </div>
+        ) : filteredMembers.length === 0 ? (
+          /* Empty State */
+          <div className="bg-white rounded-3xl border border-zinc-200 p-12 text-center shadow-sm space-y-5 max-w-2xl mx-auto">
+            <div className="w-16 h-16 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto border border-amber-200">
+              <Search className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-zinc-900">No Members Found</h3>
+              <p className="text-sm text-zinc-500 leading-relaxed">
+                We couldn't find any member matching "{searchQuery}". Try searching with a different name, address keyword, or Samaj ID.
+              </p>
+            </div>
+            <div className="pt-2">
+              <p className="text-xs text-zinc-400 mb-3 font-semibold uppercase tracking-wider">Are you a member of Agrawal Samaj?</p>
+              <button
+                onClick={() => {
+                  setShowRegisterModal(true);
+                  setRegStep("details");
+                  setRegError("");
+                  setRegSuccessMsg("");
+                }}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold text-sm shadow-md transition-all"
+              >
+                <UserPlus className="w-4 h-4" /> Member Not Listed? Apply for Membership
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Members Grid */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredMembers.map((m) => {
+              const initials = `${m.first_name.charAt(0)}${m.surname.charAt(0)}`.toUpperCase();
+              return (
+                <div
+                  key={m.user_id}
+                  className="bg-white border border-zinc-200/80 rounded-3xl p-6 hover:shadow-lg transition-all duration-300 relative flex flex-col justify-between group overflow-hidden"
+                >
+                  <div className="space-y-4">
+                    {/* Top Avatar & Samaj ID Header */}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-3.5">
+                        {m.profile_photo ? (
+                          <img
+                            src={m.profile_photo}
+                            alt={`${m.first_name} ${m.surname}`}
+                            className="w-14 h-14 rounded-2xl object-cover border-2 border-amber-500/20 shadow-sm"
+                          />
+                        ) : (
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                            {initials}
+                          </div>
+                        )}
+                        <div>
+                          <h3 className="font-bold text-zinc-900 text-lg group-hover:text-amber-600 transition-colors">
+                            {m.first_name} {m.surname}
+                          </h3>
+                          {m.father_name && (
+                            <p className="text-xs text-zinc-500 font-medium">S/o, W/o: {m.father_name}</p>
+                          )}
+                          {m.samaj_id ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200/50 mt-1">
+                              <Award className="w-3.5 h-3.5 text-amber-600" /> {m.samaj_id}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-zinc-400 italic">Member ID Pending</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => handleOpenEdit(m)}
+                        title="Edit profile via OTP"
+                        className="p-2 text-zinc-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Profession */}
+                    {m.profession && (
+                      <div className="inline-block px-3 py-1 bg-zinc-100 text-zinc-700 rounded-xl text-xs font-medium">
+                        💼 {m.profession}
+                      </div>
+                    )}
+
+                    {/* Details Info List */}
+                    <div className="border-t border-zinc-100 pt-3 space-y-2.5 text-sm">
+                      {/* Mobile */}
+                      <div className="flex items-center justify-between text-zinc-600 bg-zinc-50/70 px-3 py-2 rounded-xl border border-zinc-200/50">
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-4 h-4 text-amber-500" />
+                          <span className="font-medium text-xs">Phone</span>
+                        </div>
+                        {m.mobile_private ? (
+                          <span className="text-xs font-bold text-zinc-400 flex items-center gap-1">
+                            <Lock className="w-3 h-3 text-amber-600" /> Private
+                          </span>
+                        ) : (
+                          <span className="text-xs font-mono font-bold text-zinc-800">
+                            {m.mobile_masked || (m.mobile ? `XXXXXXX${m.mobile.slice(-3)}` : "N/A")}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Email */}
+                      <div className="flex items-center justify-between text-zinc-600 bg-zinc-50/70 px-3 py-2 rounded-xl border border-zinc-200/50">
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-amber-500" />
+                          <span className="font-medium text-xs">Email</span>
+                        </div>
+                        {m.email_private || !m.email ? (
+                          <span className="text-xs font-bold text-zinc-400 flex items-center gap-1">
+                            <Lock className="w-3 h-3 text-amber-600" /> Private
+                          </span>
+                        ) : (
+                          <span className="text-xs font-semibold text-zinc-800 truncate max-w-[150px]">
+                            {m.email}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Address */}
+                      {m.address && !m.address_private && (
+                        <div className="flex items-start gap-2 text-zinc-600 bg-zinc-50/70 px-3 py-2 rounded-xl border border-zinc-200/50 text-xs">
+                          <MapPin className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                          <span className="leading-snug text-zinc-700 font-medium">{m.address}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* TWO ACTION BUTTONS AT BOTTOM: View Details & Message */}
+                  <div className="border-t border-zinc-100 pt-4 mt-4 grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setViewMemberModal(m)}
+                      className="py-2.5 px-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <Eye className="w-4 h-4 text-zinc-500" /> View Details
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMessageMemberModal(m);
+                        setSenderName("");
+                        setSenderMobile("");
+                        setSenderEmail("");
+                        setMessageReason("General Inquiry");
+                        setMessageText("");
+                        setMessageError("");
+                        setMessageSuccessMsg("");
+                      }}
+                      className="py-2.5 px-3 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <MessageSquare className="w-4 h-4 text-amber-600" /> Message
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* MODAL 1: OTP Profile Edit Modal */}
+      <AnimatePresence>
+        {showEditModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl max-w-lg w-full border border-zinc-200 shadow-2xl overflow-hidden my-8"
+            >
+              <div className="px-6 py-5 bg-gradient-to-r from-amber-500 to-orange-600 text-white flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Edit3 className="w-5 h-5" />
+                  <h3 className="font-bold text-lg">Edit Profile Details</h3>
+                </div>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="p-1 rounded-full hover:bg-white/20 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {editSuccessMsg ? (
+                  <div className="text-center py-6 space-y-4">
+                    <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto border border-emerald-200">
+                      <CheckCircle2 className="w-8 h-8" />
+                    </div>
+                    <h4 className="text-xl font-bold text-zinc-900">Request Submitted!</h4>
+                    <p className="text-sm text-zinc-600 leading-relaxed px-4">{editSuccessMsg}</p>
+                    <button
+                      onClick={() => setShowEditModal(false)}
+                      className="px-6 py-2.5 bg-zinc-900 text-white text-sm font-bold rounded-xl hover:bg-zinc-800 transition-colors"
+                    >
+                      Close Window
+                    </button>
+                  </div>
+                ) : editStep === "phone" ? (
+                  <div className="space-y-4">
+                    {targetMember ? (
+                      <div className="p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl text-sm space-y-1">
+                        <p className="font-bold text-zinc-900">{targetMember.first_name} {targetMember.surname} ({targetMember.samaj_id || "Member"})</p>
+                        <p className="text-amber-800 font-medium">
+                          OTP will be sent to registered number: <span className="font-mono font-bold">{targetMember.mobile_masked || "XXXXXXX..."}</span>
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider">Member ID or Registered Phone</label>
+                        <input
+                          type="text"
+                          placeholder="Enter Member ID or registered phone number"
+                          value={identifierInput}
+                          onChange={(e) => setIdentifierInput(e.target.value)}
+                          className="w-full px-4 py-3 border border-zinc-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white font-mono"
+                        />
+                      </div>
+                    )}
+
+                    {otpError && (
+                      <p className="text-xs text-rose-600 font-medium flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" /> {otpError}
+                      </p>
+                    )}
+
+                    <button
+                      onClick={handleSendEditOtp}
+                      disabled={sendingOtp}
+                      className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm transition-all shadow-md flex items-center justify-center gap-2"
+                    >
+                      {sendingOtp ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      Send Verification OTP
+                    </button>
+                  </div>
+                ) : editStep === "otp" ? (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-emerald-50 text-emerald-800 rounded-2xl text-xs border border-emerald-200 flex items-center justify-between">
+                      <span>{otpSentMessage || `OTP sent to registered phone`}</span>
+                      <button
+                        onClick={() => setEditStep("phone")}
+                        className="text-emerald-700 underline font-bold hover:text-emerald-900 ml-2"
+                      >
+                        Change
+                      </button>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider">Enter 6-Digit OTP Code</label>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        placeholder="123456"
+                        value={editOtp}
+                        onChange={(e) => setEditOtp(e.target.value)}
+                        className="w-full px-4 py-3 border border-zinc-300 rounded-xl text-center text-xl font-mono tracking-widest focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      />
+                    </div>
+
+                    {otpError && (
+                      <p className="text-xs text-rose-600 font-medium flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" /> {otpError}
+                      </p>
+                    )}
+
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={() => setEditStep("phone")}
+                        className="w-1/3 py-3 border border-zinc-200 text-zinc-600 text-xs font-bold rounded-xl hover:bg-zinc-50"
+                      >
+                        Back
+                      </button>
+                      <button
+                        onClick={handleVerifyEditOtp}
+                        disabled={verifyingOtp}
+                        className="w-2/3 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+                      >
+                        {verifyingOtp ? <RefreshCw className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+                        Verify & Open Edit Panel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubmitProfileEdit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+                    <div className="p-3 bg-blue-50 text-blue-800 rounded-xl text-xs font-medium border border-blue-200">
+                      ℹ️ Edit your profile details below and toggle field visibility. Your changes will be submitted for Admin approval.
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-zinc-700">First Name *</label>
+                        <input
+                          type="text"
+                          required
+                          value={editFirstName}
+                          onChange={(e) => setEditFirstName(e.target.value)}
+                          className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-zinc-700">Surname *</label>
+                        <input
+                          type="text"
+                          required
+                          value={editSurname}
+                          onChange={(e) => setEditSurname(e.target.value)}
+                          className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-zinc-700">Father's / Husband's Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Late Shri Ramesh Agrawal"
+                        value={editFatherName}
+                        onChange={(e) => setEditFatherName(e.target.value)}
+                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-zinc-700">Profession / Business</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Doctor, Businessman, Architect"
+                        value={editProfession}
+                        onChange={(e) => setEditProfession(e.target.value)}
+                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Email Field + Privacy Toggle */}
+                    <div className="space-y-1.5 p-3 bg-zinc-50 rounded-2xl border border-zinc-200">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-zinc-700">Email Address</label>
+                        <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-zinc-600">
+                          <input
+                            type="checkbox"
+                            checked={editEmailPrivate}
+                            onChange={(e) => setEditEmailPrivate(e.target.checked)}
+                            className="rounded text-amber-500 focus:ring-amber-500"
+                          />
+                          <span>🔒 Hide on public directory</span>
+                        </label>
+                      </div>
+                      <input
+                        type="email"
+                        placeholder="name@example.com"
+                        value={editEmail}
+                        onChange={(e) => setEditEmail(e.target.value)}
+                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none bg-white"
+                      />
+                    </div>
+
+                    {/* Mobile Field (Fixed) + Privacy Toggle */}
+                    <div className="space-y-1.5 p-3 bg-zinc-50 rounded-2xl border border-zinc-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <label className="text-xs font-bold text-zinc-700">Mobile Number</label>
+                          <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">Verified & Fixed</span>
+                        </div>
+                        <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-zinc-600">
+                          <input
+                            type="checkbox"
+                            checked={editMobilePrivate}
+                            onChange={(e) => setEditMobilePrivate(e.target.checked)}
+                            className="rounded text-amber-500 focus:ring-amber-500"
+                          />
+                          <span>🔒 Hide on public directory</span>
+                        </label>
+                      </div>
+                      <input
+                        type="tel"
+                        value={targetMember?.mobile_masked || "Registered Phone Number"}
+                        readOnly
+                        disabled
+                        className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-sm bg-zinc-100/80 text-zinc-600 font-mono cursor-not-allowed select-none"
+                      />
+                    </div>
+
+                    {/* Address Field + Privacy Toggle */}
+                    <div className="space-y-1.5 p-3 bg-zinc-50 rounded-2xl border border-zinc-200">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-zinc-700">Address / Location</label>
+                        <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-zinc-600">
+                          <input
+                            type="checkbox"
+                            checked={editAddressPrivate}
+                            onChange={(e) => setEditAddressPrivate(e.target.checked)}
+                            className="rounded text-amber-500 focus:ring-amber-500"
+                          />
+                          <span>🔒 Hide on public directory</span>
+                        </label>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="House no, Street, Sector, City"
+                        value={editAddress}
+                        onChange={(e) => setEditAddress(e.target.value)}
+                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none bg-white"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-zinc-700">Profile Photo Image URL (Optional)</label>
+                      <input
+                        type="url"
+                        placeholder="https://..."
+                        value={editPhotoUrl}
+                        onChange={(e) => setEditPhotoUrl(e.target.value)}
+                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      />
+                    </div>
+
+                    {otpError && (
+                      <p className="text-xs text-rose-600 font-medium flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" /> {otpError}
+                      </p>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={submittingEdit}
+                      className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold rounded-xl text-sm transition-all shadow-md flex items-center justify-center gap-2"
+                    >
+                      {submittingEdit ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      Submit Details for Admin Approval
+                    </button>
+                  </form>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 2: View Full Details Modal */}
+      <AnimatePresence>
+        {viewMemberModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl max-w-lg w-full border border-zinc-200 shadow-2xl overflow-hidden my-8"
+            >
+              {/* Header Banner */}
+              <div className="px-6 py-6 bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 text-white relative">
+                <button
+                  onClick={() => setViewMemberModal(null)}
+                  className="absolute right-4 top-4 p-1 rounded-full hover:bg-white/20 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                <div className="flex items-center gap-4">
+                  {viewMemberModal.profile_photo ? (
+                    <img
+                      src={viewMemberModal.profile_photo}
+                      alt={`${viewMemberModal.first_name} ${viewMemberModal.surname}`}
+                      className="w-16 h-16 rounded-2xl object-cover border-2 border-white/40 shadow-md"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-2xl bg-white/20 text-white flex items-center justify-center font-bold text-xl border border-white/30 backdrop-blur-md shadow-md">
+                      {`${viewMemberModal.first_name.charAt(0)}${viewMemberModal.surname.charAt(0)}`.toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="text-xl font-bold">{viewMemberModal.first_name} {viewMemberModal.surname}</h3>
+                    {viewMemberModal.samaj_id && (
+                      <span className="inline-flex items-center gap-1 text-xs font-mono font-bold bg-white/20 text-white px-2.5 py-0.5 rounded-lg border border-white/30 mt-1">
+                        <Award className="w-3.5 h-3.5" /> {viewMemberModal.samaj_id}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Body Details */}
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-1 gap-3 text-sm">
+                  {/* Father / Husband Name */}
+                  <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-200/60 flex items-center justify-between">
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Father's / Husband's Name</span>
+                    <span className="font-semibold text-zinc-900">{viewMemberModal.father_name || "Not specified"}</span>
+                  </div>
+
+                  {/* Profession */}
+                  <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-200/60 flex items-center justify-between">
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Profession</span>
+                    <span className="font-semibold text-zinc-900">{viewMemberModal.profession || "Not specified"}</span>
+                  </div>
+
+                  {/* Phone */}
+                  <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-200/60 flex items-center justify-between">
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Contact Phone</span>
+                    {viewMemberModal.mobile_private ? (
+                      <span className="text-xs font-bold text-zinc-400 flex items-center gap-1">
+                        <Lock className="w-3.5 h-3.5 text-amber-600" /> Hidden (Private)
+                      </span>
+                    ) : (
+                      <span className="font-mono font-bold text-zinc-900">
+                        {viewMemberModal.mobile_masked || (viewMemberModal.mobile ? `XXXXXXX${viewMemberModal.mobile.slice(-3)}` : "N/A")}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Email */}
+                  <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-200/60 flex items-center justify-between">
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Email Address</span>
+                    {viewMemberModal.email_private || !viewMemberModal.email ? (
+                      <span className="text-xs font-bold text-zinc-400 flex items-center gap-1">
+                        <Lock className="w-3.5 h-3.5 text-amber-600" /> Hidden (Private)
+                      </span>
+                    ) : (
+                      <span className="font-semibold text-zinc-900">{viewMemberModal.email}</span>
+                    )}
+                  </div>
+
+                  {/* Address */}
+                  <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-200/60 flex items-start justify-between gap-3">
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex-shrink-0">Address</span>
+                    {viewMemberModal.address_private || !viewMemberModal.address ? (
+                      <span className="text-xs font-bold text-zinc-400 flex items-center gap-1">
+                        <Lock className="w-3.5 h-3.5 text-amber-600" /> Hidden (Private)
+                      </span>
+                    ) : (
+                      <span className="font-semibold text-zinc-900 text-right">{viewMemberModal.address}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button
+                    onClick={() => {
+                      const m = viewMemberModal;
+                      setViewMemberModal(null);
+                      setMessageMemberModal(m);
+                      setSenderName("");
+                      setSenderMobile("");
+                      setSenderEmail("");
+                      setMessageReason("General Inquiry");
+                      setMessageText("");
+                      setMessageError("");
+                      setMessageSuccessMsg("");
+                    }}
+                    className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-2xl text-sm hover:from-amber-600 hover:to-orange-700 transition-all shadow-md flex items-center justify-center gap-2"
+                  >
+                    <MessageSquare className="w-4 h-4" /> Send Message Request
+                  </button>
+                  <button
+                    onClick={() => setViewMemberModal(null)}
+                    className="px-5 py-3 border border-zinc-200 text-zinc-600 font-bold rounded-2xl text-sm hover:bg-zinc-50 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 3: Send Message / Contact Request Form Modal */}
+      <AnimatePresence>
+        {messageMemberModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl max-w-lg w-full border border-zinc-200 shadow-2xl overflow-hidden my-8"
+            >
+              {/* Modal Header */}
+              <div className="px-6 py-5 bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 text-white flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <MessageSquare className="w-5 h-5" />
+                  <h3 className="font-bold text-lg">Send Message to {messageMemberModal.first_name}</h3>
+                </div>
+                <button
+                  onClick={() => setMessageMemberModal(null)}
+                  className="p-1 rounded-full hover:bg-white/20 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {messageSuccessMsg ? (
+                  <div className="text-center py-6 space-y-4">
+                    <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto border border-emerald-200">
+                      <CheckCircle2 className="w-8 h-8" />
+                    </div>
+                    <h4 className="text-xl font-bold text-zinc-900">Message Sent!</h4>
+                    <p className="text-sm text-zinc-600 leading-relaxed px-4">{messageSuccessMsg}</p>
+                    <button
+                      onClick={() => setMessageMemberModal(null)}
+                      className="px-6 py-2.5 bg-zinc-900 text-white text-sm font-bold rounded-xl hover:bg-zinc-800 transition-colors"
+                    >
+                      Close Window
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubmitMessage} className="space-y-4">
+                    <div className="p-3 bg-amber-50 text-amber-900 rounded-2xl text-xs font-medium border border-amber-200/70">
+                      📩 Enter your contact details below. Your message request will be delivered to <strong>{messageMemberModal.first_name} {messageMemberModal.surname}</strong> ({messageMemberModal.samaj_id || "Member"}).
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-zinc-700">Your Full Name *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Ramesh Gupta"
+                        value={senderName}
+                        onChange={(e) => setSenderName(e.target.value)}
+                        className="w-full px-3.5 py-2.5 border border-zinc-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-zinc-700">Your Phone Number *</label>
+                        <input
+                          type="tel"
+                          required
+                          placeholder="10-digit mobile"
+                          value={senderMobile}
+                          onChange={(e) => setSenderMobile(e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-zinc-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-zinc-700">Your Email (Optional)</label>
+                        <input
+                          type="email"
+                          placeholder="name@example.com"
+                          value={senderEmail}
+                          onChange={(e) => setSenderEmail(e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-zinc-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-zinc-700">Reason for Contacting</label>
+                      <select
+                        value={messageReason}
+                        onChange={(e) => setMessageReason(e.target.value)}
+                        className="w-full px-3.5 py-2.5 border border-zinc-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white font-medium text-zinc-800"
+                      >
+                        <option value="General Inquiry">General Inquiry</option>
+                        <option value="Community Networking">Community Networking</option>
+                        <option value="Matrimonial Request">Matrimonial Request</option>
+                        <option value="Business Opportunity">Business Opportunity</option>
+                        <option value="Samaj Event Info">Samaj Event Info</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-zinc-700">Message / Details *</label>
+                      <textarea
+                        rows={3}
+                        required
+                        placeholder="Write your message here..."
+                        value={messageText}
+                        onChange={(e) => setMessageText(e.target.value)}
+                        className="w-full px-3.5 py-2.5 border border-zinc-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      />
+                    </div>
+
+                    {messageError && (
+                      <p className="text-xs text-rose-600 font-medium flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" /> {messageError}
+                      </p>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={sendingMessage}
+                      className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold rounded-xl text-sm transition-all shadow-md flex items-center justify-center gap-2"
+                    >
+                      {sendingMessage ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      Send Message Request
+                    </button>
+                  </form>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 4: Non-member Registration Application Modal */}
+      <AnimatePresence>
+        {showRegisterModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl max-w-xl w-full border border-zinc-200 shadow-2xl overflow-hidden my-8"
+            >
+              <div className="px-6 py-5 bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 text-white flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <UserPlus className="w-5 h-5" />
+                  <h3 className="font-bold text-lg">Apply for Agrawal Samaj Membership</h3>
+                </div>
+                <button
+                  onClick={() => setShowRegisterModal(false)}
+                  className="p-1 rounded-full hover:bg-white/20 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {regSuccessMsg ? (
+                  <div className="text-center py-6 space-y-4">
+                    <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto border border-emerald-200">
+                      <CheckCircle2 className="w-8 h-8" />
+                    </div>
+                    <h4 className="text-xl font-bold text-zinc-900">Application Submitted!</h4>
+                    <p className="text-sm text-zinc-600 leading-relaxed px-4">{regSuccessMsg}</p>
+                    <button
+                      onClick={() => setShowRegisterModal(false)}
+                      className="px-6 py-2.5 bg-zinc-900 text-white text-sm font-bold rounded-xl hover:bg-zinc-800 transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
+                ) : regStep === "details" ? (
+                  <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+                    <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-2 text-xs text-amber-900">
+                      <p className="font-bold text-amber-800 flex items-center gap-1.5 text-sm">
+                        <AlertCircle className="w-4 h-4 text-amber-600" /> Agrawal Samaj Membership Criteria & Rules:
+                      </p>
+                      <ul className="list-disc list-inside space-y-1 leading-relaxed text-amber-900/90 pl-1">
+                        <li>Applicant must belong to the Agrawal / Vaishya community.</li>
+                        <li>Valid mobile number and address are compulsory for identification.</li>
+                        <li>All applications are cross-verified by the Agrawal Samaj Executive Committee prior to approval.</li>
+                      </ul>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-zinc-700">First Name *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Ramesh"
+                          value={regFirstName}
+                          onChange={(e) => setRegFirstName(e.target.value)}
+                          className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-zinc-700">Surname *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Agrawal / Garg"
+                          value={regSurname}
+                          onChange={(e) => setRegSurname(e.target.value)}
+                          className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-zinc-700">Father's / Husband's Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Late Shri Ramesh Agrawal"
+                        value={regFatherName}
+                        onChange={(e) => setRegFatherName(e.target.value)}
+                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-zinc-700">Mobile Number *</label>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="10-digit mobile number"
+                        value={regMobile}
+                        onChange={(e) => setRegMobile(e.target.value)}
+                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-zinc-700">Email Address (Optional)</label>
+                      <input
+                        type="email"
+                        placeholder="name@example.com"
+                        value={regEmail}
+                        onChange={(e) => setRegEmail(e.target.value)}
+                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-zinc-700">Profession / Occupation</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Business, Doctor, Engineer"
+                        value={regProfession}
+                        onChange={(e) => setRegProfession(e.target.value)}
+                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-zinc-700">Address / Location</label>
+                      <input
+                        type="text"
+                        placeholder="Sector, Colony, City"
+                        value={regAddress}
+                        onChange={(e) => setRegAddress(e.target.value)}
+                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      />
+                    </div>
+
+                    {regError && (
+                      <p className="text-xs text-rose-600 font-medium flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" /> {regError}
+                      </p>
+                    )}
+
+                    <button
+                      onClick={handleRegSendOtp}
+                      disabled={regSendingOtp}
+                      className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center gap-2 shadow-md"
+                    >
+                      {regSendingOtp ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      Verify Mobile & Proceed
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-emerald-50 text-emerald-800 rounded-2xl text-xs border border-emerald-200">
+                      OTP sent to {regMobile}. Enter code to verify identity and submit application.
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider">Enter 6-Digit OTP Code</label>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        placeholder="123456"
+                        value={regOtp}
+                        onChange={(e) => setRegOtp(e.target.value)}
+                        className="w-full px-4 py-3 border border-zinc-300 rounded-xl text-center text-xl font-mono tracking-widest focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      />
+                    </div>
+
+                    {regError && (
+                      <p className="text-xs text-rose-600 font-medium flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" /> {regError}
+                      </p>
+                    )}
+
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={() => setRegStep("details")}
+                        className="w-1/3 py-3 border border-zinc-200 text-zinc-600 text-xs font-bold rounded-xl hover:bg-zinc-50"
+                      >
+                        Back
+                      </button>
+                      <button
+                        onClick={handleRegSubmit}
+                        disabled={regSubmitting}
+                        className="w-2/3 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+                      >
+                        {regSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <UserCheck className="w-4 h-4" />}
+                        Submit Application to Admin
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

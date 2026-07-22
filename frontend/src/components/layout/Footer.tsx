@@ -61,7 +61,7 @@ export default function Footer() {
               Resources
             </h3>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/login" className="hover:text-amber-500 transition-colors">Member Directory</Link></li>
+              <li><Link href="/members" className="hover:text-amber-500 transition-colors">Member Directory</Link></li>
               <li><Link href="/register" className="hover:text-amber-500 transition-colors">Join Samaj</Link></li>
               <li><Link href="/login" className="hover:text-amber-500 transition-colors">Bookings Dashboard</Link></li>
               <li><Link href="#" className="hover:text-amber-500 transition-colors">Terms of Service</Link></li>

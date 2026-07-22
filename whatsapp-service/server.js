@@ -366,7 +366,51 @@ app.post("/send-text", requireApiKey, requireReady, async (req, res) => {
     return res.json({ success: true, message_id: messageId || "sent_unconfirmed", chat_id: chatId });
   } catch (e) {
     console.error("[whatsapp] send-text failed:", e);
+    if (e.message && (e.message.includes("detached Frame") || e.message.includes("Execution context was destroyed"))) {
+      console.warn("[whatsapp] Detached frame detected. Triggering full session recovery...");
+      state.status = "disconnected";
+      state.lastError = e.message;
+      if (!isRecovering) {
+        isRecovering = true;
+        setTimeout(async () => {
+          try {
+            try { await client.destroy(); } catch (_) {}
+            state.status = "starting";
+            await client.initialize();
+          } catch (recErr) {
+            state.status = "auth_failure";
+            state.lastError = String(recErr);
+            console.error("[whatsapp] Auto-recovery failed:", recErr);
+          } finally {
+            isRecovering = false;
+          }
+        }, 2000);
+      }
+    }
     return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/** POST /restart — Force a full session restart (destroy + re-initialize) */
+app.post("/restart", requireApiKey, async (req, res) => {
+  if (isRecovering) {
+    return res.status(409).json({ success: false, error: "Recovery already in progress." });
+  }
+  console.log("[whatsapp] Manual restart requested via /restart endpoint.");
+  isRecovering = true;
+  state.status = "starting";
+  state.lastError = null;
+  try {
+    try { await client.destroy(); } catch (_) {}
+    await client.initialize();
+    res.json({ success: true, message: "Client restarted. Waiting for ready state." });
+  } catch (e) {
+    state.status = "auth_failure";
+    state.lastError = String(e);
+    console.error("[whatsapp] Restart failed:", e);
+    res.status(500).json({ success: false, error: e.message });
+  } finally {
+    isRecovering = false;
   }
 });
 
