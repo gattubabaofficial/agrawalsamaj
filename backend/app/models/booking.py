@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime
 from enum import Enum as PyEnum
 from typing import List, Optional
-from sqlalchemy import String, Boolean, ForeignKey, Date, DateTime, Enum, Numeric, Integer, JSON
+from sqlalchemy import String, Boolean, ForeignKey, Date, DateTime, Enum, Numeric, Integer, JSON, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -154,3 +154,76 @@ class RoomBookingRule(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     room: Mapped[Optional[Room]] = relationship("Room", back_populates="booking_rules")
+
+
+class SpecialEvent(Base, TimestampMixin):
+    """A named window (e.g. 'New Year Special') that groups one or more date
+    ranges with shared per-room special pricing/availability/stay rules.
+    Takes precedence over RoomPricingRule/RoomBookingRule during its dates."""
+    __tablename__ = "special_events"
+
+    event_id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # Above RoomPricingRule's default priority (0), so events win on overlap.
+    priority: Mapped[int] = mapped_column(Integer, default=100, nullable=False)
+    # When true, rooms with no SpecialEventRoomConfig row are blocked during
+    # this event's dates ("only selected room types allowed").
+    block_unlisted_rooms: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("users.user_id", ondelete="SET NULL"),
+        nullable=True
+    )
+
+    date_ranges: Mapped[List["SpecialEventDateRange"]] = relationship(
+        "SpecialEventDateRange",
+        back_populates="event",
+        cascade="all, delete-orphan"
+    )
+    room_configs: Mapped[List["SpecialEventRoomConfig"]] = relationship(
+        "SpecialEventRoomConfig",
+        back_populates="event",
+        cascade="all, delete-orphan"
+    )
+
+
+class SpecialEventDateRange(Base, TimestampMixin):
+    """One of an event's date ranges (inclusive on both ends). An event can
+    have several of these; they all share the event's room configs."""
+    __tablename__ = "special_event_date_ranges"
+
+    range_id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    event_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("special_events.event_id", ondelete="CASCADE"),
+        nullable=False
+    )
+    start_date: Mapped[date] = mapped_column(Date, nullable=False)
+    end_date: Mapped[date] = mapped_column(Date, nullable=False)
+
+    event: Mapped[SpecialEvent] = relationship("SpecialEvent", back_populates="date_ranges")
+
+
+class SpecialEventRoomConfig(Base, TimestampMixin):
+    """Per-room special price/availability/stay-rules for a SpecialEvent,
+    applying across all of that event's date ranges. A null special_price_per_day
+    means "keep the normal price, only apply the restrictions"."""
+    __tablename__ = "special_event_room_configs"
+    __table_args__ = (UniqueConstraint("event_id", "room_id", name="uq_event_room_config"),)
+
+    config_id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    event_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("special_events.event_id", ondelete="CASCADE"),
+        nullable=False
+    )
+    room_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("rooms.room_id", ondelete="CASCADE"),
+        nullable=False
+    )
+    special_price_per_day: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), nullable=True)
+    is_available: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    min_days: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    max_days: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+    event: Mapped[SpecialEvent] = relationship("SpecialEvent", back_populates="room_configs")
+    room: Mapped[Room] = relationship("Room")

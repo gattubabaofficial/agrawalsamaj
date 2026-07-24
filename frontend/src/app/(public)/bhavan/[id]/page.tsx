@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Calendar, Users, MapPin, ArrowLeft, CheckCircle, Clock, User, Phone, Ticket, X, Sparkles } from "lucide-react";
+import { Calendar, Users, MapPin, ArrowLeft, CheckCircle, Clock, User, Phone, Ticket, X, Sparkles, PartyPopper, Ban, AlertTriangle } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
 import { formatDateDDMonthYYYY } from "@/utils/date";
@@ -51,6 +51,12 @@ export default function RoomBookingPage() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
+  // Backend-authoritative special-event / availability info for the selected dates.
+  // Purely additive: never used to compute totalAmount below, only to show an
+  // event badge, warn about stay-length restrictions, and disable booking when
+  // the room is blocked or fully booked for these dates.
+  const [quoteInfo, setQuoteInfo] = useState<any>(null);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     setIsLoggedIn(!!token);
@@ -82,6 +88,24 @@ export default function RoomBookingPage() {
     };
     if (roomId) fetchRoom();
   }, [roomId]);
+
+  // Ask the backend whether these dates fall under a special event or are
+  // blocked/full, so we can surface that to the customer. The backend remains
+  // the sole authority for price/availability at booking time regardless.
+  useEffect(() => {
+    if (!roomId || !startDate || !endDate) {
+      setQuoteInfo(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      axios
+        .post(`${getApiBaseUrl()}/bookings/rooms/${roomId}/quote`, { start_date: startDate, end_date: endDate })
+        .then((res) => { if (!cancelled) setQuoteInfo(res.data); })
+        .catch(() => { if (!cancelled) setQuoteInfo(null); });
+    }, 250);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [roomId, startDate, endDate]);
 
   // Compute exact official 2020 rate list breakdown
   const computeOfficialQuote = () => {
@@ -163,6 +187,10 @@ export default function RoomBookingPage() {
   const quote = computeOfficialQuote();
   const totalAmount = quote.totalPayable;
 
+  const isBlockedOrFull = quoteInfo != null && quoteInfo.available === false;
+  const isFull = isBlockedOrFull && quoteInfo.full === true;
+  const hasStayViolation = Array.isArray(quoteInfo?.stay_errors) && quoteInfo.stay_errors.length > 0;
+
   const voucherIsStale = appliedVoucher !== null && appliedVoucher.forAmount !== totalAmount;
   const payableAmount = appliedVoucher && !voucherIsStale ? appliedVoucher.finalAmount : totalAmount;
 
@@ -201,6 +229,11 @@ export default function RoomBookingPage() {
 
     if (quote.days <= 0) {
       setError("End date must be after start date.");
+      return;
+    }
+
+    if (isBlockedOrFull) {
+      setError(isFull ? "These dates are fully booked for this room." : (quoteInfo?.blocked_reason || "Not available for these dates."));
       return;
     }
 
@@ -467,6 +500,42 @@ export default function RoomBookingPage() {
                     </div>
                   </div>
 
+                  {/* Special-event / availability status for the selected dates (backend-authoritative) */}
+                  {quoteInfo && quoteInfo.event_name && !isBlockedOrFull && (
+                    <div className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl space-y-1.5">
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold uppercase tracking-wide">
+                        <PartyPopper className="w-3 h-3" /> Special Event Price
+                      </span>
+                      <p className="text-xs font-bold text-amber-900">{quoteInfo.event_name}</p>
+                      <p className="text-[11px] text-zinc-600">
+                        Normal Price: ₹{quoteInfo.default_price_per_day}/day · Event nights are priced differently — see breakdown below.
+                      </p>
+                    </div>
+                  )}
+
+                  {isBlockedOrFull && (
+                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2">
+                      <Ban className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-bold text-rose-800">
+                          {isFull ? "FULL — Not Available for These Dates" : "Not Available During This Event"}
+                        </p>
+                        {!isFull && quoteInfo.blocked_reason && (
+                          <p className="text-[11px] text-rose-600 mt-0.5">{quoteInfo.blocked_reason}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {!isBlockedOrFull && hasStayViolation && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <ul className="text-[11px] text-amber-800 space-y-1">
+                        {quoteInfo.stay_errors.map((msg: string, i: number) => <li key={i}>{msg}</li>)}
+                      </ul>
+                    </div>
+                  )}
+
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-zinc-700">Event Function Notes</label>
                     <textarea 
@@ -568,8 +637,12 @@ export default function RoomBookingPage() {
                     </label>
                   </div>
 
-                  <button disabled={isSubmitting || quote.days <= 0 || !agreedToTerms} type="submit" className="w-full py-3.5 mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm rounded-xl transition-colors disabled:opacity-50 shadow-md">
-                    {isSubmitting ? "Processing..." : (paymentMode === "upi" ? `Pay ₹${payableAmount}` : "Submit Booking Request")}
+                  <button disabled={isSubmitting || quote.days <= 0 || !agreedToTerms || isBlockedOrFull} type="submit" className="w-full py-3.5 mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm rounded-xl transition-colors disabled:opacity-50 shadow-md">
+                    {isSubmitting
+                      ? "Processing..."
+                      : isBlockedOrFull
+                        ? (isFull ? "FULL" : "Not Available During This Event")
+                        : (paymentMode === "upi" ? `Pay ₹${payableAmount}` : "Submit Booking Request")}
                   </button>
                 </form>
               </div>

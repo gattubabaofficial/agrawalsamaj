@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.routers.auth import router as auth_router
 from app.routers.membership import router as membership_router
+from app.routers.special_events import router as special_events_router
 from app.routers.family import router as family_router
 from app.routers.events import router as events_router
 from app.routers.bookings import router as bookings_router
@@ -74,6 +75,7 @@ app.include_router(blog_router)
 app.include_router(admin_router)
 app.include_router(receipts_router)
 app.include_router(vouchers_router)
+app.include_router(special_events_router)
 
 
 @app.get("/")

@@ -19,7 +19,8 @@ import {
   Contact,
   BookOpen,
   QrCode,
-  Ticket
+  Ticket,
+  CalendarRange
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -90,6 +91,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     ...(isSuperAdmin || isAdmin ? [
       { name: "Bhavan Bookings", href: "/admin/bookings", icon: Home },
       { name: "Room Pricing & Rules", href: "/admin/pricing", icon: Settings },
+      { name: "Special Events", href: "/admin/special-events", icon: CalendarRange },
       { name: "Vouchers", href: "/admin/vouchers", icon: Ticket },
       { name: "Donations Management", href: "/admin/donations", icon: Heart },
       { name: "Receipts", href: "/admin/receipts", icon: BookOpen },

@@ -2,7 +2,10 @@ from app.database import Base
 from app.models.base import TimestampMixin, UUIDPKMixin
 from app.models.user import Family, User, OtpLog, UserRole, OtpType
 from app.models.event import Event, EventSchedule, EventGallery, EventDocument, EventRegistration, EventStatus, EventCategory, PaymentStatus, MediaType, DocType
-from app.models.booking import Room, Booking, PaymentMode, BookingStatus, RoomPricingRule, RoomBookingRule
+from app.models.booking import (
+    Room, Booking, PaymentMode, BookingStatus, RoomPricingRule, RoomBookingRule,
+    SpecialEvent, SpecialEventDateRange, SpecialEventRoomConfig,
+)
 from app.models.receipt import Receipt, ReceiptType
 from app.models.donation import DonationCategory, Donation
 from app.models.chat import Group, GroupMember, Message, GroupType
@@ -37,6 +40,9 @@ __all__ = [
     "BookingStatus",
     "RoomPricingRule",
     "RoomBookingRule",
+    "SpecialEvent",
+    "SpecialEventDateRange",
+    "SpecialEventRoomConfig",
     "Receipt",
     "ReceiptType",
     "DonationCategory",
