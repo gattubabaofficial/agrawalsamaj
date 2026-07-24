@@ -467,7 +467,8 @@ async def send_otp(
     db.add(otp_log)
     await db.commit()
 
-    print(f"\n--- [OTP SENT] Target: {normalized_val} | OTP Code: {otp_code} ---\n")
+    if os.getenv("ENVIRONMENT") == "development":
+        print(f"\n--- [OTP SENT] Target: {normalized_val} | OTP Code: {otp_code} ---\n")
 
     # Send real SMS
     message = f"Your Agrawal Samaj registration verification code is {otp_code}. Valid for 10 minutes."

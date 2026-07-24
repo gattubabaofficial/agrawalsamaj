@@ -10,7 +10,9 @@ from app.models.receipt import Receipt, ReceiptType
 from app.models.donation import DonationCategory, Donation
 from app.models.chat import Group, GroupMember, Message, GroupType
 from app.models.audit import AuditLog, Notification, NotificationType
-from app.models.requests import MembershipRequest, FamilyJoinRequest, RequestStatus
+from app.models.requests import (
+    MembershipRequest, FamilyJoinRequest, FamilyCreationRequest, ProfileUpdateRequest, RequestStatus,
+)
 from app.models.blog import Blog, BlogComment, BlogLike, BlogStatus
 from app.models.voucher import Voucher, DiscountType, VoucherScope
 
@@ -46,7 +48,7 @@ __all__ = [
     "Receipt",
     "ReceiptType",
     "DonationCategory",
-    "Donations",
+    "Donation",
     "Group",
     "GroupMember",
     "Message",
@@ -56,6 +58,8 @@ __all__ = [
     "NotificationType",
     "MembershipRequest",
     "FamilyJoinRequest",
+    "FamilyCreationRequest",
+    "ProfileUpdateRequest",
     "RequestStatus",
     "Blog",
     "BlogComment",

@@ -820,7 +820,7 @@ async def list_users(
     )
     users = result.scalars().all()
     
-    is_admin = current_user.role == UserRole.ADMIN
+    is_admin = current_user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN)
     
     data = []
     for u in users:

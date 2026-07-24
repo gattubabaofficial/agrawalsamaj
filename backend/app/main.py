@@ -55,6 +55,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+static_dir = Path("static")
+static_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Serve uploaded blog media files
