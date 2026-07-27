@@ -548,7 +548,7 @@ export default function PublicMembersPage() {
                     <button
                       onClick={() => handleOpenEdit(m)}
                       title="Edit profile via OTP"
-                      className="p-2 text-zinc-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all flex-shrink-0"
+                      className="p-2.5 text-zinc-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all flex-shrink-0"
                     >
                       <Edit3 className="w-4 h-4" />
                     </button>
@@ -598,7 +598,7 @@ export default function PublicMembersPage() {
                 </div>
                 <button
                   onClick={() => setShowEditModal(false)}
-                  className="p-1 rounded-full hover:bg-white/20 transition-colors"
+                  className="p-2 rounded-full hover:bg-white/20 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -709,7 +709,7 @@ export default function PublicMembersPage() {
                       ℹ️ Edit your profile details below and toggle field visibility. Your changes will be submitted for Admin approval.
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <label className="text-xs font-bold text-zinc-700">First Name *</label>
                         <input
@@ -1044,7 +1044,7 @@ export default function PublicMembersPage() {
                 </div>
                 <button
                   onClick={() => setMessageMemberModal(null)}
-                  className="p-1 rounded-full hover:bg-white/20 transition-colors"
+                  className="p-2 rounded-full hover:bg-white/20 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1083,7 +1083,7 @@ export default function PublicMembersPage() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <label className="text-xs font-bold text-zinc-700">Your Phone Number *</label>
                         <input
@@ -1173,7 +1173,7 @@ export default function PublicMembersPage() {
                 </div>
                 <button
                   onClick={() => setShowRegisterModal(false)}
-                  className="p-1 rounded-full hover:bg-white/20 transition-colors"
+                  className="p-2 rounded-full hover:bg-white/20 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1207,7 +1207,7 @@ export default function PublicMembersPage() {
                       </ul>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <label className="text-xs font-bold text-zinc-700">First Name *</label>
                         <input

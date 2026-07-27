@@ -240,7 +240,7 @@ export default function BlogPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex justify-center gap-2 mt-12">
+          <div className="flex flex-wrap justify-center gap-2 mt-12">
             <button
               onClick={() => { setPage(p => p - 1); fetchBlogs(page - 1); }}
               disabled={page === 1}

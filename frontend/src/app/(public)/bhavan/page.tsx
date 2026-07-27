@@ -130,7 +130,7 @@ export default function BhavanPage() {
         <div className="bg-white rounded-3xl border border-zinc-200 p-6 sm:p-8 shadow-sm space-y-4">
           <h3 className="text-lg font-bold text-zinc-900">Fixed Rate List for Wedding Saava Days</h3>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left border-collapse">
+            <table className="w-full text-xs text-left border-collapse min-w-[640px]">
               <thead>
                 <tr className="bg-zinc-100 text-zinc-700 uppercase font-semibold">
                   <th className="p-3 rounded-l-xl">Unit Description</th>

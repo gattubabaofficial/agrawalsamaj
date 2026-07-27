@@ -379,7 +379,7 @@ function CommentItem({
   const authorName = comment.author ? `${comment.author.first_name} ${comment.author.surname}` : "User";
 
   return (
-    <div className={`${isReply ? "ml-8 mt-3" : ""}`}>
+    <div className={`${isReply ? "ml-4 sm:ml-8 mt-3" : ""}`}>
       <div className="flex gap-3">
         <div className={`${isReply ? "w-7 h-7 text-xs" : "w-9 h-9 text-sm"} rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center text-white font-bold flex-shrink-0`}>
           {comment.author?.first_name?.[0] || "U"}

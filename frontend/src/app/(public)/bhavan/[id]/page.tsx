@@ -402,7 +402,7 @@ export default function RoomBookingPage() {
 
             {/* Booking Form Card */}
             <div className="md:col-span-1">
-              <div className="bg-white rounded-3xl border border-zinc-200 shadow-sm p-6 sticky top-24">
+              <div className="bg-white rounded-3xl border border-zinc-200 shadow-sm p-6 md:sticky md:top-24">
                 <h3 className="text-xl font-bold text-zinc-900 mb-5 flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-amber-500" /> Book Facility
                 </h3>
@@ -572,7 +572,7 @@ export default function RoomBookingPage() {
                             type="button"
                             onClick={handleApplyVoucher}
                             disabled={voucherChecking || !voucherCode.trim()}
-                            className="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl disabled:opacity-50 transition-colors"
+                            className="px-3 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl disabled:opacity-50 transition-colors"
                           >
                             {voucherChecking ? "..." : "Apply"}
                           </button>

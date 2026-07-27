@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  User, 
-  Users, 
-  Calendar, 
-  Home, 
-  Heart, 
-  MessageCircle, 
+import {
+  LayoutDashboard,
+  User,
+  Users,
+  Calendar,
+  Home,
+  Heart,
+  MessageCircle,
   LogOut,
   UserPlus,
   Shield,
@@ -17,7 +17,9 @@ import {
   ChevronRight,
   Settings,
   Contact,
-  BookOpen
+  BookOpen,
+  Menu,
+  X
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -25,6 +27,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    setIsMobileNavOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     setIsClient(true);
@@ -80,21 +87,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-zinc-50 flex flex-col md:flex-row">
+      {/* Mobile nav backdrop */}
+      {isMobileNavOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          onClick={() => setIsMobileNavOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className={`w-full md:w-64 flex-shrink-0 flex flex-col justify-between overflow-y-auto md:sticky md:top-0 md:h-screen border-r scrollbar-hide ${
+      <aside className={`fixed inset-y-0 left-0 z-40 w-72 -translate-x-full transition-transform duration-200 ${isMobileNavOpen ? "translate-x-0" : ""} md:translate-x-0 md:static md:w-64 flex-shrink-0 flex flex-col justify-between overflow-y-auto md:sticky md:top-0 md:h-screen border-r scrollbar-hide ${
         role === "ADMIN" ? "bg-zinc-900 text-white border-zinc-800" : "bg-white border-zinc-200"
       }`}>
         <div>
-          <div className={`h-16 flex items-center px-6 border-b ${
+          <div className={`h-16 flex items-center justify-between px-6 border-b ${
             role === "ADMIN" ? "border-zinc-800" : "border-zinc-200"
           }`}>
             <Link href="/" className={`text-xl font-bold ${
-              role === "ADMIN" 
-                ? "bg-gradient-to-r from-amber-400 to-rose-400 bg-clip-text text-transparent" 
+              role === "ADMIN"
+                ? "bg-gradient-to-r from-amber-400 to-rose-400 bg-clip-text text-transparent"
                 : "bg-gradient-to-r from-amber-500 to-rose-600 bg-clip-text text-transparent"
             }`}>
               Agrawal Samaj
             </Link>
+            <button
+              onClick={() => setIsMobileNavOpen(false)}
+              className={`p-1.5 rounded-lg md:hidden ${role === "ADMIN" ? "text-zinc-400 hover:bg-zinc-800 hover:text-white" : "text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800"}`}
+              aria-label="Close menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
           
           <nav className="p-3 space-y-1">
@@ -171,7 +193,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Topbar */}
-        <header className="h-16 bg-white/80 backdrop-blur-md border-b border-zinc-200 flex items-center justify-end px-6 flex-shrink-0 sticky top-0 z-10">
+        <header className="h-16 bg-white/80 backdrop-blur-md border-b border-zinc-200 flex items-center justify-between px-4 sm:px-6 flex-shrink-0 sticky top-0 z-10">
+          <button
+            onClick={() => setIsMobileNavOpen(true)}
+            className="p-2.5 text-zinc-500 hover:text-zinc-800 rounded-lg hover:bg-zinc-100 transition-colors md:hidden"
+            aria-label="Open menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${

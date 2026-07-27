@@ -3,8 +3,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
-  MessageCircle, Users, Hash, Send, PlusCircle, Search, 
-  User, Check, ChevronRight, Loader2, Plus, LogOut, CheckCheck
+  MessageCircle, Users, Hash, Send, PlusCircle, Search,
+  User, Check, ChevronRight, Loader2, Plus, LogOut, CheckCheck, ArrowLeft
 } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
@@ -431,7 +431,7 @@ export default function ChatPage() {
   return (
     <div className="flex h-[calc(100vh-8rem)] -m-6 bg-zinc-50 border border-zinc-200 overflow-hidden rounded-2xl shadow-sm">
       {/* Sidebar Navigation */}
-      <div className="w-80 border-r border-zinc-200 bg-white flex flex-col flex-shrink-0">
+      <div className={`${activeChat ? "hidden md:flex" : "flex"} w-full md:w-80 border-r border-zinc-200 bg-white flex-col flex-shrink-0`}>
         <div className="p-4 border-b border-zinc-200 bg-zinc-50/50 space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-zinc-800 text-lg">Samaj Chat Channels</h2>
@@ -572,15 +572,22 @@ export default function ChatPage() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-[#f8f9fa] relative min-w-0">
+      <div className={`${activeChat ? "flex" : "hidden md:flex"} flex-1 w-full flex-col bg-[#f8f9fa] relative min-w-0`}>
         {/* Background decorative pattern for chat area */}
         <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23d97706\' fill-opacity=\'1\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'1\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'1\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
 
         {activeChat ? (
           <>
             {/* Active Header */}
-            <div className="h-16 px-6 border-b border-zinc-200 bg-white flex items-center justify-between z-10 shadow-sm">
+            <div className="h-16 px-3 sm:px-6 border-b border-zinc-200 bg-white flex items-center justify-between z-10 shadow-sm">
               <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setActiveChat(null)}
+                  className="p-2 -ml-1 text-zinc-500 hover:text-zinc-800 rounded-lg hover:bg-zinc-100 transition-colors md:hidden"
+                  aria-label="Back to conversations"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-rose-400 flex items-center justify-center text-white font-bold text-sm">
                   {activeChat.type === "group" ? <Users className="w-5 h-5" /> : activeChat.name.charAt(0).toUpperCase()}
                 </div>

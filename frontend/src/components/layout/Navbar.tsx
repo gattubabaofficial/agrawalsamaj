@@ -245,7 +245,7 @@ export default function Navbar() {
             )}
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-lg text-zinc-500 hover:bg-zinc-100 focus:outline-none transition-colors"
+              className="inline-flex items-center justify-center p-2.5 rounded-lg text-zinc-500 hover:bg-zinc-100 focus:outline-none transition-colors"
             >
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>

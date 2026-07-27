@@ -701,7 +701,7 @@ export default function FamilyPage() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                         <div className="space-y-1.5">
                           <label className="font-semibold text-zinc-700">First Name <span className="text-rose-500">*</span></label>
                           <input
@@ -727,7 +727,7 @@ export default function FamilyPage() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                         <div className="space-y-1.5">
                           <label className="font-semibold text-zinc-700 flex justify-between">
                             <span>Phone Number {!(createProfession.trim().toLowerCase() === "student") && <span className="text-rose-500">*</span>}</span>
@@ -858,7 +858,7 @@ export default function FamilyPage() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="space-y-1">
                               <label className="text-zinc-700">First Name *</label>
                               <input type="text" value={newMemberFirstName} onChange={e => setNewMemberFirstName(e.target.value)} placeholder="First Name" className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white" />
@@ -869,7 +869,7 @@ export default function FamilyPage() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="space-y-1">
                               <label className="text-zinc-700">Relation to Head *</label>
                               <select value={newMemberRelation} onChange={e => setNewMemberRelation(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white">
@@ -887,7 +887,7 @@ export default function FamilyPage() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="space-y-1">
                               <label className="text-zinc-700">
                                 Phone Number {!(newMemberProfession.trim().toLowerCase() === "student") && "*"}
@@ -1013,7 +1013,7 @@ export default function FamilyPage() {
                 </div>
                 <div className="divide-y divide-zinc-100">
                   {familyData.members.map((member: any) => (
-                    <div key={member.user_id} className="p-6 flex items-center justify-between hover:bg-zinc-50 transition-colors">
+                    <div key={member.user_id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-zinc-50 transition-colors">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-sm uppercase overflow-hidden flex-shrink-0">
                           {member.profile_photo ? (

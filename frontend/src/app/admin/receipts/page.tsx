@@ -65,7 +65,8 @@ export default function ReceiptsPage() {
         <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-zinc-400" /></div>
       ) : (
         <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[720px]">
             <thead className="bg-zinc-50 text-zinc-500 text-xs">
               <tr>
                 <th className="text-left px-4 py-3">Receipt No.</th>
@@ -105,6 +106,7 @@ export default function ReceiptsPage() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>
