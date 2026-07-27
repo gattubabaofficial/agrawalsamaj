@@ -79,24 +79,25 @@ export default function BhavanPage() {
   }, []);
 
   return (
-    <div className="py-20 px-4 sm:px-6 lg:px-8 bg-zinc-50 min-h-screen">
+    <div className="relative py-20 px-4 sm:px-6 lg:px-8 min-h-screen overflow-hidden">
+      <div className="absolute inset-0 animated-gradient-mesh opacity-20 -z-10" />
       <div className="max-w-7xl mx-auto space-y-16">
-        
+
         {/* Header */}
         <div className="text-center space-y-4">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-100 border border-amber-300 text-amber-800 text-xs font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-panel text-amber-800 text-xs font-bold uppercase tracking-wider shadow-md">
             <Building className="w-4 h-4" /> Agrasen Bhawan, Rajat Path, Mansarovar, Jaipur
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 bg-clip-text text-transparent">
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-gradient-vivid">
             Official Bhavan Rate List & Facilities
           </h1>
-          <p className="max-w-2xl mx-auto text-sm text-zinc-500">
+          <p className="max-w-2xl mx-auto text-sm text-zinc-600">
             Effective from 01 January 2020. Book halls, basement, and guest rooms for weddings, social events, and family functions.
           </p>
         </div>
 
         {/* Official Rules & Guidelines */}
-        <div className="bg-white rounded-3xl border border-amber-200/80 p-6 sm:p-8 shadow-sm space-y-6">
+        <div className="glass-panel rounded-[2rem] p-6 sm:p-8 shadow-xl space-y-6">
           <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
             <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
               <Info className="w-5 h-5 text-amber-600" /> Agrasen Bhawan Booking Guidelines
@@ -127,12 +128,12 @@ export default function BhavanPage() {
         </div>
 
         {/* Rate List Table */}
-        <div className="bg-white rounded-3xl border border-zinc-200 p-6 sm:p-8 shadow-sm space-y-4">
+        <div className="glass-panel rounded-[2rem] p-6 sm:p-8 shadow-xl space-y-4">
           <h3 className="text-lg font-bold text-zinc-900">Fixed Rate List for Wedding Saava Days</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse min-w-[640px]">
               <thead>
-                <tr className="bg-zinc-100 text-zinc-700 uppercase font-semibold">
+                <tr className="bg-gradient-to-r from-amber-500 to-rose-500 text-white uppercase font-semibold">
                   <th className="p-3 rounded-l-xl">Unit Description</th>
                   <th className="p-3">First Day Rate</th>
                   <th className="p-3">Two Days Rate</th>
@@ -189,13 +190,14 @@ export default function BhavanPage() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: idx * 0.05 }}
-              whileHover={{ y: -6 }}
-              className="p-8 rounded-3xl border border-zinc-200/50 bg-white flex flex-col justify-between shadow-sm hover:shadow-xl hover:shadow-zinc-200/60 transition-shadow duration-300 group"
+              whileHover={{ y: -8, scale: 1.02 }}
+              className="relative p-8 rounded-[2rem] glass-panel flex flex-col justify-between shadow-lg hover:shadow-2xl hover:shadow-amber-500/20 transition-shadow duration-300 group overflow-hidden"
             >
-              <div className="space-y-6">
+              <div className="absolute -top-12 -right-12 w-36 h-36 rounded-full bg-gradient-to-br from-amber-400 to-rose-500 opacity-10 blur-2xl group-hover:opacity-25 transition-opacity duration-300" />
+              <div className="space-y-6 relative">
                 {/* Icon & Title */}
                 <div className="space-y-4">
-                  <div className="inline-flex p-3 rounded-2xl bg-amber-500/10 text-amber-600 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+                  <div className="inline-flex p-3 rounded-2xl bg-gradient-to-br from-amber-500 to-rose-500 text-white shadow-md transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
                     <Building className="w-6 h-6" />
                   </div>
                   <div className="space-y-1">
@@ -234,14 +236,14 @@ export default function BhavanPage() {
               </div>
 
               {/* Price & Action */}
-              <div className="pt-6 border-t border-zinc-100 flex items-center justify-between mt-6">
+              <div className="relative pt-6 border-t border-white/60 flex items-center justify-between mt-6">
                 <div>
                   <span className="text-3xs text-zinc-400 uppercase tracking-wider font-semibold block">Rent Rate</span>
                   <span className="text-lg font-bold text-zinc-900">₹{fac.price_per_day} <span className="text-xs font-normal text-zinc-500">/ day</span></span>
                 </div>
                 <Link
                   href={`/bhavan/${fac.room_id}`}
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-all shadow-sm hover:shadow-md active:scale-95"
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white text-xs font-bold rounded-xl transition-all shadow-md hover:shadow-lg hover:shadow-amber-500/40 active:scale-95"
                 >
                   Book Facility <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
                 </Link>

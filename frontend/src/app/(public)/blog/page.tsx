@@ -81,18 +81,24 @@ export default function BlogPage() {
     <div className="min-h-screen bg-gradient-to-br from-zinc-50 via-white to-amber-50/30">
       {/* Hero */}
       <div className="relative bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-20 w-64 h-64 bg-amber-400 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-20 w-96 h-96 bg-rose-400 rounded-full blur-3xl" />
-        </div>
+        <motion.div
+          className="absolute top-10 left-20 w-72 h-72 bg-amber-400/30 rounded-full blur-3xl"
+          animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0.8, 0.4] }}
+          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-0 right-20 w-96 h-96 bg-rose-400/30 rounded-full blur-3xl"
+          animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0.8, 0.4] }}
+          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 2.5 }}
+        />
         <div className="relative max-w-5xl mx-auto px-4 py-20 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-medium mb-6">
               <BookOpen className="w-4 h-4" />
               Samaj Blog
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
-              Stories, News &amp; Insights
+            <h1 className="text-4xl md:text-6xl font-extrabold mb-4 leading-tight">
+              <span className="text-gradient-vivid">Stories, News &amp; Insights</span>
             </h1>
             <p className="text-zinc-400 text-lg max-w-xl mx-auto mb-8">
               Discover stories, announcements, and wisdom shared by our Agrawal Samaj community.
@@ -108,7 +114,7 @@ export default function BlogPage() {
                 placeholder="Search blogs..."
                 className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/10 backdrop-blur border border-white/20 text-white placeholder-zinc-400 focus:outline-none focus:border-amber-400/60 focus:bg-white/15 transition-all"
               />
-              <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium transition-colors">
+              <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white text-sm font-semibold shadow-md shadow-amber-500/30 transition-all active:scale-95">
                 Search
               </button>
             </form>
@@ -122,7 +128,7 @@ export default function BlogPage() {
           <div className="flex flex-wrap gap-2 mb-10">
             <button
               onClick={() => handleTag("")}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all ${activeTag === "" ? "bg-amber-500 border-amber-500 text-white" : "bg-white border-zinc-200 text-zinc-600 hover:border-amber-300 hover:text-amber-600"}`}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all ${activeTag === "" ? "bg-gradient-to-r from-amber-500 to-rose-500 border-transparent text-white shadow-md shadow-amber-500/30" : "bg-white border-zinc-200 text-zinc-600 hover:border-amber-300 hover:text-amber-600"}`}
             >
               All Posts
             </button>
@@ -130,7 +136,7 @@ export default function BlogPage() {
               <button
                 key={tag}
                 onClick={() => handleTag(tag)}
-                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium border transition-all ${activeTag === tag ? "bg-amber-500 border-amber-500 text-white" : "bg-white border-zinc-200 text-zinc-600 hover:border-amber-300 hover:text-amber-600"}`}
+                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium border transition-all ${activeTag === tag ? "bg-gradient-to-r from-amber-500 to-rose-500 border-transparent text-white shadow-md shadow-amber-500/30" : "bg-white border-zinc-200 text-zinc-600 hover:border-amber-300 hover:text-amber-600"}`}
               >
                 <Tag className="w-3 h-3" />
                 {tag}
@@ -172,8 +178,8 @@ export default function BlogPage() {
               <motion.article
                 key={blog.blog_id}
                 variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-                whileHover={{ y: -4 }}
-                className="group bg-white rounded-2xl overflow-hidden border border-zinc-100 hover:border-amber-200 hover:shadow-lg hover:shadow-amber-100/50 transition-all duration-300 flex flex-col"
+                whileHover={{ y: -8, scale: 1.02 }}
+                className="group glass-panel rounded-[1.75rem] overflow-hidden hover:shadow-2xl hover:shadow-amber-500/25 transition-shadow duration-300 flex flex-col"
               >
                 {/* Cover */}
                 <Link href={`/blog/${blog.slug}`} className="block overflow-hidden">

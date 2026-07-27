@@ -117,7 +117,7 @@ export default function Navbar() {
     <nav
       className={`sticky top-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-white/80 backdrop-blur-md shadow-lg border-b border-zinc-200/50 py-3"
+          ? "glass-panel shadow-xl shadow-amber-500/10 py-3"
           : "bg-transparent py-5"
       }`}
     >
@@ -126,10 +126,10 @@ export default function Navbar() {
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href="/" className="flex items-center gap-2 group">
-              <span className="text-2xl font-bold bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 bg-clip-text text-transparent group-hover:opacity-80 transition-opacity">
+              <span className="text-2xl font-bold text-gradient-vivid group-hover:scale-105 inline-block transition-transform">
                 Agrawal Samaj
               </span>
-              <span className="hidden sm:inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/20">
+              <span className="hidden sm:inline-block text-xs font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 to-rose-500/20 text-amber-700 border border-amber-500/30">
                 Portal
               </span>
             </Link>
@@ -152,7 +152,7 @@ export default function Navbar() {
                   {isActive && (
                     <motion.span
                       layoutId="activeNav"
-                      className="absolute inset-0 bg-amber-500/10 rounded-full -z-10"
+                      className="absolute inset-0 bg-gradient-to-r from-amber-500/20 to-rose-500/20 rounded-full -z-10 shadow-[0_0_12px_rgba(245,158,11,0.35)]"
                       transition={{ type: "spring", stiffness: 380, damping: 30 }}
                     />
                   )}

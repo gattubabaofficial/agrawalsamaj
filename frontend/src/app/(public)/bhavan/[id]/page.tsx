@@ -313,14 +313,15 @@ export default function RoomBookingPage() {
   if (!room) return null;
 
   return (
-    <div className="py-20 px-4 sm:px-6 lg:px-8 bg-zinc-50 min-h-screen">
+    <div className="relative py-20 px-4 sm:px-6 lg:px-8 min-h-screen overflow-hidden">
+      <div className="absolute inset-0 animated-gradient-mesh opacity-20 -z-10" />
       <div className="max-w-4xl mx-auto space-y-8">
         <Link href="/bhavan" className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-500 hover:text-amber-600 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back to Bhavan Facilities
         </Link>
 
         {successStatus !== "none" ? (
-          <div className="bg-white rounded-3xl border border-zinc-200 shadow-sm p-8 md:p-12 text-center space-y-6">
+          <div className="glass-panel rounded-[2rem] shadow-xl p-8 md:p-12 text-center space-y-6">
             <div className="mx-auto w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
               <CheckCircle className="w-8 h-8" />
             </div>
@@ -344,7 +345,7 @@ export default function RoomBookingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Room Details */}
             <div className="md:col-span-2 space-y-6">
-              <div className="bg-white rounded-3xl border border-zinc-200 shadow-sm p-6 sm:p-8">
+              <div className="glass-panel rounded-[2rem] shadow-xl p-6 sm:p-8">
                 <div className="flex flex-wrap gap-2 mb-4">
                   <span className="px-3 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded-full uppercase border border-amber-200">
                     {room.type}
@@ -403,7 +404,7 @@ export default function RoomBookingPage() {
 
             {/* Booking Form Card */}
             <div className="md:col-span-1">
-              <div className="bg-white rounded-3xl border border-zinc-200 shadow-sm p-6 md:sticky md:top-24">
+              <div className="glass-panel rounded-[2rem] shadow-xl p-6 md:sticky md:top-24">
                 <h3 className="text-xl font-bold text-zinc-900 mb-5 flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-amber-500" /> Book Facility
                 </h3>
@@ -657,7 +658,7 @@ export default function RoomBookingPage() {
                     </label>
                   </div>
 
-                  <button disabled={isSubmitting || quote.days <= 0 || !agreedToTerms || isBlockedOrFull} type="submit" className="w-full py-3.5 mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm rounded-xl transition-all disabled:opacity-50 shadow-md hover:shadow-lg active:scale-[0.98] disabled:active:scale-100">
+                  <button disabled={isSubmitting || quote.days <= 0 || !agreedToTerms || isBlockedOrFull} type="submit" className="w-full py-3.5 mt-4 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-600 hover:via-orange-600 hover:to-rose-700 text-white font-bold text-sm rounded-xl transition-all disabled:opacity-50 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 active:scale-[0.98] disabled:active:scale-100">
                     {isSubmitting
                       ? "Processing..."
                       : isBlockedOrFull

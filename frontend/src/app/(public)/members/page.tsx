@@ -352,10 +352,21 @@ export default function PublicMembersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50/50 pb-20">
+    <div className="relative min-h-screen bg-zinc-50/50 pb-20 overflow-hidden">
+      <div className="absolute inset-0 animated-gradient-mesh opacity-10 -z-10" />
       {/* Hero Banner Header */}
       <div className="relative bg-gradient-to-br from-amber-600 via-orange-600 to-rose-700 text-white overflow-hidden py-16 px-4 sm:px-6 lg:px-8">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-400/20 via-transparent to-black/30 pointer-events-none" />
+        <motion.div
+          className="absolute -top-16 -left-16 w-72 h-72 bg-white/20 rounded-full blur-3xl pointer-events-none"
+          animate={{ scale: [1, 1.3, 1] }}
+          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute -bottom-16 -right-16 w-72 h-72 bg-white/20 rounded-full blur-3xl pointer-events-none"
+          animate={{ scale: [1, 1.3, 1] }}
+          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 3 }}
+        />
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-3 max-w-2xl">
@@ -453,7 +464,7 @@ export default function PublicMembersPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35 }}
-            className="border border-zinc-200/80 rounded-2xl bg-white divide-y divide-zinc-100 overflow-hidden shadow-sm"
+            className="glass-panel rounded-[1.75rem] divide-y divide-white/50 overflow-hidden shadow-xl"
           >
             {filteredMembers.map((m) => {
               const initials = `${m.first_name.charAt(0)}${m.surname.charAt(0)}`.toUpperCase();

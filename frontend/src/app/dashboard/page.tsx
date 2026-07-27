@@ -113,19 +113,19 @@ export default function UserDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Quick Stats */}
         {[
-          { icon: Ticket, value: stats.active_tickets, label: "Active Tickets", bg: "bg-amber-100", fg: "text-amber-600" },
-          { icon: Calendar, value: stats.upcoming_bookings, label: "Upcoming Bookings", bg: "bg-rose-100", fg: "text-rose-600" },
-          { icon: CreditCard, value: `₹${stats.total_donated.toFixed(2)}`, label: "Total Donations", bg: "bg-emerald-100", fg: "text-emerald-600" },
+          { icon: Ticket, value: stats.active_tickets, label: "Active Tickets", grad: "from-amber-500 to-orange-500", glow: "hover:shadow-amber-500/30" },
+          { icon: Calendar, value: stats.upcoming_bookings, label: "Upcoming Bookings", grad: "from-rose-500 to-pink-500", glow: "hover:shadow-rose-500/30" },
+          { icon: CreditCard, value: `₹${stats.total_donated.toFixed(2)}`, label: "Total Donations", grad: "from-emerald-500 to-teal-500", glow: "hover:shadow-emerald-500/30" },
         ].map((card, i) => (
           <motion.div
             key={card.label}
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: i * 0.08 }}
-            whileHover={{ y: -4 }}
-            className="group bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm hover:shadow-lg hover:shadow-zinc-200/50 transition-shadow duration-300"
+            whileHover={{ y: -6, scale: 1.02 }}
+            className={`group glass-panel p-6 rounded-[1.5rem] shadow-md hover:shadow-2xl ${card.glow} transition-shadow duration-300`}
           >
-            <div className={`w-10 h-10 rounded-full ${card.bg} flex items-center justify-center ${card.fg} mb-4 transition-transform duration-300 group-hover:scale-110`}>
+            <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${card.grad} flex items-center justify-center text-white shadow-lg mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6`}>
               <card.icon className="w-5 h-5" />
             </div>
             <h3 className="text-2xl font-bold text-zinc-900">{card.value}</h3>

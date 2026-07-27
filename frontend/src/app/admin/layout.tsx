@@ -123,7 +123,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className={`fixed inset-y-0 left-0 z-40 w-72 -translate-x-full transition-transform duration-200 ${isMobileNavOpen ? "translate-x-0" : ""} md:translate-x-0 md:static md:w-64 bg-zinc-900 text-white flex-shrink-0 flex flex-col justify-between overflow-y-auto md:sticky md:top-0 md:h-screen border-r border-zinc-800 scrollbar-hide`}>
         <div>
           <div className="h-16 flex items-center justify-between px-6 border-b border-zinc-800">
-            <Link href="/" className="text-xl font-bold bg-gradient-to-r from-amber-400 to-rose-400 bg-clip-text text-transparent">
+            <Link href="/" className="text-xl font-bold text-gradient-vivid">
               Agrawal Samaj
             </Link>
             <button
@@ -186,7 +186,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   href={item.href}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:translate-x-0.5 ${
                     isActive
-                      ? "bg-amber-500/10 text-amber-500 font-semibold"
+                      ? "bg-gradient-to-r from-amber-500/20 to-rose-500/20 text-amber-400 font-semibold shadow-[0_0_12px_rgba(245,158,11,0.25)]"
                       : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
                   }`}
                 >

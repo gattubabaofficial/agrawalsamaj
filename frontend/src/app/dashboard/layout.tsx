@@ -103,11 +103,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className={`h-16 flex items-center justify-between px-6 border-b ${
             role === "ADMIN" ? "border-zinc-800" : "border-zinc-200"
           }`}>
-            <Link href="/" className={`text-xl font-bold ${
-              role === "ADMIN"
-                ? "bg-gradient-to-r from-amber-400 to-rose-400 bg-clip-text text-transparent"
-                : "bg-gradient-to-r from-amber-500 to-rose-600 bg-clip-text text-transparent"
-            }`}>
+            <Link href="/" className="text-xl font-bold text-gradient-vivid">
               Agrawal Samaj
             </Link>
             <button
@@ -174,8 +170,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:translate-x-0.5 ${
                     isActive
                       ? role === "ADMIN"
-                        ? "bg-amber-500/10 text-amber-500 font-semibold"
-                        : "bg-amber-55 text-amber-600 font-semibold"
+                        ? "bg-gradient-to-r from-amber-500/20 to-rose-500/20 text-amber-400 font-semibold shadow-[0_0_12px_rgba(245,158,11,0.25)]"
+                        : "bg-gradient-to-r from-amber-500/15 to-rose-500/15 text-amber-600 font-semibold shadow-[0_0_12px_rgba(245,158,11,0.2)]"
                       : role === "ADMIN"
                         ? "text-zinc-400 hover:bg-zinc-800 hover:text-white"
                         : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
