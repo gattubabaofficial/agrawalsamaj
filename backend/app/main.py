@@ -34,11 +34,22 @@ async def on_startup():
     import app.models.requests
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        try:
-            from sqlalchemy import text
-            await conn.execute(text("ALTER TABLE users ADD COLUMN father_name VARCHAR(100)"))
-        except Exception:
-            pass
+        # SQLite's create_all only creates missing tables, never adds columns to an
+        # existing one. Add newer columns idempotently (each ALTER fails harmlessly
+        # once the column already exists).
+        from sqlalchemy import text
+        for ddl in (
+            "ALTER TABLE users ADD COLUMN father_name VARCHAR(100)",
+            "ALTER TABLE users ADD COLUMN lm_no INTEGER",
+            "ALTER TABLE users ADD COLUMN zone VARCHAR(60)",
+            "ALTER TABLE users ADD COLUMN house_no VARCHAR(60)",
+            "ALTER TABLE users ADD COLUMN contact_mobile VARCHAR(20)",
+            "ALTER TABLE users ADD COLUMN member_status VARCHAR(30) DEFAULT 'active'",
+        ):
+            try:
+                await conn.execute(text(ddl))
+            except Exception:
+                pass
 
 
 # CORS middleware configuration

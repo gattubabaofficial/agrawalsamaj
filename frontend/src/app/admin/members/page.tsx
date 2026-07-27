@@ -4,13 +4,19 @@ import { useEffect, useState } from "react";
 import { Search, Mail, Phone, MapPin, ShieldAlert, Award, FileUser, MessageSquare, HandHeart, Undo2 } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
+import { formatParentage } from "@/utils/member";
 import { useRouter } from "next/navigation";
 
 interface Member {
   user_id: string;
   samaj_id: string | null;
+  lm_no: number | null;
+  zone: string | null;
+  house_no: string | null;
+  member_status: string | null;
   first_name: string;
   surname: string;
+  father_name: string | null;
   profession: string | null;
   profile_photo: string | null;
   family_relation: string | null;
@@ -21,6 +27,21 @@ interface Member {
   address: string | null;
   role: string;
   is_member: boolean;
+}
+
+// Members flagged Shifted / Expired / etc. in the imported list are kept here, not
+// deleted — surfaced with a status badge instead.
+const MEMBER_STATUS_BADGE: Record<string, { label: string; className: string }> = {
+  shifted: { label: "Shifted", className: "bg-amber-50 text-amber-700 border-amber-100" },
+  expired: { label: "Expired", className: "bg-rose-50 text-rose-700 border-rose-100" },
+  sold_out: { label: "Sold Out", className: "bg-orange-50 text-orange-700 border-orange-100" },
+  shifted_sold_out: { label: "Shifted · Sold Out", className: "bg-purple-50 text-purple-700 border-purple-100" },
+  double_name: { label: "Double Name", className: "bg-zinc-100 text-zinc-600 border-zinc-200" },
+};
+
+function getStatusBadge(status: string | null | undefined) {
+  if (!status || status === "active") return null;
+  return MEMBER_STATUS_BADGE[status] ?? { label: status, className: "bg-zinc-100 text-zinc-600 border-zinc-200" };
 }
 
 export default function AdminMembersPage() {
@@ -68,12 +89,24 @@ export default function AdminMembersPage() {
   };
 
   const filteredMembers = members.filter(m => {
-    const fullName = `${m.first_name} ${m.surname}`.toLowerCase();
-    const email = (m.email || "").toLowerCase();
-    const phone = (m.mobile || "").toLowerCase();
-    const samajId = (m.samaj_id || "").toLowerCase();
-    const query = searchQuery.toLowerCase();
-    return fullName.includes(query) || email.includes(query) || phone.includes(query) || samajId.includes(query);
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return true;
+    const haystack = [
+      m.first_name,
+      m.surname,
+      m.father_name,
+      m.email,
+      m.mobile,
+      m.samaj_id,
+      m.lm_no != null ? String(m.lm_no) : "",
+      m.zone,
+      m.house_no,
+      m.address,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(query);
   });
 
   return (
@@ -132,11 +165,22 @@ export default function AdminMembersPage() {
                       )}
                       <div>
                         <h4 className="font-bold text-zinc-900 text-base">{m.first_name} {m.surname}</h4>
-                        {m.samaj_id && (
-                          <span className="inline-flex items-center gap-1 mt-1 text-xs font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-100">
-                            <Award className="w-3.5 h-3.5" /> {m.samaj_id}
-                          </span>
-                        )}
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                          {m.samaj_id && (
+                            <span className="inline-flex items-center gap-1 text-xs font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-100">
+                              <Award className="w-3.5 h-3.5" /> {m.samaj_id}
+                            </span>
+                          )}
+                          {(() => {
+                            const badge = getStatusBadge(m.member_status);
+                            return badge ? (
+                              <span className={`inline-flex items-center text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded border ${badge.className}`}>
+                                {badge.label}
+                              </span>
+                            ) : null;
+                          })()}
+                        </div>
+                        {formatParentage(m.father_name) && <p className="text-xs text-zinc-500 mt-1">{formatParentage(m.father_name)}</p>}
                         {m.profession && <p className="text-xs text-zinc-500 mt-1 italic">{m.profession}</p>}
                       </div>
                     </div>
@@ -163,6 +207,13 @@ export default function AdminMembersPage() {
                         <MapPin className="w-4 h-4 text-zinc-400 mt-0.5" />
                         <span className="line-clamp-2">{m.address || 'No address configured'}</span>
                       </div>
+
+                      {(m.zone || m.house_no) && (
+                        <div className="flex items-center gap-2 text-xs text-zinc-500">
+                          {m.zone && <span className="bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200"><span className="font-semibold">Zone:</span> {m.zone}</span>}
+                          {m.house_no && <span className="bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200"><span className="font-semibold">House:</span> {m.house_no}</span>}
+                        </div>
+                      )}
                     </div>
                   </div>
 

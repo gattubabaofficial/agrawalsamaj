@@ -55,11 +55,18 @@ class User(Base, TimestampMixin):
         nullable=True
     )
     samaj_id: Mapped[Optional[str]] = mapped_column(String(50), unique=True, index=True, nullable=True) # Samaj ID for members
+    lm_no: Mapped[Optional[int]] = mapped_column(index=True, nullable=True) # Life Member number (from voter/member list; not unique — a few numbers repeat)
+    zone: Mapped[Optional[str]] = mapped_column(String(60), nullable=True) # Zone / colony from member list
+    house_no: Mapped[Optional[str]] = mapped_column(String(60), nullable=True) # House No. from member list
     family_relation: Mapped[Optional[str]] = mapped_column(String(50), nullable=True) # Relation to head
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     surname: Mapped[str] = mapped_column(String(100), nullable=False)
     father_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True) # Father's / Husband's name
     mobile: Mapped[Optional[str]] = mapped_column(String(15), unique=True, index=True, nullable=True)
+    # Display-only contact number from the imported member list. Kept separate from the
+    # unique `mobile` (used for login/OTP) because the source list repeats numbers across
+    # people, so they can't all live on a unique column.
+    contact_mobile: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     email: Mapped[Optional[str]] = mapped_column(String(255), unique=True, index=True, nullable=True)
     password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     role: Mapped[UserRole] = mapped_column(
@@ -68,6 +75,10 @@ class User(Base, TimestampMixin):
         nullable=False
     )
     is_member: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Lifecycle status for members carried over from the printed list. We never delete
+    # people who moved away or passed on — they stay in the directory flagged instead.
+    # Values: active | shifted | expired | sold_out | shifted_sold_out | double_name
+    member_status: Mapped[str] = mapped_column(String(30), default="active", nullable=False)
     profession: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     address: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     profile_photo: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)

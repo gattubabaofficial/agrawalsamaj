@@ -2,16 +2,21 @@
 
 import { useState, useEffect } from "react";
 import { 
-  Search, Mail, Phone, MapPin, Lock, Award, FileUser, Edit3, UserPlus, 
+  Search, Phone, MapPin, Lock, Award, Edit3, UserPlus,
   CheckCircle2, AlertCircle, ShieldCheck, X, Send, KeyRound, UserCheck, RefreshCw, Eye, MessageSquare, User
 } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
+import { formatParentage } from "@/utils/member";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Member {
   user_id: string;
   samaj_id: string | null;
+  lm_no: number | null;
+  zone: string | null;
+  house_no: string | null;
+  member_status: string | null;
   first_name: string;
   surname: string;
   father_name: string | null;
@@ -27,6 +32,21 @@ interface Member {
   address_private: boolean;
   role: string;
   is_member: boolean;
+}
+
+// Members flagged Shifted / Expired / etc. in the source list are kept in the
+// directory, not deleted — they are surfaced with a status badge instead.
+const MEMBER_STATUS_BADGE: Record<string, { label: string; className: string }> = {
+  shifted: { label: "Shifted", className: "bg-amber-50 text-amber-700 border-amber-200" },
+  expired: { label: "Expired", className: "bg-rose-50 text-rose-700 border-rose-200" },
+  sold_out: { label: "Sold Out", className: "bg-orange-50 text-orange-700 border-orange-200" },
+  shifted_sold_out: { label: "Shifted · Sold Out", className: "bg-purple-50 text-purple-700 border-purple-200" },
+  double_name: { label: "Double Name", className: "bg-zinc-100 text-zinc-600 border-zinc-200" },
+};
+
+function getStatusBadge(status: string | null | undefined) {
+  if (!status || status === "active") return null;
+  return MEMBER_STATUS_BADGE[status] ?? { label: status, className: "bg-zinc-100 text-zinc-600 border-zinc-200" };
 }
 
 export default function PublicMembersPage() {
@@ -119,6 +139,9 @@ export default function PublicMembersPage() {
       `${m.first_name} ${m.surname}`,
       m.father_name || "",
       m.samaj_id || "",
+      m.lm_no != null ? String(m.lm_no) : "",
+      m.zone || "",
+      m.house_no || "",
       m.profession || "",
       m.address || "",
       m.mobile || "",
@@ -425,114 +448,113 @@ export default function PublicMembersPage() {
             </div>
           </div>
         ) : (
-          /* Members Grid */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          /* Members List */
+          <div className="border border-zinc-200/80 rounded-2xl bg-white divide-y divide-zinc-100 overflow-hidden shadow-sm">
             {filteredMembers.map((m) => {
               const initials = `${m.first_name.charAt(0)}${m.surname.charAt(0)}`.toUpperCase();
+              const badge = getStatusBadge(m.member_status);
               return (
                 <div
                   key={m.user_id}
-                  className="bg-white border border-zinc-200/80 rounded-3xl p-6 hover:shadow-lg transition-all duration-300 relative flex flex-col justify-between group overflow-hidden"
+                  className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4 px-4 py-3.5 hover:bg-amber-50/30 transition-colors group"
                 >
-                  <div className="space-y-4">
-                    {/* Top Avatar & Samaj ID Header */}
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-center gap-3.5">
-                        {m.profile_photo ? (
-                          <img
-                            src={m.profile_photo}
-                            alt={`${m.first_name} ${m.surname}`}
-                            className="w-14 h-14 rounded-2xl object-cover border-2 border-amber-500/20 shadow-sm"
-                          />
-                        ) : (
-                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
-                            {initials}
-                          </div>
-                        )}
-                        <div>
-                          <h3 className="font-bold text-zinc-900 text-lg group-hover:text-amber-600 transition-colors">
-                            {m.first_name} {m.surname}
-                          </h3>
-                          {m.father_name && (
-                            <p className="text-xs text-zinc-500 font-medium">S/o, W/o: {m.father_name}</p>
-                          )}
-                          {m.samaj_id ? (
-                            <span className="inline-flex items-center gap-1 text-xs font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200/50 mt-1">
-                              <Award className="w-3.5 h-3.5 text-amber-600" /> {m.samaj_id}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-zinc-400 italic">Member ID Pending</span>
-                          )}
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => handleOpenEdit(m)}
-                        title="Edit profile via OTP"
-                        className="p-2 text-zinc-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {/* Profession */}
-                    {m.profession && (
-                      <div className="inline-block px-3 py-1 bg-zinc-100 text-zinc-700 rounded-xl text-xs font-medium">
-                        💼 {m.profession}
+                  {/* Identity */}
+                  <div className="flex items-center gap-3 min-w-0 lg:w-64 xl:w-72 flex-shrink-0">
+                    {m.profile_photo ? (
+                      <img
+                        src={m.profile_photo}
+                        alt={`${m.first_name} ${m.surname}`}
+                        className="w-11 h-11 rounded-xl object-cover border-2 border-amber-500/20 shadow-sm flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-400 to-orange-600 text-white flex items-center justify-center font-bold text-sm shadow-sm flex-shrink-0">
+                        {initials}
                       </div>
                     )}
-
-                    {/* Details Info List */}
-                    <div className="border-t border-zinc-100 pt-3 space-y-2.5 text-sm">
-                      {/* Mobile */}
-                      <div className="flex items-center justify-between text-zinc-600 bg-zinc-50/70 px-3 py-2 rounded-xl border border-zinc-200/50">
-                        <div className="flex items-center gap-2">
-                          <Phone className="w-4 h-4 text-amber-500" />
-                          <span className="font-medium text-xs">Phone</span>
-                        </div>
-                        {m.mobile_private ? (
-                          <span className="text-xs font-bold text-zinc-400 flex items-center gap-1">
-                            <Lock className="w-3 h-3 text-amber-600" /> Private
-                          </span>
-                        ) : (
-                          <span className="text-xs font-mono font-bold text-zinc-800">
-                            {m.mobile_masked || (m.mobile ? `XXXXXXX${m.mobile.slice(-3)}` : "N/A")}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-bold text-zinc-900 text-sm sm:text-base truncate group-hover:text-amber-600 transition-colors">
+                          {m.first_name} {m.surname}
+                        </h3>
+                        {badge && (
+                          <span className={`inline-flex items-center text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded border ${badge.className}`}>
+                            {badge.label}
                           </span>
                         )}
                       </div>
-
-                      {/* Email */}
-                      <div className="flex items-center justify-between text-zinc-600 bg-zinc-50/70 px-3 py-2 rounded-xl border border-zinc-200/50">
-                        <div className="flex items-center gap-2">
-                          <Mail className="w-4 h-4 text-amber-500" />
-                          <span className="font-medium text-xs">Email</span>
-                        </div>
-                        {m.email_private || !m.email ? (
-                          <span className="text-xs font-bold text-zinc-400 flex items-center gap-1">
-                            <Lock className="w-3 h-3 text-amber-600" /> Private
-                          </span>
-                        ) : (
-                          <span className="text-xs font-semibold text-zinc-800 truncate max-w-[150px]">
-                            {m.email}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Address */}
-                      {m.address && !m.address_private && (
-                        <div className="flex items-start gap-2 text-zinc-600 bg-zinc-50/70 px-3 py-2 rounded-xl border border-zinc-200/50 text-xs">
-                          <MapPin className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                          <span className="leading-snug text-zinc-700 font-medium">{m.address}</span>
-                        </div>
+                      {formatParentage(m.father_name) && (
+                        <p className="text-xs text-zinc-500 truncate">{formatParentage(m.father_name)}</p>
+                      )}
+                      {m.samaj_id ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/50 mt-0.5">
+                          <Award className="w-3 h-3 text-amber-600" /> {m.samaj_id}
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-zinc-400 italic">ID Pending</span>
                       )}
                     </div>
                   </div>
 
-                  {/* TWO ACTION BUTTONS AT BOTTOM: View Details & Message */}
-                  <div className="border-t border-zinc-100 pt-4 mt-4 grid grid-cols-2 gap-2">
+                  {/* Key details */}
+                  <div className="flex-1 min-w-0 grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1.5 text-xs">
+                    {/* Phone */}
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Phone className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                      {m.mobile_private ? (
+                        <span className="font-semibold text-zinc-400 flex items-center gap-1"><Lock className="w-3 h-3 text-amber-600" /> Private</span>
+                      ) : (
+                        <span className="font-mono font-semibold text-zinc-700 truncate">
+                          {m.mobile_masked || (m.mobile ? `XXXXXXX${m.mobile.slice(-3)}` : "N/A")}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Zone */}
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-zinc-400 font-semibold flex-shrink-0">Zone:</span>
+                      <span className="text-zinc-700 font-medium truncate">{m.zone || "—"}</span>
+                    </div>
+
+                    {/* House No. */}
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-zinc-400 font-semibold flex-shrink-0">House:</span>
+                      <span className="text-zinc-700 font-medium truncate">{m.house_no || "—"}</span>
+                    </div>
+
+                    {/* Profession */}
+                    {m.profession ? (
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-zinc-700 font-medium truncate">💼 {m.profession}</span>
+                      </div>
+                    ) : (
+                      <div className="hidden md:block" />
+                    )}
+
+                    {/* Address (full width) */}
+                    <div className="col-span-2 md:col-span-4 flex items-start gap-1.5 min-w-0">
+                      <MapPin className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-zinc-600 font-medium truncate">
+                        {m.address && !m.address_private
+                          ? m.address
+                          : m.address_private
+                            ? "Address private"
+                            : "No address on record"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions: Edit (OTP), View Details & Message */}
+                  <div className="flex items-center gap-2 flex-shrink-0 lg:justify-end border-t border-zinc-100 pt-3 mt-1 lg:border-t-0 lg:pt-0 lg:mt-0">
+                    <button
+                      onClick={() => handleOpenEdit(m)}
+                      title="Edit profile via OTP"
+                      className="p-2 text-zinc-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all flex-shrink-0"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
                     <button
                       onClick={() => setViewMemberModal(m)}
-                      className="py-2.5 px-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors"
+                      className="py-2 px-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap"
                     >
                       <Eye className="w-4 h-4 text-zinc-500" /> View Details
                     </button>
@@ -547,7 +569,7 @@ export default function PublicMembersPage() {
                         setMessageError("");
                         setMessageSuccessMsg("");
                       }}
-                      className="py-2.5 px-3 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors"
+                      className="py-2 px-3 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap"
                     >
                       <MessageSquare className="w-4 h-4 text-amber-600" /> Message
                     </button>
@@ -869,11 +891,21 @@ export default function PublicMembersPage() {
                   )}
                   <div>
                     <h3 className="text-xl font-bold">{viewMemberModal.first_name} {viewMemberModal.surname}</h3>
-                    {viewMemberModal.samaj_id && (
-                      <span className="inline-flex items-center gap-1 text-xs font-mono font-bold bg-white/20 text-white px-2.5 py-0.5 rounded-lg border border-white/30 mt-1">
-                        <Award className="w-3.5 h-3.5" /> {viewMemberModal.samaj_id}
-                      </span>
-                    )}
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                      {viewMemberModal.samaj_id && (
+                        <span className="inline-flex items-center gap-1 text-xs font-mono font-bold bg-white/20 text-white px-2.5 py-0.5 rounded-lg border border-white/30">
+                          <Award className="w-3.5 h-3.5" /> {viewMemberModal.samaj_id}
+                        </span>
+                      )}
+                      {(() => {
+                        const badge = getStatusBadge(viewMemberModal.member_status);
+                        return badge ? (
+                          <span className="inline-flex items-center text-[11px] font-bold uppercase tracking-wide bg-white/20 text-white px-2 py-0.5 rounded-lg border border-white/30">
+                            {badge.label}
+                          </span>
+                        ) : null;
+                      })()}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -881,10 +913,41 @@ export default function PublicMembersPage() {
               {/* Body Details */}
               <div className="p-6 space-y-4">
                 <div className="grid grid-cols-1 gap-3 text-sm">
+                  {/* LM No. */}
+                  <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-200/60 flex items-center justify-between">
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">LM No.</span>
+                    <span className="font-semibold text-zinc-900">{viewMemberModal.lm_no ?? "Not specified"}</span>
+                  </div>
+
                   {/* Father / Husband Name */}
                   <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-200/60 flex items-center justify-between">
                     <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Father's / Husband's Name</span>
-                    <span className="font-semibold text-zinc-900">{viewMemberModal.father_name || "Not specified"}</span>
+                    <span className="font-semibold text-zinc-900">{formatParentage(viewMemberModal.father_name) || "Not specified"}</span>
+                  </div>
+
+                  {/* Zone & House No. */}
+                  <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-200/60 flex items-center justify-between">
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Zone / House No.</span>
+                    <span className="font-semibold text-zinc-900">
+                      {[viewMemberModal.zone, viewMemberModal.house_no].filter(Boolean).join(" / ") || "Not specified"}
+                    </span>
+                  </div>
+
+                  {/* Status */}
+                  <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-200/60 flex items-center justify-between">
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Status</span>
+                    {(() => {
+                      const badge = getStatusBadge(viewMemberModal.member_status);
+                      return badge ? (
+                        <span className={`inline-flex items-center text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-lg border ${badge.className}`}>
+                          {badge.label}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-200">
+                          Active
+                        </span>
+                      );
+                    })()}
                   </div>
 
                   {/* Profession */}

@@ -389,20 +389,28 @@ async def list_members(
     
     data = []
     for u in users:
+        # Imported list members keep their number in `contact_mobile` (non-unique);
+        # registered members use `mobile`. Display whichever is present.
+        display_mobile = u.mobile or u.contact_mobile
+
         # Email, address, mobile privacy handling
         if is_admin:
             email_val = u.email
-            mobile_val = u.mobile
+            mobile_val = display_mobile
             address_val = u.address
         else:
             email_val = None if u.email_private else u.email
             address_val = None if u.address_private else u.address
             # Mask phone string: replace all digits except last 3 with X
-            mobile_val = None if u.mobile_private else mask_phone_number(u.mobile)
+            mobile_val = None if u.mobile_private else mask_phone_number(display_mobile)
 
         data.append({
             "user_id": str(u.user_id),
             "samaj_id": u.samaj_id,
+            "lm_no": u.lm_no,
+            "zone": u.zone,
+            "house_no": u.house_no,
+            "member_status": u.member_status or "active",
             "first_name": u.first_name,
             "surname": u.surname,
             "father_name": u.father_name,
@@ -411,7 +419,7 @@ async def list_members(
             "family_relation": u.family_relation,
             "email": email_val,
             "mobile": mobile_val,
-            "mobile_masked": mask_phone_number(u.mobile),
+            "mobile_masked": mask_phone_number(display_mobile),
             "address": address_val,
             "mobile_private": u.mobile_private,
             "email_private": u.email_private,
