@@ -172,6 +172,7 @@ export default function BlogPage() {
               <motion.article
                 key={blog.blog_id}
                 variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+                whileHover={{ y: -4 }}
                 className="group bg-white rounded-2xl overflow-hidden border border-zinc-100 hover:border-amber-200 hover:shadow-lg hover:shadow-amber-100/50 transition-all duration-300 flex flex-col"
               >
                 {/* Cover */}

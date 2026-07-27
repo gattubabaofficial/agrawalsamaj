@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Calendar, Users, MapPin, ArrowLeft, CheckCircle, Clock, User, Phone, Ticket, X, Sparkles, PartyPopper, Ban, AlertTriangle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
 import { formatDateDDMonthYYYY } from "@/utils/date";
@@ -586,31 +587,50 @@ export default function RoomBookingPage() {
                   )}
 
                   {/* Official User Side Calculation Summary */}
-                  {quote.days > 0 && (
-                    <div className="space-y-2 p-3.5 bg-zinc-50 rounded-xl border border-zinc-200 text-xs">
-                      <div className="flex justify-between text-zinc-600 font-medium">
-                        <span>Duration</span>
-                        <span>{quote.days} Day(s)</span>
-                      </div>
-                      <div className="flex justify-between text-zinc-600 font-medium">
-                        <span>Facility Rent</span>
-                        <span>₹{quote.netRent}</span>
-                      </div>
-                      {quote.cleaningCharge > 0 && (
+                  <AnimatePresence>
+                    {quote.days > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -8, height: 0 }}
+                        animate={{ opacity: 1, y: 0, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className="space-y-2 p-3.5 bg-zinc-50 rounded-xl border border-zinc-200 text-xs overflow-hidden"
+                      >
                         <div className="flex justify-between text-zinc-600 font-medium">
-                          <span>Mandatory Cleaning Charge</span>
-                          <span>+₹{quote.cleaningCharge}</span>
+                          <span>Duration</span>
+                          <span>{quote.days} Day(s)</span>
                         </div>
-                      )}
-                      <p className="text-[10px] text-zinc-400 italic pt-1">
-                        * Electricity @ ₹15/kWh based on meter reading settled at venue.
-                      </p>
-                      <div className="flex justify-between font-bold text-zinc-900 pt-2 border-t border-zinc-200 text-sm">
-                        <span>Total Payable</span>
-                        <span className="text-amber-600 font-extrabold text-base">₹{payableAmount}</span>
-                      </div>
-                    </div>
-                  )}
+                        <div className="flex justify-between text-zinc-600 font-medium">
+                          <span>Facility Rent</span>
+                          <span>₹{quote.netRent}</span>
+                        </div>
+                        {quote.cleaningCharge > 0 && (
+                          <div className="flex justify-between text-zinc-600 font-medium">
+                            <span>Mandatory Cleaning Charge</span>
+                            <span>+₹{quote.cleaningCharge}</span>
+                          </div>
+                        )}
+                        <p className="text-[10px] text-zinc-400 italic pt-1">
+                          * Electricity @ ₹15/kWh based on meter reading settled at venue.
+                        </p>
+                        <div className="flex justify-between items-baseline font-bold text-zinc-900 pt-2 border-t border-zinc-200 text-sm">
+                          <span>Total Payable</span>
+                          <AnimatePresence mode="popLayout">
+                            <motion.span
+                              key={payableAmount}
+                              initial={{ opacity: 0, y: -6 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: 6 }}
+                              transition={{ duration: 0.2 }}
+                              className="text-amber-600 font-extrabold text-base"
+                            >
+                              ₹{payableAmount}
+                            </motion.span>
+                          </AnimatePresence>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
                   <div className="space-y-3 pt-3 border-t border-zinc-100">
                     <div className="space-y-2">
@@ -637,7 +657,7 @@ export default function RoomBookingPage() {
                     </label>
                   </div>
 
-                  <button disabled={isSubmitting || quote.days <= 0 || !agreedToTerms || isBlockedOrFull} type="submit" className="w-full py-3.5 mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm rounded-xl transition-colors disabled:opacity-50 shadow-md">
+                  <button disabled={isSubmitting || quote.days <= 0 || !agreedToTerms || isBlockedOrFull} type="submit" className="w-full py-3.5 mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm rounded-xl transition-all disabled:opacity-50 shadow-md hover:shadow-lg active:scale-[0.98] disabled:active:scale-100">
                     {isSubmitting
                       ? "Processing..."
                       : isBlockedOrFull

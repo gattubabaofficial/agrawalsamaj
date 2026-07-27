@@ -240,7 +240,7 @@ export default function SpecialEventsPage() {
         {editingId === null && (
           <button
             onClick={openCreate}
-            className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl px-4 py-2 text-sm font-semibold"
+            className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl px-4 py-2 text-sm font-semibold transition-all shadow-sm hover:shadow-md active:scale-95"
           >
             <Plus className="w-4 h-4" /> New Event
           </button>
@@ -457,7 +457,7 @@ export default function SpecialEventsPage() {
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl px-5 py-2 text-sm font-semibold"
+              className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl px-5 py-2 text-sm font-semibold transition-all shadow-sm hover:shadow-md active:scale-95 disabled:active:scale-100"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
               {editingId ? "Save Changes" : "Create Event"}
@@ -480,7 +480,7 @@ export default function SpecialEventsPage() {
               </thead>
               <tbody>
                 {events.map((ev) => (
-                  <tr key={ev.event_id} className="border-b border-zinc-100 align-top">
+                  <tr key={ev.event_id} className="border-b border-zinc-100 align-top hover:bg-amber-50/30 transition-colors">
                     <td className="py-3 px-4">
                       <div className="font-semibold text-zinc-900">{ev.name}</div>
                       {ev.description && <div className="text-xs text-zinc-400 max-w-[200px]">{ev.description}</div>}
@@ -524,8 +524,8 @@ export default function SpecialEventsPage() {
                     <td className="py-3 px-4">
                       <button
                         onClick={() => toggleActive(ev)}
-                        className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${
-                          ev.is_active ? "bg-emerald-100 text-emerald-700" : "bg-zinc-100 text-zinc-500"
+                        className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full transition-all hover:scale-105 active:scale-95 ${
+                          ev.is_active ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
                         }`}
                       >
                         {ev.is_active ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}

@@ -189,12 +189,13 @@ export default function BhavanPage() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: idx * 0.05 }}
-              className="p-8 rounded-3xl border border-zinc-200/50 bg-white flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow group"
+              whileHover={{ y: -6 }}
+              className="p-8 rounded-3xl border border-zinc-200/50 bg-white flex flex-col justify-between shadow-sm hover:shadow-xl hover:shadow-zinc-200/60 transition-shadow duration-300 group"
             >
               <div className="space-y-6">
                 {/* Icon & Title */}
                 <div className="space-y-4">
-                  <div className="inline-flex p-3 rounded-2xl bg-amber-500/10 text-amber-600">
+                  <div className="inline-flex p-3 rounded-2xl bg-amber-500/10 text-amber-600 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
                     <Building className="w-6 h-6" />
                   </div>
                   <div className="space-y-1">
@@ -240,9 +241,9 @@ export default function BhavanPage() {
                 </div>
                 <Link
                   href={`/bhavan/${fac.room_id}`}
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-all shadow-sm hover:shadow-md active:scale-95"
                 >
-                  Book Facility <ArrowRight className="w-3.5 h-3.5" />
+                  Book Facility <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
                 </Link>
               </div>
             </motion.div>

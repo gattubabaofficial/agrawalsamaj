@@ -45,8 +45,16 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center justify-center pt-20 pb-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-amber-50/50 via-white to-white">
         <div className="absolute inset-0 z-0">
-          <div className="absolute top-1/4 left-1/10 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/4 right-1/10 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl" />
+          <motion.div
+            className="absolute top-1/4 left-1/10 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl"
+            animate={{ scale: [1, 1.15, 1], opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div
+            className="absolute bottom-1/4 right-1/10 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl"
+            animate={{ scale: [1, 1.15, 1], opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+          />
         </div>
 
         <div className="max-w-7xl mx-auto z-10 text-center">
@@ -71,14 +79,14 @@ export default function HomePage() {
             <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
               <Link
                 href="/register"
-                className="flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold text-lg shadow-lg shadow-amber-500/25 hover:shadow-orange-600/30 transition-all hover:scale-[1.01]"
+                className="group flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold text-lg shadow-lg shadow-amber-500/25 hover:shadow-orange-600/30 transition-all hover:scale-[1.02] active:scale-[0.97]"
               >
                 Join the Directory
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
               </Link>
               <Link
                 href="/about"
-                className="flex items-center justify-center px-8 py-4 rounded-full border border-zinc-200 text-zinc-700 font-semibold text-lg bg-white/50 backdrop-blur hover:bg-zinc-50 transition-colors"
+                className="flex items-center justify-center px-8 py-4 rounded-full border border-zinc-200 text-zinc-700 font-semibold text-lg bg-white/50 backdrop-blur hover:bg-zinc-50 transition-all hover:scale-[1.02] active:scale-[0.97]"
               >
                 Learn More
               </Link>
@@ -134,10 +142,11 @@ export default function HomePage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: index * 0.15 }}
-              className="flex flex-col justify-between p-8 rounded-3xl border border-zinc-200/60 bg-white shadow-sm hover:shadow-md transition-shadow group"
+              whileHover={{ y: -6 }}
+              className="flex flex-col justify-between p-8 rounded-3xl border border-zinc-200/60 bg-white shadow-sm hover:shadow-xl hover:shadow-zinc-200/60 transition-shadow duration-300 group"
             >
               <div className="space-y-6">
-                <div className={`inline-flex p-4 rounded-2xl bg-gradient-to-r ${feature.color} text-white shadow-md`}>
+                <div className={`inline-flex p-4 rounded-2xl bg-gradient-to-r ${feature.color} text-white shadow-md transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3`}>
                   <feature.icon className="w-6 h-6" />
                 </div>
                 <div className="space-y-2">
@@ -154,7 +163,7 @@ export default function HomePage() {
                   href={feature.href}
                   className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-600 hover:text-amber-700 transition-colors"
                 >
-                  {feature.actionText} <ArrowRight className="w-4 h-4" />
+                  {feature.actionText} <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                 </Link>
               </div>
             </motion.div>
@@ -167,14 +176,20 @@ export default function HomePage() {
 
       {/* Banner/Maharaja Agrasen Quote */}
       <section className="bg-gradient-to-r from-amber-500/90 to-orange-600/90 text-white py-20 px-4 sm:px-6 lg:px-8 text-center relative overflow-hidden">
-        <div className="max-w-4xl mx-auto space-y-6 z-10 relative">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="max-w-4xl mx-auto space-y-6 z-10 relative"
+        >
           <blockquote className="text-2xl sm:text-3xl font-medium italic leading-relaxed">
             "A society can only progress when the welfare of every citizen is secured, and we support one another as a single family."
           </blockquote>
           <cite className="block text-lg font-semibold uppercase tracking-wider not-italic">
             — Maharaja Agrasen
           </cite>
-        </div>
+        </motion.div>
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white via-zinc-900 to-black z-0" />
       </section>
     </div>

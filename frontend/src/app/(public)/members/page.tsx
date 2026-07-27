@@ -449,14 +449,19 @@ export default function PublicMembersPage() {
           </div>
         ) : (
           /* Members List */
-          <div className="border border-zinc-200/80 rounded-2xl bg-white divide-y divide-zinc-100 overflow-hidden shadow-sm">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="border border-zinc-200/80 rounded-2xl bg-white divide-y divide-zinc-100 overflow-hidden shadow-sm"
+          >
             {filteredMembers.map((m) => {
               const initials = `${m.first_name.charAt(0)}${m.surname.charAt(0)}`.toUpperCase();
               const badge = getStatusBadge(m.member_status);
               return (
                 <div
                   key={m.user_id}
-                  className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4 px-4 py-3.5 hover:bg-amber-50/30 transition-colors group"
+                  className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4 px-4 py-3.5 border-l-2 border-transparent hover:border-amber-400 hover:bg-amber-50/30 transition-all duration-200 group"
                 >
                   {/* Identity */}
                   <div className="flex items-center gap-3 min-w-0 lg:w-64 xl:w-72 flex-shrink-0">
@@ -577,7 +582,7 @@ export default function PublicMembersPage() {
                 </div>
               );
             })}
-          </div>
+          </motion.div>
         )}
       </div>
 
