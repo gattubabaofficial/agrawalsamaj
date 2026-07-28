@@ -33,8 +33,8 @@ export default function Ledger() {
         {ENTRIES.map((entry) => (
           <RevealItem key={entry.label}>
             <div className="group flex items-baseline justify-between gap-6 border-b border-rule py-6 sm:py-7">
-              <span className="text-sm text-ink-2 sm:text-base">{entry.label}</span>
-              <span className="figure text-[clamp(2rem,6vw,3.75rem)] leading-none text-ink">
+              <span className="text-lg text-ink-2 sm:text-xl">{entry.label}</span>
+              <span className="figure text-[clamp(1.75rem,4.5vw,2.75rem)] leading-none text-ink">
                 <CountUp to={entry.value} />
               </span>
             </div>
