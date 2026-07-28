@@ -3,76 +3,254 @@
 @import "@uiw/react-md-editor/markdown-editor.css";
 @import "@uiw/react-markdown-preview/markdown.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ═══════════════════════════════════════════════════════════════════
+   AGRAWAL SAMAJ — heritage editorial design system
+
+   The register is an architect's drawing on warm paper: hairlines,
+   crop marks, tabular numerals, generous air. Colour is spent only
+   where it means something. Every value below is a decision — if you
+   need a new one, add it here rather than inlining a hex.
+   ═══════════════════════════════════════════════════════════════════ */
+
+@theme {
+  /* ── Surface ───────────────────────────────────────────────────── */
+  --color-paper: #faf7f2; /* page base — warm, never sterile white */
+  --color-paper-2: #f2ede5; /* recessed panels, table stripes */
+  --color-paper-3: #e7dfd3; /* pressed / active surface */
+  --color-char: #0f0c0a; /* full-bleed dark sections */
+
+  /* ── Ink ───────────────────────────────────────────────────────── */
+  --color-ink: #16110e; /* headlines and body */
+  --color-ink-2: #4a423c; /* secondary text */
+  --color-ink-3: #8c8079; /* eyebrows, captions, meta */
+
+  /* ── Accent ────────────────────────────────────────────────────── */
+  --color-vermilion: #c8321e; /* primary action, active state */
+  --color-vermilion-deep: #9c2415; /* hover / pressed */
+  --color-saffron: #e0761f; /* secondary accent */
+  --color-gold: #b8892f; /* hairline ornament ONLY — never text */
+
+  /* ── Rules ─────────────────────────────────────────────────────── */
+  --color-rule: #ded4c6; /* standard hairline on paper */
+  --color-rule-strong: #c4b6a3; /* emphasised hairline */
+
+  /* ── Type ──────────────────────────────────────────────────────── */
+  --font-display: var(--font-lora), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-deva: var(--font-noto-deva), "Nirmala UI", sans-serif;
+
+  /* ── Motion ────────────────────────────────────────────────────── */
+  /* One curve for the whole site. Expo-out: fast commit, soft landing. */
+  --ease-editorial: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Legacy aliases so the existing background/foreground utilities keep
+   resolving after the palette change. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--color-paper);
+  --color-foreground: var(--color-ink);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Base
+   ───────────────────────────────────────────────────────────────── */
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  /* 17px base, not 15px. Most of this readership is over 40 and reading on a
+     phone; the usual 14–15px web default is the single biggest thing that
+     makes a site feel hostile to them. Paired with a 1.65 leading. */
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  /* `clip`, not `hidden`: hidden would make this a scroll container and
+     break every position:sticky descendant. */
+  overflow-x: clip;
+}
+
+/* Body copy sits in a measure of roughly 65–75 characters — past that the
+   eye loses its place returning to the next line. */
+.prose-measure {
+  max-width: 38rem;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-vermilion) 18%, transparent);
+  color: var(--color-ink);
+}
+
+/* Keyboard focus must always be visible — never remove this. */
+:focus-visible {
+  outline: 2px solid var(--color-vermilion);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Type utilities
+   ───────────────────────────────────────────────────────────────── */
+
+/* Display headline. Fraunces at low weight with a high optical size is
+   where this face earns its keep — big, thin, and confident. */
+.display {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-variation-settings: "SOFT" 0, "WONK" 0, "opsz" 144;
+  letter-spacing: -0.022em;
+  line-height: 0.94;
+  text-wrap: balance;
+}
+
+.display-italic {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-style: italic;
+  font-variation-settings: "SOFT" 40, "WONK" 1, "opsz" 144;
+  letter-spacing: -0.015em;
+  line-height: 1.06;
+  text-wrap: balance;
+}
+
+/* The small caps label that sits above almost every section. */
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  color: var(--color-ink-3);
+}
+
+/* Ledger figures: aligned columns, fixed-width digits. */
+.figure {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.03em;
+}
+
+.deva {
+  font-family: var(--font-deva);
+  font-weight: 400;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Ornament
+   ───────────────────────────────────────────────────────────────── */
+
+/* Film grain. A CSS-only repeating gradient at very low alpha —
+   enough tooth to stop large paper fields looking flat, no image cost. */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(22, 17, 14, 0.012) 0px,
+      rgba(22, 17, 14, 0.012) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(22, 17, 14, 0.012) 0px,
+      rgba(22, 17, 14, 0.012) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+}
+
+/* Underline that grows from the left on hover — the nav's active tell. */
+.rule-grow {
+  background-image: linear-gradient(
+    var(--color-vermilion),
+    var(--color-vermilion)
+  );
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 1px;
+  transition: background-size 0.45s var(--ease-editorial);
+}
+.rule-grow:hover,
+.rule-grow[data-active="true"] {
+  background-size: 100% 1px;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Legacy utilities
+
+   Still referenced by admin/layout.tsx, dashboard/layout.tsx and a few
+   inner public pages that this pass does not touch. Redefined against
+   the new tokens so those screens inherit the palette instead of
+   breaking. Do not use these in new work.
+   ───────────────────────────────────────────────────────────────── */
+
+.glass-panel {
+  background: color-mix(in srgb, var(--color-paper) 82%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-rule);
+}
+
+.glass-panel-dark {
+  background: color-mix(in srgb, var(--color-char) 78%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.animated-gradient-mesh {
+  background: var(--color-paper-2);
+}
+
+.glow-pulse {
+  box-shadow: none;
+}
+
+.text-gradient-vivid {
+  color: var(--color-vermilion);
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
 }
 
 /* Hide scrollbar but keep scrollable */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* IE/Edge */
-  scrollbar-width: none;     /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none; /* Firefox */
 }
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;             /* Chrome/Safari/Opera */
+  display: none; /* Chrome/Safari/Opera */
 }
 
-/* ───────── Bold gradient + glassmorphism theme utilities ─────────
-   Same amber/orange/rose palette as the rest of the app, pushed harder:
-   frosted glass panels, animated gradient washes, glowing shadows. */
+/* ─────────────────────────────────────────────────────────────────
+   Reduced motion
 
-.glass-panel {
-  background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-}
+   The cinematic hero collapses to its final frame via JS (see
+   useReducedMotion in CovenantHero). This block handles everything
+   else: no transitions, no smooth scroll, no ambient drift.
+   ───────────────────────────────────────────────────────────────── */
 
-.glass-panel-dark {
-  background: rgba(24, 24, 27, 0.55);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 
-@keyframes gradient-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-.animated-gradient-mesh {
-  background: linear-gradient(120deg, #fef3c7, #fed7aa, #fecdd3, #fde68a, #fecaca);
-  background-size: 300% 300%;
-  animation: gradient-shift 12s ease infinite;
-}
-
-@keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 20px 0px rgba(245, 158, 11, 0.35), 0 0 40px 0px rgba(244, 63, 94, 0.15); }
-  50% { box-shadow: 0 0 35px 5px rgba(245, 158, 11, 0.55), 0 0 60px 10px rgba(244, 63, 94, 0.25); }
-}
-
-.glow-pulse {
-  animation: glow-pulse 3s ease-in-out infinite;
-}
-
-.text-gradient-vivid {
-  background: linear-gradient(90deg, #f59e0b, #f97316, #f43f5e, #f97316, #f59e0b);
-  background-size: 300% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: gradient-shift 6s ease infinite;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

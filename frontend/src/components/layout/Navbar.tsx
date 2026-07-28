@@ -2,24 +2,24 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Menu, X, Heart, Calendar, Building, Info, Home,
-  BookOpen, LayoutDashboard, LogOut, User, ChevronDown, Shield, QrCode, Users
+  BookOpen, LayoutDashboard, LogOut, User, QrCode, Users
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getApiBaseUrl } from "@/utils/api";
+import { EASE } from "@/components/ui/motion";
 
 const navItems = [
   { name: "Home", href: "/", icon: Home },
-  { name: "About Us", href: "/about", icon: Info },
-  { name: "Members", href: "/members", icon: Users },
+  { name: "About", href: "/about", icon: Info },
+  { name: "Directory", href: "/members", icon: Users },
   { name: "Events", href: "/events", icon: Calendar },
   { name: "Blog", href: "/blog", icon: BookOpen },
-  { name: "Bhavan Booking", href: "/bhavan", icon: Building },
-  { name: "Donations", href: "/donate", icon: Heart },
+  { name: "Bhavan", href: "/bhavan", icon: Building },
+  { name: "Donate", href: "/donate", icon: Heart },
 ];
-
 
 interface AuthUser {
   name: string;
@@ -29,7 +29,6 @@ interface AuthUser {
 
 export default function Navbar() {
   const pathname = usePathname();
-  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
@@ -59,6 +58,12 @@ export default function Navbar() {
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, []);
+
+  // Lock the page while the mobile sheet is open.
+  useEffect(() => {
+    document.body.style.overflow = isOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
 
   const checkAuth = async () => {
     const token = localStorage.getItem("token");
@@ -115,117 +120,104 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`sticky top-0 z-50 transition-all duration-300 ${
+      // Padding stays fixed. A nav that resizes on scroll is in normal flow,
+      // so it shifts every section below it mid-scroll — which shows up as
+      // jitter and quietly corrupts the hero's scroll-progress maths.
+      className={`sticky top-0 z-50 py-4 transition-colors duration-500 ${
         scrolled
-          ? "glass-panel shadow-xl shadow-amber-500/10 py-3"
-          : "bg-transparent py-5"
+          ? "border-b border-rule bg-paper/85 backdrop-blur-xl"
+          : "border-b border-transparent bg-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-12">
-          {/* Logo */}
-          <div className="flex-shrink-0">
-            <Link href="/" className="flex items-center gap-2 group">
-              <span className="text-2xl font-bold text-gradient-vivid group-hover:scale-105 inline-block transition-transform">
-                Agrawal Samaj
-              </span>
-              <span className="hidden sm:inline-block text-xs font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 to-rose-500/20 text-amber-700 border border-amber-500/30">
-                Portal
-              </span>
-            </Link>
-          </div>
+      <div className="mx-auto max-w-[78rem] px-5 sm:px-8 lg:px-12">
+        <div className="flex h-11 items-center justify-between gap-8">
+          {/* Wordmark */}
+          <Link href="/" className="group flex shrink-0 flex-col leading-none">
+            <span className="display text-xl tracking-[-0.01em] text-ink sm:text-[1.375rem]">
+              Agrawal Samaj
+            </span>
+            <span className="deva mt-0.5 text-[0.625rem] tracking-wide text-vermilion transition-opacity duration-300 group-hover:opacity-70">
+              अग्रवाल समाज · जयपुर
+            </span>
+          </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
+          {/* Desktop navigation */}
+          <div className="hidden items-center gap-7 lg:flex">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`relative px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 flex items-center gap-2 ${
-                    isActive
-                      ? "text-amber-600"
-                      : "text-zinc-600 hover:text-zinc-900"
+                  data-active={isActive}
+                  className={`rule-grow pb-1 text-[0.6875rem] font-medium uppercase tracking-[0.2em] transition-colors duration-300 ${
+                    isActive ? "text-ink" : "text-ink-3 hover:text-ink"
                   }`}
                 >
-                  {isActive && (
-                    <motion.span
-                      layoutId="activeNav"
-                      className="absolute inset-0 bg-gradient-to-r from-amber-500/20 to-rose-500/20 rounded-full -z-10 shadow-[0_0_12px_rgba(245,158,11,0.35)]"
-                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                    />
-                  )}
-                  <item.icon className="w-4 h-4" />
                   {item.name}
                 </Link>
               );
             })}
           </div>
 
-          {/* Right — Auth-aware buttons */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* Right — auth aware */}
+          <div className="hidden shrink-0 items-center gap-4 lg:flex">
             {!authChecked ? (
-              // Skeleton while checking auth
-              <div className="w-24 h-8 rounded-full bg-zinc-100 animate-pulse" />
+              <div className="h-8 w-20 animate-pulse bg-paper-2" />
             ) : authUser ? (
-              // LOGGED IN STATE
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 {isVolunteer && (
                   <Link
                     href="/admin/scan"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold bg-sky-500 hover:bg-sky-600 text-white shadow-sm transition-colors"
+                    className="inline-flex items-center gap-2 border border-rule-strong px-4 py-2 text-[0.6875rem] font-medium uppercase tracking-[0.16em] text-ink transition-colors hover:border-ink"
                   >
-                    <QrCode className="w-4 h-4" /> Scan Tickets
+                    <QrCode className="h-3.5 w-3.5" /> Scan
                   </Link>
                 )}
-                {/* User avatar menu */}
                 <div className="relative" ref={menuRef}>
                   <button
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    className="flex items-center justify-center rounded-full border border-zinc-200 hover:border-amber-300 hover:shadow-md transition-all p-0.5"
+                    aria-label="Account menu"
+                    aria-expanded={userMenuOpen}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-rule-strong text-[0.8125rem] font-medium text-ink transition-colors hover:border-vermilion hover:text-vermilion"
                   >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center text-white text-sm font-bold shadow-sm">
-                      {authUser.initial}
-                    </div>
+                    {authUser.initial}
                   </button>
 
                   <AnimatePresence>
                     {userMenuOpen && (
                       <motion.div
-                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                        transition={{ duration: 0.15 }}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 6 }}
+                        transition={{ duration: 0.2, ease: EASE }}
                         onClick={(e) => e.stopPropagation()}
-                        className="absolute right-0 mt-2 w-52 bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden z-50"
+                        className="absolute right-0 z-50 mt-3 w-60 border border-rule bg-paper shadow-[0_18px_50px_-24px_rgba(22,17,14,0.4)]"
                       >
-                        {/* User info header */}
-                        <div className="px-4 py-3 bg-zinc-50 border-b border-zinc-100">
-                          <p className="text-sm font-semibold text-zinc-800 truncate">{authUser.name}</p>
-                          <p className="text-xs text-zinc-400 capitalize">{authUser.role}</p>
+                        <div className="border-b border-rule px-4 py-3.5">
+                          <p className="truncate text-sm font-medium text-ink">{authUser.name}</p>
+                          <p className="eyebrow mt-1 !tracking-[0.18em]">{authUser.role.replace("_", " ")}</p>
                         </div>
                         <div className="p-1.5">
                           <Link
                             href={getDashboardHref()}
                             onClick={() => setUserMenuOpen(false)}
-                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-zinc-600 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                            className="flex items-center gap-3 px-3 py-2.5 text-sm text-ink-2 transition-colors hover:bg-paper-2 hover:text-ink"
                           >
-                            <LayoutDashboard className="w-4 h-4" /> {isVolunteer ? "Scan Tickets" : "Dashboard"}
+                            <LayoutDashboard className="h-4 w-4" /> {isVolunteer ? "Scan tickets" : "Dashboard"}
                           </Link>
                           <Link
                             href={authUser.role === "admin" || authUser.role === "super_admin" || authUser.role === "volunteer" ? "/admin/profile" : "/dashboard/profile"}
                             onClick={() => setUserMenuOpen(false)}
-                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-zinc-600 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                            className="flex items-center gap-3 px-3 py-2.5 text-sm text-ink-2 transition-colors hover:bg-paper-2 hover:text-ink"
                           >
-                            <User className="w-4 h-4" /> My Profile
+                            <User className="h-4 w-4" /> My profile
                           </Link>
-                          <div className="border-t border-zinc-100 my-1" />
                           <button
                             onClick={handleLogout}
-                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-rose-600 hover:bg-rose-50 transition-colors w-full"
+                            className="flex w-full items-center gap-3 border-t border-rule px-3 py-2.5 text-sm text-vermilion transition-colors hover:bg-paper-2"
                           >
-                            <LogOut className="w-4 h-4" /> Sign Out
+                            <LogOut className="h-4 w-4" /> Sign out
                           </button>
                         </div>
                       </motion.div>
@@ -233,84 +225,118 @@ export default function Navbar() {
                   </AnimatePresence>
                 </div>
               </div>
-            ) : null}
+            ) : (
+              <Link
+                href="/login"
+                className="rule-grow pb-1 text-[0.6875rem] font-medium uppercase tracking-[0.2em] text-ink-3 transition-colors hover:text-ink"
+              >
+                Sign in
+              </Link>
+            )}
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center gap-2">
+          {/* Mobile trigger */}
+          <div className="flex items-center gap-3 lg:hidden">
             {authChecked && authUser && (
-              <Link href={getDashboardHref()} className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-rose-500 text-white text-sm font-bold">
+              <Link
+                href={getDashboardHref()}
+                aria-label="Dashboard"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-rule-strong text-[0.8125rem] font-medium text-ink"
+              >
                 {authUser.initial}
               </Link>
             )}
             <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="inline-flex items-center justify-center p-2.5 rounded-lg text-zinc-500 hover:bg-zinc-100 focus:outline-none transition-colors"
+              onClick={() => setIsOpen(true)}
+              aria-label="Open menu"
+              className="p-2 text-ink"
             >
-              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              <Menu className="h-6 w-6" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Drawer */}
+      {/* Mobile sheet — full field, items cascade in */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden border-t border-zinc-200/50 bg-white/95 backdrop-blur-md"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3, ease: EASE }}
+            className="fixed inset-0 z-100 flex flex-col bg-paper lg:hidden"
           >
-            <div className="px-4 pt-2 pb-6 space-y-1">
-              {navItems.map((item) => {
-                const isActive = pathname === item.href;
-                return (
+            <div className="flex items-center justify-between px-5 py-5 sm:px-8">
+              <span className="deva text-sm text-vermilion">अग्रवाल समाज</span>
+              <button onClick={() => setIsOpen(false)} aria-label="Close menu" className="p-2 text-ink">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="flex flex-1 flex-col justify-center gap-1 overflow-y-auto px-5 pb-10 sm:px-8">
+              {navItems.map((item, i) => (
+                <motion.div
+                  key={item.href}
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.06 + i * 0.045, ease: EASE }}
+                >
                   <Link
-                    key={item.href}
                     href={item.href}
                     onClick={() => setIsOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-colors ${
-                      isActive
-                        ? "bg-amber-500/10 text-amber-600"
-                        : "text-zinc-600 hover:bg-zinc-50"
-                    }`}
+                    className="flex items-baseline justify-between border-b border-rule py-4"
                   >
-                    <item.icon className="w-5 h-5" />
-                    {item.name}
+                    <span className={`display text-3xl ${pathname === item.href ? "text-vermilion" : "text-ink"}`}>
+                      {item.name}
+                    </span>
+                    <item.icon className="h-4 w-4 text-ink-3" />
                   </Link>
-                );
-              })}
+                </motion.div>
+              ))}
 
-              <div className="border-t border-zinc-200/50 pt-4 flex flex-col gap-2 px-2">
+              <motion.div
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.4, ease: EASE }}
+                className="mt-8 flex flex-col gap-3"
+              >
                 {authUser ? (
                   <>
-                    <div className="flex items-center gap-3 px-3 py-2 mb-1">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center text-white font-bold">
-                        {authUser.initial}
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-zinc-800">{authUser.name}</p>
-                        <p className="text-xs text-zinc-400 capitalize">{authUser.role}</p>
-                      </div>
-                    </div>
                     <Link
                       href={getDashboardHref()}
                       onClick={() => setIsOpen(false)}
-                      className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-white font-medium text-base ${isVolunteer ? "bg-sky-500" : "bg-amber-500"}`}
+                      className="flex items-center justify-center gap-2 bg-vermilion px-6 py-3.5 text-[0.8125rem] font-medium uppercase tracking-[0.16em] text-paper"
                     >
-                      {isVolunteer ? <QrCode className="w-4 h-4" /> : <LayoutDashboard className="w-4 h-4" />}
-                      {isVolunteer ? "Scan Tickets" : "Go to Dashboard"}
+                      {isVolunteer ? <QrCode className="h-4 w-4" /> : <LayoutDashboard className="h-4 w-4" />}
+                      {isVolunteer ? "Scan tickets" : "Dashboard"}
                     </Link>
                     <button
                       onClick={() => { handleLogout(); setIsOpen(false); }}
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-rose-200 text-rose-600 font-medium text-base hover:bg-rose-50 transition-colors"
+                      className="flex items-center justify-center gap-2 border border-rule-strong px-6 py-3.5 text-[0.8125rem] font-medium uppercase tracking-[0.16em] text-ink"
                     >
-                      <LogOut className="w-4 h-4" /> Sign Out
+                      <LogOut className="h-4 w-4" /> Sign out
                     </button>
                   </>
-                ) : null}
-              </div>
+                ) : (
+                  <>
+                    <Link
+                      href="/register"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center justify-center bg-vermilion px-6 py-3.5 text-[0.8125rem] font-medium uppercase tracking-[0.16em] text-paper"
+                    >
+                      Register a household
+                    </Link>
+                    <Link
+                      href="/login"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center justify-center border border-rule-strong px-6 py-3.5 text-[0.8125rem] font-medium uppercase tracking-[0.16em] text-ink"
+                    >
+                      Sign in
+                    </Link>
+                  </>
+                )}
+              </motion.div>
             </div>
           </motion.div>
         )}

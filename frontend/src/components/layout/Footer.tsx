@@ -1,103 +1,166 @@
 import Link from "next/link";
-import { Heart, Mail, Phone, MapPin } from "lucide-react";
+import { Mail, Phone, MapPin } from "lucide-react";
+import { Rule } from "@/components/ui/primitives";
+
+const COLUMNS = [
+  {
+    heading: "The samaj",
+    links: [
+      { label: "About us", href: "/about" },
+      { label: "Managing committee", href: "/about" },
+      { label: "Blog", href: "/blog" },
+      { label: "Member directory", href: "/members" },
+    ],
+  },
+  {
+    heading: "Take part",
+    links: [
+      { label: "Book the Bhavan", href: "/bhavan" },
+      { label: "Upcoming events", href: "/events" },
+      { label: "Donation schemes", href: "/donate" },
+      { label: "Register a household", href: "/register" },
+    ],
+  },
+  {
+    heading: "Your account",
+    links: [
+      { label: "Sign in", href: "/login" },
+      { label: "Dashboard", href: "/dashboard" },
+      { label: "Receipts", href: "/dashboard/receipts" },
+      { label: "My bookings", href: "/dashboard/bookings" },
+    ],
+  },
+];
+
+const SOCIALS = [
+  {
+    label: "Facebook",
+    href: "#",
+    path: "M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z",
+  },
+  {
+    label: "Instagram",
+    href: "#",
+    path: "M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37zM17.5 6.5h.01M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5z",
+  },
+  {
+    label: "YouTube",
+    href: "#",
+    path: "M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17zM9.7 15l4.8-3-4.8-3v6z",
+  },
+];
 
 export default function Footer() {
   return (
-    <footer className="bg-zinc-50 border-t border-zinc-200/50 text-zinc-600">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Brand/About */}
-          <div className="space-y-4">
-            <span className="text-xl font-bold bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 bg-clip-text text-transparent">
-              Agrawal Samaj
-            </span>
-            <p className="text-sm leading-relaxed">
-              Connecting and empowering the Agrawal Samaj community. Managing events, bhavan bookings, donations, and communication seamlessly.
+    <footer className="relative overflow-hidden border-t border-rule bg-paper">
+      <div className="mx-auto max-w-[78rem] px-5 pb-10 pt-20 sm:px-8 lg:px-12">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-12 sm:grid-cols-3 lg:grid-cols-12 lg:gap-x-12">
+          {/* Identity */}
+          <div className="col-span-2 sm:col-span-3 lg:col-span-4">
+            <p className="deva text-lg text-vermilion">अग्रवाल समाज</p>
+            <p className="display mt-2 text-2xl">Agrawal Samaj</p>
+            <p className="mt-5 max-w-xs text-sm leading-relaxed text-ink-2">
+              One brick, one rupee — the covenant that built Agroha, kept by the
+              households of Jaipur.
             </p>
-            <div className="flex gap-4">
-              <a href="#" className="hover:text-amber-500 transition-colors" aria-label="Facebook">
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
-                </svg>
-              </a>
-              <a href="#" className="hover:text-amber-500 transition-colors" aria-label="Twitter">
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/>
-                </svg>
-              </a>
-              <a href="#" className="hover:text-amber-500 transition-colors" aria-label="Instagram">
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
-                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-                  <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
-                </svg>
-              </a>
-              <a href="#" className="hover:text-amber-500 transition-colors" aria-label="Youtube">
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17z"/>
-                  <polygon points="9.7 15 14.5 12 9.7 9 9.7 15"/>
-                </svg>
-              </a>
+
+            <div className="mt-7 flex gap-4">
+              {SOCIALS.map((social) => (
+                <a
+                  key={social.label}
+                  href={social.href}
+                  aria-label={social.label}
+                  className="flex h-9 w-9 items-center justify-center border border-rule text-ink-3 transition-colors duration-300 hover:border-vermilion hover:text-vermilion"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d={social.path} />
+                  </svg>
+                </a>
+              ))}
             </div>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h3 className="text-sm font-semibold text-zinc-900 uppercase tracking-wider mb-4">
-              Quick Links
-            </h3>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/about" className="hover:text-amber-500 transition-colors">Vision & Mission</Link></li>
-              <li><Link href="/about" className="hover:text-amber-500 transition-colors">Board Members</Link></li>
-              <li><Link href="/events" className="hover:text-amber-500 transition-colors">Upcoming Events</Link></li>
-              <li><Link href="/bhavan" className="hover:text-amber-500 transition-colors">Bhavan Facilities</Link></li>
-              <li><Link href="/donate" className="hover:text-amber-500 transition-colors">Donation Schemes</Link></li>
-            </ul>
-          </div>
-
-          {/* Support */}
-          <div>
-            <h3 className="text-sm font-semibold text-zinc-900 uppercase tracking-wider mb-4">
-              Resources
-            </h3>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/members" className="hover:text-amber-500 transition-colors">Member Directory</Link></li>
-              <li><Link href="/register" className="hover:text-amber-500 transition-colors">Join Samaj</Link></li>
-              <li><Link href="/login" className="hover:text-amber-500 transition-colors">Bookings Dashboard</Link></li>
-              <li><Link href="#" className="hover:text-amber-500 transition-colors">Terms of Service</Link></li>
-              <li><Link href="#" className="hover:text-amber-500 transition-colors">Privacy Policy</Link></li>
-            </ul>
-          </div>
+          {/* Link columns */}
+          {COLUMNS.map((column) => (
+            <nav key={column.heading} className="lg:col-span-2">
+              <h2 className="eyebrow">{column.heading}</h2>
+              <ul className="mt-5 space-y-3">
+                {column.links.map((link) => (
+                  <li key={link.label}>
+                    <Link
+                      href={link.href}
+                      className="text-sm text-ink-2 transition-colors duration-300 hover:text-vermilion"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ))}
 
           {/* Contact */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-zinc-900 uppercase tracking-wider mb-4">
-              Contact Us
-            </h3>
-            <ul className="space-y-3 text-sm">
-              <li className="flex gap-2 items-start">
-                <MapPin className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                <span>Agrawal Bhavan Marg, Sector 5, Vidyadhar Nagar, Jaipur, Rajasthan</span>
+          <div className="col-span-2 sm:col-span-3 lg:col-span-2">
+            <h2 className="eyebrow">Find us</h2>
+            <ul className="mt-5 space-y-4 text-sm text-ink-2">
+              <li className="flex gap-2.5">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-vermilion" />
+                <span className="leading-relaxed">
+                  Agrawal Bhavan Marg, Sector 5, Vidyadhar Nagar, Jaipur
+                </span>
               </li>
-              <li className="flex gap-2 items-center">
-                <Phone className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                <span>+91 141 2345678</span>
+              <li className="flex items-center gap-2.5">
+                <Phone className="h-4 w-4 shrink-0 text-vermilion" />
+                <a href="tel:+911412345678" className="transition-colors hover:text-vermilion">
+                  +91 141 234 5678
+                </a>
               </li>
-              <li className="flex gap-2 items-center">
-                <Mail className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                <span>contact@agrawalsamajjaipur.org</span>
+              <li className="flex items-center gap-2.5">
+                <Mail className="h-4 w-4 shrink-0 text-vermilion" />
+                <a
+                  href="mailto:contact@agrawalsamajjaipur.org"
+                  className="break-words transition-colors hover:text-vermilion"
+                >
+                  contact@agrawalsamajjaipur.org
+                </a>
               </li>
             </ul>
           </div>
         </div>
 
-        <div className="border-t border-zinc-200/50 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs">
-          <p>&copy; {new Date().getFullYear()} Agrawal Samaj Jaipur. All rights reserved.</p>
-          <p className="flex items-center gap-1">
-            Made with <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" /> for the community.
+        <Rule className="mt-16" />
+
+        <div className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <p className="eyebrow !tracking-[0.18em]">
+            © {new Date().getFullYear()} Agrawal Samaj Jaipur
           </p>
+          <div className="flex gap-6">
+            <Link href="#" className="eyebrow !tracking-[0.18em] transition-colors hover:text-vermilion">
+              Privacy
+            </Link>
+            <Link href="#" className="eyebrow !tracking-[0.18em] transition-colors hover:text-vermilion">
+              Terms
+            </Link>
+          </div>
         </div>
       </div>
+
+      {/* Oversized watermark — the name of the samaj, set as a seal rather
+          than a logo, bleeding off the bottom edge. */}
+      <p
+        aria-hidden
+        className="deva pointer-events-none select-none whitespace-nowrap text-center text-[18vw] leading-[0.72] text-ink/[0.045]"
+      >
+        अग्रवाल समाज
+      </p>
     </footer>
   );
 }
