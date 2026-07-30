@@ -24,10 +24,18 @@ const COLUMNS = [
   {
     heading: "Your account",
     links: [
-      { label: "Sign in", href: "/login" },
       { label: "Dashboard", href: "/dashboard" },
       { label: "Receipts", href: "/dashboard/receipts" },
       { label: "My bookings", href: "/dashboard/bookings" },
+    ],
+  },
+  {
+    heading: "Samaj Network",
+    links: [
+      { label: "Agrawal Matrimony (वैवाहिक)", href: "https://www.agrawalmatrimony.org" },
+      { label: "Agroha Dham (अग्रोहा धाम)", href: "https://www.agrohadham.org" },
+      { label: "Agrasen Foundation", href: "https://www.agrasenfoundation.org" },
+      { label: "Agrawal Business Guild", href: "https://www.agrawalbusiness.org" },
     ],
   },
 ];
@@ -58,7 +66,7 @@ export default function Footer() {
           {/* Identity */}
           <div className="col-span-2 sm:col-span-3 lg:col-span-4">
             <p className="deva text-lg text-vermilion">अग्रवाल समाज</p>
-            <p className="display mt-2 text-2xl">Agrawal Samaj</p>
+            <p className="display mt-2 text-2xl">Agrawal Samaj Mansrovar Jaipur</p>
             <p className="mt-5 max-w-xs text-sm leading-relaxed text-ink-2">
               One brick, one rupee — the covenant that built Agroha, kept by the
               households of Jaipur.
@@ -140,7 +148,7 @@ export default function Footer() {
 
         <div className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="eyebrow !tracking-[0.18em]">
-            © {new Date().getFullYear()} Agrawal Samaj Jaipur
+            © {new Date().getFullYear()} Agrawal Samaj Mansrovar Jaipur
           </p>
           <div className="flex gap-6">
             <Link href="#" className="eyebrow !tracking-[0.18em] transition-colors hover:text-vermilion">

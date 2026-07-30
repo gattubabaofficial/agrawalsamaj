@@ -61,7 +61,7 @@ export default function AdminLoginPage() {
       <div className="max-w-md w-full space-y-8 p-8 rounded-3xl border border-zinc-200/50 bg-white shadow-xl relative z-10">
         <div className="text-center space-y-2">
           <Link href="/" className="inline-block text-2xl font-bold bg-gradient-to-r from-amber-500 to-rose-600 bg-clip-text text-transparent">
-            Agrawal Samaj
+            Agrawal Samaj Mansrovar Jaipur
           </Link>
           <h2 className="text-2xl font-bold text-zinc-900">Admin Panel</h2>
           <p className="text-xs text-zinc-500">Sign in to manage the portal.</p>

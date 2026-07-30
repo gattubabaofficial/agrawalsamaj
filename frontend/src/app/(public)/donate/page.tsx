@@ -154,7 +154,7 @@ export default function DonatePage() {
       key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_placeholder",
       amount: Math.round(parseFloat(amount) * 100),
       currency: "INR",
-      name: "Agrawal Samaj Portal",
+      name: "Agrawal Samaj Mansrovar Jaipur Portal",
       description: `Donation - ${categories.find(c => c.category_id === selectedCat)?.name || "General"}`,
       handler: (response: any) => submitDonation(response.razorpay_payment_id),
       prefill: {

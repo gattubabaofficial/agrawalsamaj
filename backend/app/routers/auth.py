@@ -17,7 +17,12 @@ from app.dependencies import get_db, get_current_user
 from app.models.user import User, Family, OtpLog, OtpType, UserRole, PhoneOTPRequest, EmailOTPRequest
 from app.models.requests import MembershipRequest
 from app.utils.security import hash_password, verify_password, create_access_token
-from app.services.sms_service import send_sms
+from app.services.otp_delivery import (
+    send_otp_message,
+    CHANNEL_WHATSAPP,
+    CHANNEL_CONSOLE,
+    DELIVERED_CHANNELS,
+)
 from app.services.email_service import send_email
 import hashlib
 import os
@@ -180,6 +185,45 @@ async def login(
 def hash_otp(otp: str) -> str:
     return hashlib.sha256(otp.encode()).hexdigest()
 
+
+def _otp_send_response(channel: str, otp_code: str, sms_message: str) -> dict:
+    """Turn a delivery channel into the endpoint's response.
+
+    The rule this enforces: never report success over a code that did not
+    reach a device. A console-only "send" counts as delivered ONLY when
+    someone has explicitly switched on OTP_DEBUG_RETURN_CODE, and in that case
+    the code comes back in the body so it is usable without reading logs.
+    """
+    if channel in DELIVERED_CHANNELS:
+        return {
+            "status": "success",
+            "channel": channel,
+            "message": (
+                "OTP sent to your WhatsApp."
+                if channel == CHANNEL_WHATSAPP
+                else sms_message
+            ),
+        }
+
+    if channel == CHANNEL_CONSOLE and settings.OTP_DEBUG_RETURN_CODE:
+        return {
+            "status": "success",
+            "channel": channel,
+            "message": "OTP not delivered — no provider configured. Returned here for local testing only.",
+            "otp": otp_code,
+        }
+
+    # Either nothing worked, or the only "send" was a console print on a
+    # system that has not opted into that. Fail loudly: a false success leaves
+    # someone waiting for a code that is never coming.
+    raise HTTPException(
+        status_code=502,
+        detail=(
+            "Could not send the verification code right now. "
+            "Please try again in a moment."
+        ),
+    )
+
 @router.post("/phone/send-otp")
 async def phone_send_otp(payload: PhoneOtpSendRequest, db: AsyncSession = Depends(get_db)):
     id_type, normalized_mobile = parse_identifier(payload.phone)
@@ -227,18 +271,11 @@ async def phone_send_otp(payload: PhoneOtpSendRequest, db: AsyncSession = Depend
     db.add(otp_request)
     await db.commit()
 
-    # 3. Send SMS
-    message = f"Your Agrawal Samaj verification code is {otp_code}. Valid for {expiry_minutes} minutes. Do not share this with anyone."
-    sms_sent = await send_sms(normalized_mobile, message)
-    
-    if not sms_sent:
-        # We don't necessarily fail the API if dummy mode is on, but in prod we might.
-        pass
+    # 3. Deliver the code — WhatsApp first, SMS if that does not land.
+    message = f"Your Agrawal Samaj Mansrovar Jaipur verification code is {otp_code}. Valid for {expiry_minutes} minutes. Do not share this with anyone."
+    channel = await send_otp_message(normalized_mobile, message)
 
-    return {
-        "status": "success",
-        "message": "OTP sent successfully."
-    }
+    return _otp_send_response(channel, otp_code, "OTP sent by SMS.")
 
 @router.post("/phone/verify-otp")
 async def phone_verify_otp(payload: PhoneOtpVerifyRequest, db: AsyncSession = Depends(get_db)):
@@ -467,29 +504,13 @@ async def send_otp(
     db.add(otp_log)
     await db.commit()
 
-    if os.getenv("ENVIRONMENT") == "development":
-        print(f"\n--- [OTP SENT] Target: {normalized_val} | OTP Code: {otp_code} ---\n")
+    # Deliver the code — WhatsApp first, SMS if that does not land.
+    message = f"Your Agrawal Samaj Mansrovar Jaipur registration verification code is {otp_code}. Valid for 10 minutes."
+    channel = await send_otp_message(normalized_val, message)
 
-    # Send real SMS
-    message = f"Your Agrawal Samaj registration verification code is {otp_code}. Valid for 10 minutes."
-    await send_sms(normalized_val, message)
-
-    response_data = {
-        "status": "success",
-        "message": f"OTP sent successfully to your {id_type}."
-    }
-
-    # Only return the otp in the response body if in dummy mode
-    provider = os.getenv("SMS_PROVIDER", "msg91").lower()
-    is_dummy_provider = provider == "dummy"
-    is_dummy_msg91 = (provider == "msg91" and (not os.getenv("SMS_API_KEY") or os.getenv("SMS_API_KEY") == "dummy_key"))
-    is_dummy_twilio = (provider == "twilio" and (not os.getenv("TWILIO_ACCOUNT_SID") or os.getenv("TWILIO_ACCOUNT_SID") == "dummy_sid" or "your_" in os.getenv("TWILIO_ACCOUNT_SID")))
-    is_dummy_2factor = (provider == "2factor" and (not os.getenv("TWOFACTOR_API_KEY") and (not os.getenv("SMS_API_KEY") or os.getenv("SMS_API_KEY") == "dummy_key")))
-    
-    if is_dummy_provider or is_dummy_msg91 or is_dummy_twilio or is_dummy_2factor:
-        response_data["otp"] = otp_code
-
-    return response_data
+    return _otp_send_response(
+        channel, otp_code, f"OTP sent successfully to your {id_type}."
+    )
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def verify_otp_and_register(
@@ -796,10 +817,15 @@ class ProfileUpdate(BaseModel):
     email: Optional[str] = None
     mobile: Optional[str] = None
     profession: Optional[str] = None
+    native_place: Optional[str] = None
+    bio: Optional[str] = None
     address: Optional[str] = None
     email_private: Optional[bool] = None
     mobile_private: Optional[bool] = None
     address_private: Optional[bool] = None
+    profession_private: Optional[bool] = None
+    native_place_private: Optional[bool] = None
+    bio_private: Optional[bool] = None
     profile_photo: Optional[str] = None
 
 class ProfileResponse(BaseModel):
@@ -808,10 +834,15 @@ class ProfileResponse(BaseModel):
     email: Optional[str]
     mobile: Optional[str]
     profession: Optional[str]
+    native_place: Optional[str] = None
+    bio: Optional[str] = None
     address: Optional[str]
-    email_private: bool
-    mobile_private: bool
-    address_private: bool
+    email_private: bool = False
+    mobile_private: bool = False
+    address_private: bool = False
+    profession_private: bool = False
+    native_place_private: bool = False
+    bio_private: bool = False
     family_id: Optional[uuid.UUID] = None
     profile_photo: Optional[str] = None
     is_member: bool

@@ -61,10 +61,53 @@ const mockFacilities = [
   }
 ];
 
+const DEFAULT_RATE_LISTS: Record<string, any[]> = {
+  saava: [
+    { unit: "First Unit (Ground Floor Hall + 5 Rooms)", day1: "₹15,000/-", day2: "₹25,000/-", day3: "₹33,000/-", cleaning: "₹1,000 / day" },
+    { unit: "Second Unit (First Floor 11 Rooms + 3 Dormitories)", day1: "₹14,000/-", day2: "₹21,000/-", day3: "₹27,000/-", cleaning: "₹1,000 / day" },
+    { unit: "Third Unit (Basement Hall)", day1: "₹4,000/-", day2: "₹8,000/-", day3: "₹12,000/-", cleaning: "₹1,000 / day" },
+    { unit: "Individual AC Room (Patient Family Stay)", day1: "₹600 / day", day2: "-", day3: "-", cleaning: "Included" },
+    { unit: "Individual Non-AC Room", day1: "₹400 / day", day2: "-", day3: "-", cleaning: "Included" },
+  ],
+  other_days: [
+    { unit: "First Unit (Ground Floor Hall + 5 Rooms)", day1: "₹12,000/-", day2: "₹20,000/-", day3: "₹28,000/-", cleaning: "₹1,000 / day" },
+    { unit: "Second Unit (First Floor 11 Rooms + 3 Dormitories)", day1: "₹11,000/-", day2: "₹18,000/-", day3: "₹24,000/-", cleaning: "₹1,000 / day" },
+    { unit: "Third Unit (Basement Hall)", day1: "₹3,500/-", day2: "₹7,000/-", day3: "₹10,000/-", cleaning: "₹1,000 / day" },
+    { unit: "Individual AC Room (Patient Family Stay)", day1: "₹550 / day", day2: "-", day3: "-", cleaning: "Included" },
+    { unit: "Individual Non-AC Room", day1: "₹350 / day", day2: "-", day3: "-", cleaning: "Included" },
+  ],
+  social: [
+    { unit: "First Unit (Ground Floor Hall + 5 Rooms)", day1: "₹8,000/-", day2: "₹14,000/-", day3: "₹20,000/-", cleaning: "₹800 / day" },
+    { unit: "Second Unit (First Floor 11 Rooms + 3 Dormitories)", day1: "₹7,000/-", day2: "₹12,000/-", day3: "₹16,000/-", cleaning: "₹800 / day" },
+    { unit: "Third Unit (Basement Hall)", day1: "₹2,500/-", day2: "₹4,500/-", day3: "₹6,500/-", cleaning: "₹500 / day" },
+    { unit: "Individual AC Room (Patient Family Stay)", day1: "₹450 / day", day2: "-", day3: "-", cleaning: "Included" },
+    { unit: "Individual Non-AC Room", day1: "₹300 / day", day2: "-", day3: "-", cleaning: "Included" },
+  ],
+  free: [
+    { unit: "First Unit (Ground Floor Hall + 5 Rooms)", day1: "FREE (₹0)", day2: "FREE (₹0)", day3: "FREE (₹0)", cleaning: "Included" },
+    { unit: "Second Unit (First Floor 11 Rooms + 3 Dormitories)", day1: "FREE (₹0)", day2: "FREE (₹0)", day3: "FREE (₹0)", cleaning: "Included" },
+    { unit: "Third Unit (Basement Hall)", day1: "FREE (₹0)", day2: "FREE (₹0)", day3: "FREE (₹0)", cleaning: "Included" },
+    { unit: "Individual AC Room (Patient Family Stay)", day1: "FREE (₹0)", day2: "-", day3: "-", cleaning: "Included" },
+    { unit: "Individual Non-AC Room", day1: "FREE (₹0)", day2: "-", day3: "-", cleaning: "Included" },
+  ],
+};
+
 export default function BhavanPage() {
   const [facilities, setFacilities] = useState(mockFacilities);
+  const [rateCategory, setRateCategory] = useState<"saava" | "other_days" | "social" | "free">("saava");
+  const [customRateLists, setCustomRateLists] = useState<Record<string, any[]>>({});
 
   useEffect(() => {
+    // Load custom rates if edited by admin
+    const storedRates = localStorage.getItem("bhavan_custom_rates");
+    if (storedRates) {
+      try {
+        setCustomRateLists(JSON.parse(storedRates));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
     const fetchFacilities = async () => {
       try {
         const response = await axios.get(`${getApiBaseUrl()}/bookings/rooms`);
@@ -127,56 +170,94 @@ export default function BhavanPage() {
           </div>
         </div>
 
-        {/* Rate List Table */}
-        <div className="glass-panel rounded-[2rem] p-6 sm:p-8 shadow-xl space-y-4">
-          <h3 className="text-lg font-bold text-zinc-900">Fixed Rate List for Wedding Saava Days</h3>
+        {/* Rate List Table with Category Filter Tabs */}
+        <div className="glass-panel rounded-[2rem] p-6 sm:p-8 shadow-xl space-y-6">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-zinc-100 pb-4">
+            <div>
+              <h3 className="text-xl font-bold text-zinc-900">
+                {rateCategory === "saava" && "Fixed Rate List for Wedding Saava Days (सावा दिवस)"}
+                {rateCategory === "other_days" && "Rate List for Other Days (अन्य सामान्य दिवस)"}
+                {rateCategory === "social" && "Rate List for Social Functions (सामाजिक कार्यक्रम)"}
+                {rateCategory === "free" && "Free & Welfare Charitable Usage (निःशुल्क सेवा कार्य)"}
+              </h3>
+              <p className="text-xs text-zinc-500 mt-0.5">
+                {rateCategory === "saava" && "Applicable during peak wedding saava dates."}
+                {rateCategory === "other_days" && "Standard rates applicable on regular non-saava booking days."}
+                {rateCategory === "social" && "Special discounted rates for birthday, engagement, pooja, & samaj meetings."}
+                {rateCategory === "free" && "Complimentary venue usage for medical camps & charitable welfare."}
+              </p>
+            </div>
+
+            {/* Category Filter Buttons */}
+            <div className="flex flex-wrap gap-2 p-1.5 bg-zinc-100/80 rounded-2xl border border-zinc-200/60">
+              <button
+                type="button"
+                onClick={() => setRateCategory("saava")}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  rateCategory === "saava"
+                    ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md"
+                    : "text-zinc-600 hover:text-zinc-900 hover:bg-white/60"
+                }`}
+              >
+                💍 Wedding Saava Days
+              </button>
+              <button
+                type="button"
+                onClick={() => setRateCategory("other_days")}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  rateCategory === "other_days"
+                    ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md"
+                    : "text-zinc-600 hover:text-zinc-900 hover:bg-white/60"
+                }`}
+              >
+                🗓️ Other Days
+              </button>
+              <button
+                type="button"
+                onClick={() => setRateCategory("social")}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  rateCategory === "social"
+                    ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md"
+                    : "text-zinc-600 hover:text-zinc-900 hover:bg-white/60"
+                }`}
+              >
+                👥 Social Functions
+              </button>
+              <button
+                type="button"
+                onClick={() => setRateCategory("free")}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  rateCategory === "free"
+                    ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md"
+                    : "text-zinc-600 hover:text-zinc-900 hover:bg-white/60"
+                }`}
+              >
+                🎁 Free / Welfare Use
+              </button>
+            </div>
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse min-w-[640px]">
               <thead>
                 <tr className="bg-gradient-to-r from-amber-500 to-rose-500 text-white uppercase font-semibold">
-                  <th className="p-3 rounded-l-xl">Unit Description</th>
-                  <th className="p-3">First Day Rate</th>
-                  <th className="p-3">Two Days Rate</th>
-                  <th className="p-3">Three Days Rate</th>
-                  <th className="p-3 rounded-r-xl">Cleaning Charge</th>
+                  <th className="p-3.5 rounded-l-xl">Unit Description</th>
+                  <th className="p-3.5">First Day Rate</th>
+                  <th className="p-3.5">Two Days Rate</th>
+                  <th className="p-3.5">Three Days Rate</th>
+                  <th className="p-3.5 rounded-r-xl">Cleaning Charge</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 text-zinc-800 font-medium">
-                <tr>
-                  <td className="p-3 font-semibold text-zinc-900">First Unit (Ground Floor Hall + 5 Rooms)</td>
-                  <td className="p-3 text-amber-600 font-bold">₹15,000/-</td>
-                  <td className="p-3">₹25,000/-</td>
-                  <td className="p-3">₹33,000/-</td>
-                  <td className="p-3 text-zinc-500">₹1,000 / day</td>
-                </tr>
-                <tr>
-                  <td className="p-3 font-semibold text-zinc-900">Second Unit (First Floor 11 Rooms + 3 Dormitories)</td>
-                  <td className="p-3 text-amber-600 font-bold">₹14,000/-</td>
-                  <td className="p-3">₹21,000/-</td>
-                  <td className="p-3">₹27,000/-</td>
-                  <td className="p-3 text-zinc-500">₹1,000 / day</td>
-                </tr>
-                <tr>
-                  <td className="p-3 font-semibold text-zinc-900">Third Unit (Basement Hall)</td>
-                  <td className="p-3 text-amber-600 font-bold">₹4,000/-</td>
-                  <td className="p-3">₹8,000/-</td>
-                  <td className="p-3">₹12,000/-</td>
-                  <td className="p-3 text-zinc-500">₹1,000 / day</td>
-                </tr>
-                <tr>
-                  <td className="p-3 font-semibold text-zinc-900">Individual AC Room (Patient Family Stay)</td>
-                  <td className="p-3 text-amber-600 font-bold">₹600 / day</td>
-                  <td className="p-3">-</td>
-                  <td className="p-3">-</td>
-                  <td className="p-3 text-zinc-500">Included</td>
-                </tr>
-                <tr>
-                  <td className="p-3 font-semibold text-zinc-900">Individual Non-AC Room</td>
-                  <td className="p-3 text-amber-600 font-bold">₹400 / day</td>
-                  <td className="p-3">-</td>
-                  <td className="p-3">-</td>
-                  <td className="p-3 text-zinc-500">Included</td>
-                </tr>
+                {(customRateLists[rateCategory] || DEFAULT_RATE_LISTS[rateCategory]).map((item: any, idx: number) => (
+                  <tr key={idx} className="hover:bg-amber-50/40 transition-colors">
+                    <td className="p-3.5 font-semibold text-zinc-900">{item.unit}</td>
+                    <td className="p-3.5 text-amber-600 font-bold">{item.day1}</td>
+                    <td className="p-3.5">{item.day2}</td>
+                    <td className="p-3.5">{item.day3}</td>
+                    <td className="p-3.5 text-zinc-500">{item.cleaning}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

@@ -33,7 +33,7 @@ async def _deliver_booking_receipt_whatsapp(receipt: Receipt, phone: Optional[st
         to_number=phone,
         file_path=file_path,
         caption=(
-            f"🧾 *Agrawal Samaj Bhavan Booking*\n\n"
+            f"🧾 *Agrawal Samaj Mansrovar Jaipur Bhavan Booking*\n\n"
             f"Your receipt for {room_name} (₹{amount:,.2f}) is attached. Thank you!"
         ),
         filename=f"{receipt.receipt_number}.pdf",
@@ -295,6 +295,9 @@ class AdminBookingResponse(BookingResponse):
     user_name: str
     user_mobile: Optional[str]
     room_name: str
+    approved_by_name: Optional[str] = None
+    receipt_number: Optional[str] = None
+    receipt_url: Optional[str] = None
 
 # Routes
 @router.get("/rooms", response_model=List[RoomResponse])
@@ -472,8 +475,29 @@ async def list_all_bookings(
         .order_by(Booking.start_date.desc())
     )
 
+    all_rows = result.all()
+    if not all_rows:
+        return []
+
+    # Fetch all receipts linked to these bookings
+    booking_ids = [b.booking_id for b, _, _ in all_rows]
+    receipts_result = await db.execute(
+        select(Receipt).where(Receipt.booking_id.in_(booking_ids))
+    )
+    receipts_by_booking = {r.booking_id: r for r in receipts_result.scalars().all()}
+
+    # Fetch approving users
+    approver_ids = [b.approved_by for b, _, _ in all_rows if b.approved_by]
+    approvers_by_id = {}
+    if approver_ids:
+        approvers_result = await db.execute(select(User).where(User.user_id.in_(approver_ids)))
+        approvers_by_id = {u.user_id: f"{u.first_name} {u.surname}" for u in approvers_result.scalars().all()}
+
     bookings_data = []
-    for booking, user, room in result.all():
+    for booking, user, room in all_rows:
+        receipt = receipts_by_booking.get(booking.booking_id)
+        approver_name = approvers_by_id.get(booking.approved_by) if booking.approved_by else (receipt.issued_by_name if receipt else None)
+
         data = {
             "booking_id": booking.booking_id,
             "room_id": booking.room_id,
@@ -489,7 +513,10 @@ async def list_all_bookings(
             "user_id": user.user_id if user else None,
             "user_name": f"{user.first_name} {user.surname}" if user else (booking.guest_name or "Guest"),
             "user_mobile": user.mobile if user else booking.guest_phone,
-            "room_name": room.name
+            "room_name": room.name,
+            "approved_by_name": approver_name,
+            "receipt_number": receipt.receipt_number if receipt else None,
+            "receipt_url": receipt.pdf_url if receipt else None,
         }
         bookings_data.append(data)
         

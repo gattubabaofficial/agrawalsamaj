@@ -205,7 +205,7 @@ export default function BlogReaderPage() {
       {blog.cover_image_url && (
         <div className="max-w-5xl mx-auto px-4 mb-8">
           <img
-            src={blog.cover_image_url.startsWith('http') ? blog.cover_image_url : `${getApiBaseUrl().replace('/api/v1', '')}${blog.cover_image_url.startsWith("/") ? blog.cover_image_url : `/${blog.cover_image_url}`}`}
+            src={blog.cover_image_url.startsWith('http') || blog.cover_image_url.startsWith('https') ? blog.cover_image_url : blog.cover_image_url.startsWith('/uploads/') ? `${getApiBaseUrl().replace('/api/v1', '')}${blog.cover_image_url}` : blog.cover_image_url}
             alt={blog.title}
             className="w-full max-h-[480px] object-cover rounded-3xl shadow-md"
           />
@@ -240,7 +240,7 @@ export default function BlogReaderPage() {
             </div>
           </div>
           {/* Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleLike}
               disabled={likeLoading}
@@ -249,11 +249,19 @@ export default function BlogReaderPage() {
               <Heart className={`w-4 h-4 ${liked ? "fill-rose-500" : ""}`} />
               {likeCount}
             </button>
+            <a
+              href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`*${blog?.title}*\nRead more on Agrawal Samaj Mansrovar Jaipur Portal: ${typeof window !== "undefined" ? window.location.href : ""}`)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-sm font-semibold transition-all"
+            >
+              💬 WhatsApp Share
+            </a>
             <button
               onClick={handleShare}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-500 hover:bg-amber-50 hover:border-amber-200 hover:text-amber-600 text-sm font-medium transition-all"
             >
-              {copied ? <><CheckCheck className="w-4 h-4" /> Copied!</> : <><Share2 className="w-4 h-4" /> Share</>}
+              {copied ? <><CheckCheck className="w-4 h-4" /> Copied!</> : <><Share2 className="w-4 h-4" /> Copy Link</>}
             </button>
           </div>
         </div>

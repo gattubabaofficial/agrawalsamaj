@@ -19,7 +19,7 @@ def get_local_ip():
 if __name__ == "__main__":
     local_ip = get_local_ip()
     print("\n" + "="*55)
-    print("  Agrawal Samaj API - Starting Backend Server")
+    print("  Agrawal Samaj Mansrovar Jaipur API - Starting Backend Server")
     print("="*55)
     print(f"  Local:    http://localhost:8000")
     print(f"  Network:  http://{local_ip}:8000")

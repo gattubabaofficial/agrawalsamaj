@@ -12,7 +12,7 @@ from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.dependencies import get_db, get_current_user
+from app.dependencies import get_db, get_current_user, get_optional_current_user
 from app.models.user import User, UserRole
 from app.models.blog import Blog, BlogComment, BlogLike, BlogStatus
 
@@ -119,10 +119,10 @@ async def get_blog_stats(db: AsyncSession, blog_id: uuid.UUID, user_id: Optional
 @router.post("/upload")
 async def upload_file(
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Upload image or video for blog content. Stored in uploads/{username}/"""
+    """Upload image or video for blog content. Stored in uploads/blogs/"""
     ext = Path(file.filename or "").suffix.lower()
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
@@ -130,14 +130,12 @@ async def upload_file(
             detail=f"File type '{ext}' not allowed. Allowed: {', '.join(ALLOWED_EXTENSIONS)}",
         )
 
-    # Sanitize username for folder name
-    username = re.sub(r"[^\w]", "_", f"{current_user.first_name}_{current_user.surname}").lower()
-    user_dir = UPLOAD_BASE / username
-    user_dir.mkdir(parents=True, exist_ok=True)
+    blogs_dir = UPLOAD_BASE / "blogs"
+    blogs_dir.mkdir(parents=True, exist_ok=True)
 
     # Unique filename
     unique_name = f"{uuid.uuid4().hex}{ext}"
-    file_path = user_dir / unique_name
+    file_path = blogs_dir / unique_name
 
     contents = await file.read()
     if len(contents) > MAX_FILE_SIZE:
@@ -149,7 +147,7 @@ async def upload_file(
     with open(file_path, "wb") as f:
         f.write(contents)
 
-    file_url = f"/uploads/{username}/{unique_name}"
+    file_url = f"/uploads/blogs/{unique_name}"
     return {"url": file_url, "filename": unique_name}
 
 
@@ -161,9 +159,11 @@ async def list_blogs(
     per_page: int = Query(12, ge=1, le=50),
     tag: Optional[str] = None,
     search: Optional[str] = None,
+    year: Optional[int] = Query(None),
+    month: Optional[int] = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
-    """List all published blogs, newest first."""
+    """List all published blogs with search, tag, year, and month filters."""
     query = (
         select(Blog)
         .options(selectinload(Blog.author))
@@ -179,6 +179,14 @@ async def list_blogs(
     # Tag filter (JSON list in SQLite — filter in Python)
     if tag:
         blogs = [b for b in blogs if b.tags and tag.lower() in [t.lower() for t in b.tags]]
+
+    # Year filter
+    if year:
+        blogs = [b for b in blogs if b.created_at and b.created_at.year == year]
+
+    # Month filter
+    if month:
+        blogs = [b for b in blogs if b.created_at and b.created_at.month == month]
 
     total = len(blogs)
     start = (page - 1) * per_page
@@ -248,16 +256,19 @@ async def get_blog(
     return blog_dict(blog, like_count, False, comment_count)
 
 
-# ─── Admin CRUD ───────────────────────────────────────────────────────────────
+# ─── Blog Writing & Admin CRUD ───────────────────────────────────────────────────
 
 @router.post("/", status_code=201)
 async def create_blog(
     data: BlogCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ):
-    if current_user.role not in [UserRole.ADMIN, UserRole.MEMBER]:
-        raise HTTPException(status_code=403, detail="Not authorized")
+    """Allow anyone (logged in or guest) to write & publish a blog without prior verification."""
+    author_id = current_user.user_id if current_user else None
+    if not author_id:
+        first_user = await db.scalar(select(User).order_by(User.created_at.asc()).limit(1))
+        author_id = first_user.user_id if first_user else None
 
     base_slug = slugify(data.title)
     slug = base_slug

@@ -20,26 +20,24 @@ export default function Join() {
 
           <SplitHeading
             className="display mt-6 text-[clamp(2rem,5.5vw,3.75rem)]"
-            lines={["Agrasen Bhawan,", "Mansarovar."]}
+            lines={["Agrawal Bhawan,", "Mansarovar Sector 5."]}
             delay={0.05}
           />
 
           <Reveal delay={0.14}>
             <p className="mt-8 max-w-lg text-[0.9375rem] leading-relaxed text-ink-2">
-              Rajat Path, Mansarovar, Jaipur, Rajasthan 302020 — the hall where the
-              samaj gathers, and where every registered household has a standing
-              invitation.
+              VQ87+JX6, Ward 27, Mansarovar Sector 5, Mansarovar, Jaipur, Rajasthan 302020, India — Shipra Path Road (Opposite Vijay Modi), the main hall where the samaj gathers.
             </p>
           </Reveal>
 
           <Reveal delay={0.18}>
             <a
-              href="https://www.google.com/maps/search/?api=1&query=Agrasen+Bhawan+Rajat+Path+Mansarovar+Jaipur"
+              href="https://www.google.com/maps/search/?api=1&query=VQ87%2BJX6%2C+Ward+27%2C+Mansarovar+Sector+5%2C+Mansarovar%2C+Jaipur%2C+Rajasthan+302020"
               target="_blank"
               rel="noopener noreferrer"
               className="eyebrow !tracking-[0.18em] mt-8 inline-block border-b border-ink pb-1 text-ink transition-colors hover:border-vermilion hover:text-vermilion"
             >
-              Get directions
+              Get directions on Google Maps
             </a>
           </Reveal>
         </div>
@@ -48,8 +46,8 @@ export default function Join() {
           <Reveal delay={0.1}>
             <div className="aspect-[4/3] w-full overflow-hidden border border-rule sm:aspect-[16/10]">
               <iframe
-                title="Agrasen Bhawan, Mansarovar, Jaipur — location"
-                src="https://www.google.com/maps?q=Agrasen+Bhawan+Rajat+Path+Mansarovar+Jaipur&output=embed"
+                title="Agrawal Bhawan, Mansarovar Sector 5, Jaipur — location"
+                src="https://www.google.com/maps?q=VQ87%2BJX6,+Ward+27,+Mansarovar+Sector+5,+Mansarovar,+Jaipur,+Rajasthan+302020&output=embed"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
                 className="h-full w-full"

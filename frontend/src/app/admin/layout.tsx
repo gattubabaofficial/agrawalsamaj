@@ -124,7 +124,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div>
           <div className="h-16 flex items-center justify-between px-6 border-b border-zinc-800">
             <Link href="/" className="text-xl font-bold text-gradient-vivid">
-              Agrawal Samaj
+              Agrawal Samaj Mansrovar Jaipur
             </Link>
             <button
               onClick={() => setIsMobileNavOpen(false)}

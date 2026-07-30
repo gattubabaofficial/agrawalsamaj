@@ -20,7 +20,60 @@ export default function PricingRulesPage() {
   const [pForm, setPForm] = useState({ label: "", start_date: "", end_date: "", price_per_day: "", priority: "0" });
   const [mForm, setMForm] = useState({ label: "", start_date: "", end_date: "", min_days: "1", allRooms: false });
 
+  // Bhavan Rate List Manager State (Saava / Other Days / Social / Free)
+  const [activeCategoryTab, setActiveCategoryTab] = useState<"saava" | "other_days" | "social" | "free">("saava");
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [editableRateLists, setEditableRateLists] = useState<Record<string, any[]>>({
+    saava: [
+      { unit: "First Unit (Ground Floor Hall + 5 Rooms)", day1: "₹15,000/-", day2: "₹25,000/-", day3: "₹33,000/-", cleaning: "₹1,000 / day" },
+      { unit: "Second Unit (First Floor 11 Rooms + 3 Dormitories)", day1: "₹14,000/-", day2: "₹21,000/-", day3: "₹27,000/-", cleaning: "₹1,000 / day" },
+      { unit: "Third Unit (Basement Hall)", day1: "₹4,000/-", day2: "₹8,000/-", day3: "₹12,000/-", cleaning: "₹1,000 / day" },
+      { unit: "Individual AC Room (Patient Family Stay)", day1: "₹600 / day", day2: "-", day3: "-", cleaning: "Included" },
+      { unit: "Individual Non-AC Room", day1: "₹400 / day", day2: "-", day3: "-", cleaning: "Included" },
+    ],
+    other_days: [
+      { unit: "First Unit (Ground Floor Hall + 5 Rooms)", day1: "₹12,000/-", day2: "₹20,000/-", day3: "₹28,000/-", cleaning: "₹1,000 / day" },
+      { unit: "Second Unit (First Floor 11 Rooms + 3 Dormitories)", day1: "₹11,000/-", day2: "₹18,000/-", day3: "₹24,000/-", cleaning: "₹1,000 / day" },
+      { unit: "Third Unit (Basement Hall)", day1: "₹3,500/-", day2: "₹7,000/-", day3: "₹10,000/-", cleaning: "₹1,000 / day" },
+      { unit: "Individual AC Room (Patient Family Stay)", day1: "₹550 / day", day2: "-", day3: "-", cleaning: "Included" },
+      { unit: "Individual Non-AC Room", day1: "₹350 / day", day2: "-", day3: "-", cleaning: "Included" },
+    ],
+    social: [
+      { unit: "First Unit (Ground Floor Hall + 5 Rooms)", day1: "₹8,000/-", day2: "₹14,000/-", day3: "₹20,000/-", cleaning: "₹800 / day" },
+      { unit: "Second Unit (First Floor 11 Rooms + 3 Dormitories)", day1: "₹7,000/-", day2: "₹12,000/-", day3: "₹16,000/-", cleaning: "₹800 / day" },
+      { unit: "Third Unit (Basement Hall)", day1: "₹2,500/-", day2: "₹4,500/-", day3: "₹6,500/-", cleaning: "₹500 / day" },
+      { unit: "Individual AC Room (Patient Family Stay)", day1: "₹450 / day", day2: "-", day3: "-", cleaning: "Included" },
+      { unit: "Individual Non-AC Room", day1: "₹300 / day", day2: "-", day3: "-", cleaning: "Included" },
+    ],
+    free: [
+      { unit: "First Unit (Ground Floor Hall + 5 Rooms)", day1: "FREE (₹0)", day2: "FREE (₹0)", day3: "FREE (₹0)", cleaning: "Included" },
+      { unit: "Second Unit (First Floor 11 Rooms + 3 Dormitories)", day1: "FREE (₹0)", day2: "FREE (₹0)", day3: "FREE (₹0)", cleaning: "Included" },
+      { unit: "Third Unit (Basement Hall)", day1: "FREE (₹0)", day2: "FREE (₹0)", day3: "FREE (₹0)", cleaning: "Included" },
+      { unit: "Individual AC Room (Patient Family Stay)", day1: "FREE (₹0)", day2: "-", day3: "-", cleaning: "Included" },
+      { unit: "Individual Non-AC Room", day1: "FREE (₹0)", day2: "-", day3: "-", cleaning: "Included" },
+    ],
+  });
+
   const auth = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } });
+
+  useEffect(() => {
+    const stored = localStorage.getItem("bhavan_custom_rates");
+    if (stored) {
+      try { setEditableRateLists(JSON.parse(stored)); } catch (e) { console.error(e); }
+    }
+  }, []);
+
+  const handleRateCellChange = (category: string, index: number, field: string, value: string) => {
+    const updated = { ...editableRateLists };
+    updated[category][index][field] = value;
+    setEditableRateLists({ ...updated });
+  };
+
+  const saveCategoryRates = () => {
+    localStorage.setItem("bhavan_custom_rates", JSON.stringify(editableRateLists));
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 4000);
+  };
 
   const loadRooms = async () => {
     try {
@@ -168,6 +221,105 @@ export default function PricingRulesPage() {
             ))}
             {minStay.length === 0 && <p className="text-xs text-zinc-400 text-center py-3">No minimum-stay rules.</p>}
           </div>
+        </div>
+      </div>
+
+      {/* Bhavan Category Rate List Editor (Saava / Social / Free) */}
+      <div className="mt-8 bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-100 pb-4">
+          <div>
+            <h2 className="font-bold text-zinc-900 text-lg flex items-center gap-2">
+              <Settings className="w-5 h-5 text-amber-600" /> Bhavan Category Rate List Manager (दर तालिका)
+            </h2>
+            <p className="text-xs text-zinc-500 mt-0.5">Customize rate lists for Wedding Saava Days, Other Social Functions, and Free/Charitable Usage.</p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <select
+              value={activeCategoryTab}
+              onChange={(e) => setActiveCategoryTab(e.target.value as any)}
+              className="border border-zinc-200 rounded-xl px-3 py-2 text-xs font-bold bg-zinc-50 focus:outline-none focus:border-amber-500"
+            >
+              <option value="saava">💍 Wedding Saava Days (सावा)</option>
+              <option value="other_days">🗓️ Other Days (अन्य सामान्य दिवस)</option>
+              <option value="social">👥 Social Functions (सामाजिक कार्यक्रम)</option>
+              <option value="free">🎁 Free / Welfare Use (निःशुल्क सेवा)</option>
+            </select>
+
+            <button
+              type="button"
+              onClick={saveCategoryRates}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
+            >
+              Save Rate List
+            </button>
+          </div>
+        </div>
+
+        {saveSuccess && (
+          <div className="p-3 bg-emerald-50 text-emerald-800 text-xs font-bold rounded-xl border border-emerald-200">
+            ✓ Bhavan rate list updated successfully! Public Bhavan page (/bhavan) is now updated.
+          </div>
+        )}
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left border-collapse min-w-[640px]">
+            <thead>
+              <tr className="bg-zinc-100 text-zinc-700 uppercase font-semibold">
+                <th className="p-3 rounded-l-lg">Unit Description</th>
+                <th className="p-3">First Day Rate</th>
+                <th className="p-3">Two Days Rate</th>
+                <th className="p-3">Three Days Rate</th>
+                <th className="p-3 rounded-r-lg">Cleaning Charge</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100 text-zinc-800 font-medium">
+              {(editableRateLists[activeCategoryTab] || []).map((item, idx) => (
+                <tr key={idx} className="hover:bg-zinc-50">
+                  <td className="p-2.5 font-bold text-zinc-900 min-w-[200px]">
+                    <input
+                      type="text"
+                      value={item.unit}
+                      onChange={(e) => handleRateCellChange(activeCategoryTab, idx, "unit", e.target.value)}
+                      className="w-full border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-amber-500"
+                    />
+                  </td>
+                  <td className="p-2.5">
+                    <input
+                      type="text"
+                      value={item.day1}
+                      onChange={(e) => handleRateCellChange(activeCategoryTab, idx, "day1", e.target.value)}
+                      className="w-full border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-amber-600 focus:outline-none focus:border-amber-500"
+                    />
+                  </td>
+                  <td className="p-2.5">
+                    <input
+                      type="text"
+                      value={item.day2}
+                      onChange={(e) => handleRateCellChange(activeCategoryTab, idx, "day2", e.target.value)}
+                      className="w-full border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-amber-500"
+                    />
+                  </td>
+                  <td className="p-2.5">
+                    <input
+                      type="text"
+                      value={item.day3}
+                      onChange={(e) => handleRateCellChange(activeCategoryTab, idx, "day3", e.target.value)}
+                      className="w-full border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-amber-500"
+                    />
+                  </td>
+                  <td className="p-2.5">
+                    <input
+                      type="text"
+                      value={item.cleaning}
+                      onChange={(e) => handleRateCellChange(activeCategoryTab, idx, "cleaning", e.target.value)}
+                      className="w-full border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs text-zinc-500 focus:outline-none focus:border-amber-500"
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

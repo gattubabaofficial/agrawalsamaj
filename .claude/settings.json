@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s --max-time 8 http://localhost:3001/status)",
+      "Bash(curl -s --max-time 30 -X POST http://localhost:8000/api/v1/auth/phone/send-otp -H \"Content-Type: application/json\" -d '{\"phone\":\"9414054426\"}' -w \"\\\\nHTTP %{http_code}\\\\n\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\);console.log\\(p.dependencies.next, p.dependencies.react\\)\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\);console.log\\('tailwind:',p.devDependencies?.tailwindcss||p.dependencies?.tailwindcss\\)\")",
+      "Bash(curl -s --max-time 90 http://localhost:3000/members -o members.html)",
+      "Bash(npx eslint *)",
+      "Bash(curl -s --max-time 120 http://localhost:3000/members -o members2.html)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" --max-time 30 \"http://localhost:3000/_next/image?url=%2Fpanel%2F01.jpg&w=256&q=75\")",
+      "Bash(grep -o '\\\\.ease-editorial{[^}]*}\\\\|\\\\.deva{[^}]*}\\\\|\\\\.target\\\\\\\\\\\\\\\\:outline-vermilion')",
+      "Bash(cd \"c:/Users/Dell\" && find Desktop Downloads Pictures \"OneDrive/Desktop\" \"OneDrive/Pictures\" -maxdepth 3 -type f \\\\\\( -iname \"*.jpg\" -o -iname \"*.jpeg\" -o -iname \"*.png\" -o -iname \"*.webp\" \\\\\\) -newermt \"2026-06-01\" 2>/dev/null | head -40)",
+      "Read(//c/Users/Dell/**)",
+      "Bash(python -c \"import PIL; print\\('PIL ok', PIL.__version__\\)\")",
+      "Bash(python3 -c \"import PIL; print\\('PIL ok', PIL.__version__\\)\")",
+      "Bash(awk '{printf \"%.0fKB  %s\\\\n\", $2/1024, substr\\($0, index\\($0,$3\\)\\)}')",
+      "Read(//c/Users/Dell/Downloads/**)",
+      "Bash(python -c ' *)",
+      "Bash(python detect.py)",
+      "Bash(python extract.py)",
+      "Bash(npx next *)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(curl -s -o /dev/null --max-time 3 http://localhost:3222/members)",
+      "Bash(curl -s http://localhost:3222/members -o prod.html)",
+      "Bash(echo \"build exit: $?\")"
+    ]
+  }
+}

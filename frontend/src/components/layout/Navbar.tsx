@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Menu, X, Heart, Calendar, Building, Info, Home,
-  BookOpen, LayoutDashboard, LogOut, User, QrCode, Users
+  BookOpen, LayoutDashboard, LogOut, User, QrCode, Users, History
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getApiBaseUrl } from "@/utils/api";
@@ -14,6 +14,7 @@ import { EASE } from "@/components/ui/motion";
 const navItems = [
   { name: "Home", href: "/", icon: Home },
   { name: "About", href: "/about", icon: Info },
+  { name: "History", href: "/history", icon: History },
   { name: "Directory", href: "/members", icon: Users },
   { name: "Events", href: "/events", icon: Calendar },
   { name: "Blog", href: "/blog", icon: BookOpen },
@@ -134,7 +135,7 @@ export default function Navbar() {
           {/* Wordmark */}
           <Link href="/" className="group flex shrink-0 flex-col leading-none">
             <span className="display text-xl tracking-[-0.01em] text-ink sm:text-[1.375rem]">
-              Agrawal Samaj
+              Agrawal Samaj Mansrovar Jaipur
             </span>
             <span className="deva mt-0.5 text-[0.625rem] tracking-wide text-vermilion transition-opacity duration-300 group-hover:opacity-70">
               अग्रवाल समाज · जयपुर
@@ -225,14 +226,7 @@ export default function Navbar() {
                   </AnimatePresence>
                 </div>
               </div>
-            ) : (
-              <Link
-                href="/login"
-                className="rule-grow pb-1 text-[0.6875rem] font-medium uppercase tracking-[0.2em] text-ink-3 transition-colors hover:text-ink"
-              >
-                Sign in
-              </Link>
-            )}
+            ) : null}
           </div>
 
           {/* Mobile trigger */}
@@ -326,13 +320,6 @@ export default function Navbar() {
                       className="flex items-center justify-center bg-vermilion px-6 py-3.5 text-[0.8125rem] font-medium uppercase tracking-[0.16em] text-paper"
                     >
                       Register a household
-                    </Link>
-                    <Link
-                      href="/login"
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center justify-center border border-rule-strong px-6 py-3.5 text-[0.8125rem] font-medium uppercase tracking-[0.16em] text-ink"
-                    >
-                      Sign in
                     </Link>
                   </>
                 )}

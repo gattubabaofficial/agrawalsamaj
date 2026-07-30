@@ -22,7 +22,7 @@ export default function AdminSettingsPage() {
               <label className="text-sm font-semibold text-zinc-700">Platform Name</label>
               <input 
                 type="text" 
-                defaultValue="Agrawal Samaj Portal"
+                defaultValue="Agrawal Samaj Mansrovar Jaipur Portal"
                 className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-500 text-sm"
               />
             </div>

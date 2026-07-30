@@ -1,13 +1,14 @@
 "use client";
 
-import { Users, Calendar, Home, CreditCard, ArrowUpRight, ArrowDownRight, UserCheck } from "lucide-react";
+import Link from "next/link";
+import { Users, Calendar, Home, CreditCard, ArrowUpRight, ArrowDownRight, UserCheck, Shield } from "lucide-react";
 
 export default function AdminDashboard() {
   return (
     <div className="space-y-6 max-w-7xl">
       <div>
         <h1 className="text-2xl font-bold text-zinc-900">Dashboard Overview</h1>
-        <p className="text-sm text-zinc-500 mt-1">Key metrics and statistics for the Agrawal Samaj portal.</p>
+        <p className="text-sm text-zinc-500 mt-1">Key metrics and statistics for the Agrawal Samaj Mansrovar Jaipur portal.</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -63,6 +64,25 @@ export default function AdminDashboard() {
           <h3 className="text-2xl font-bold text-zinc-900">14</h3>
           <p className="text-sm font-medium text-zinc-500 mt-1">Bhavan Bookings (This Month)</p>
         </div>
+      </div>
+
+      {/* Custom Roles & Permissions Management Banner */}
+      <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-600 shrink-0">
+            <Shield className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="font-bold text-zinc-900 text-lg">Custom Roles &amp; Capability Permissions</h3>
+            <p className="text-xs text-zinc-500 mt-0.5">Create custom roles (Bhavan Manager, Event Coordinator, Editor) and assign capability permissions.</p>
+          </div>
+        </div>
+        <Link
+          href="/admin/roles"
+          className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-md hover:shadow-amber-200 transition-all shrink-0 cursor-pointer"
+        >
+          Manage Custom Roles &rarr;
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

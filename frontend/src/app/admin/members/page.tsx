@@ -18,6 +18,8 @@ interface Member {
   surname: string;
   father_name: string | null;
   profession: string | null;
+  native_place?: string | null;
+  bio?: string | null;
   profile_photo: string | null;
   family_relation: string | null;
   family_name: string | null;
@@ -25,6 +27,12 @@ interface Member {
   email: string | null;
   mobile: string | null;
   address: string | null;
+  mobile_private?: boolean;
+  email_private?: boolean;
+  address_private?: boolean;
+  profession_private?: boolean;
+  native_place_private?: boolean;
+  bio_private?: boolean;
   role: string;
   is_member: boolean;
 }
@@ -101,6 +109,9 @@ export default function AdminMembersPage() {
       m.lm_no != null ? String(m.lm_no) : "",
       m.zone,
       m.house_no,
+      m.profession,
+      m.native_place,
+      m.bio,
       m.address,
     ]
       .filter(Boolean)
@@ -207,6 +218,19 @@ export default function AdminMembersPage() {
                         <MapPin className="w-4 h-4 text-zinc-400 mt-0.5" />
                         <span className="line-clamp-2">{m.address || 'No address configured'}</span>
                       </div>
+
+                      {m.native_place && (
+                        <div className="flex items-center gap-2 text-xs text-zinc-600">
+                          <span className="font-semibold text-zinc-500">Origin:</span>
+                          <span>🚩 {m.native_place}</span>
+                        </div>
+                      )}
+
+                      {m.bio && (
+                        <div className="flex items-start gap-2 text-xs text-zinc-600 italic bg-amber-50/50 p-2 rounded-lg border border-amber-100">
+                          <span className="line-clamp-2">"{m.bio}"</span>
+                        </div>
+                      )}
 
                       {(m.zone || m.house_no) && (
                         <div className="flex items-center gap-2 text-xs text-zinc-500">

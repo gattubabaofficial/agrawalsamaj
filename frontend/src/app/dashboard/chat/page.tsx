@@ -665,7 +665,7 @@ export default function ChatPage() {
             <div className="w-16 h-16 rounded-2xl bg-white border border-zinc-200 flex items-center justify-center text-zinc-300 mb-5 shadow-sm">
               <MessageCircle className="w-8 h-8 text-amber-500" />
             </div>
-            <h2 className="text-lg font-bold text-zinc-800 mb-1">Agrawal Samaj Communications</h2>
+            <h2 className="text-lg font-bold text-zinc-800 mb-1">Agrawal Samaj Mansrovar Jaipur Communications</h2>
             <p className="text-xs text-zinc-500 max-w-sm">Select an active chat group, colony-based forum, or direct message from the sidebar list to start talking.</p>
           </div>
         )}

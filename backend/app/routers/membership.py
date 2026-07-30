@@ -1,4 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+import shutil
+from pathlib import Path
+from app.services.otp_delivery import (
+    send_otp_message,
+    CHANNEL_WHATSAPP,
+    DELIVERED_CHANNELS,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from pydantic import BaseModel
@@ -21,6 +28,24 @@ router = APIRouter(prefix="/api/v1/membership", tags=["membership"])
 ASSIGNABLE_ROLES = {UserRole.GUEST, UserRole.MEMBER, UserRole.VOLUNTEER}
 
 
+@router.post("/upload-photo")
+async def upload_profile_photo(file: UploadFile = File(...)):
+    ALLOWED_EXT = {".jpg", ".jpeg", ".png", ".webp"}
+    ext = Path(file.filename or "").suffix.lower()
+    if ext not in ALLOWED_EXT:
+        raise HTTPException(status_code=400, detail="Invalid file format. Allowed: JPG, PNG, WEBP.")
+    
+    upload_dir = Path("uploads/profiles")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    filename = f"{uuid.uuid4().hex}{ext}"
+    file_path = upload_dir / filename
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    return {"url": f"/uploads/profiles/{filename}"}
+
+
 class RoleUpdateRequest(BaseModel):
     role: str
 
@@ -32,7 +57,16 @@ class ApplyWithOtpRequest(BaseModel):
     mobile: str
     email: Optional[str] = None
     profession: Optional[str] = None
+    native_place: Optional[str] = None
+    bio: Optional[str] = None
     address: Optional[str] = None
+    profile_photo: Optional[str] = None
+    mobile_private: bool = False
+    email_private: bool = False
+    address_private: bool = False
+    profession_private: bool = False
+    native_place_private: bool = False
+    bio_private: bool = False
     otp: str
 
 
@@ -55,12 +89,17 @@ class ProfileUpdateRequestPayload(BaseModel):
     surname: str
     father_name: Optional[str] = None
     profession: Optional[str] = None
+    native_place: Optional[str] = None
+    bio: Optional[str] = None
     email: Optional[str] = None
     address: Optional[str] = None
     profile_photo: Optional[str] = None
     mobile_private: bool = False
     email_private: bool = False
     address_private: bool = False
+    profession_private: bool = False
+    native_place_private: bool = False
+    bio_private: bool = False
 
 
 class ContactMemberPayload(BaseModel):
@@ -393,16 +432,21 @@ async def list_members(
         # registered members use `mobile`. Display whichever is present.
         display_mobile = u.mobile or u.contact_mobile
 
-        # Email, address, mobile privacy handling
+        # Privacy handling for email, address, mobile, profession, native_place, bio
         if is_admin:
             email_val = u.email
             mobile_val = display_mobile
             address_val = u.address
+            profession_val = u.profession
+            native_place_val = u.native_place
+            bio_val = u.bio
         else:
             email_val = None if u.email_private else u.email
             address_val = None if u.address_private else u.address
-            # Mask phone string: replace all digits except last 3 with X
             mobile_val = None if u.mobile_private else mask_phone_number(display_mobile)
+            profession_val = None if getattr(u, "profession_private", False) else u.profession
+            native_place_val = None if getattr(u, "native_place_private", False) else u.native_place
+            bio_val = None if getattr(u, "bio_private", False) else u.bio
 
         data.append({
             "user_id": str(u.user_id),
@@ -414,7 +458,9 @@ async def list_members(
             "first_name": u.first_name,
             "surname": u.surname,
             "father_name": u.father_name,
-            "profession": u.profession,
+            "profession": profession_val,
+            "native_place": native_place_val,
+            "bio": bio_val,
             "profile_photo": u.profile_photo,
             "family_relation": u.family_relation,
             "email": email_val,
@@ -424,6 +470,9 @@ async def list_members(
             "mobile_private": u.mobile_private,
             "email_private": u.email_private,
             "address_private": u.address_private,
+            "profession_private": getattr(u, "profession_private", False),
+            "native_place_private": getattr(u, "native_place_private", False),
+            "bio_private": getattr(u, "bio_private", False),
             "role": u.role.value if hasattr(u.role, "value") else str(u.role),
             "is_member": u.is_member
         })
@@ -451,19 +500,19 @@ async def contact_member(
         from app.services.sms_service import send_sms
 
         formatted_msg = (
-            f"📩 *New Contact Request from Agrawal Samaj Portal*\n\n"
+            f"📩 *New Contact Request from Agrawal Samaj Mansrovar Jaipur Portal*\n\n"
             f"👤 *Sender Name:* {payload.sender_name}\n"
             f"📞 *Sender Mobile:* {payload.sender_mobile}\n"
             f"📧 *Sender Email:* {payload.sender_email or 'Not provided'}\n"
             f"📋 *Reason:* {payload.reason}\n\n"
             f"💬 *Message Details:*\n{payload.message}\n\n"
-            f"— Agrawal Samaj Community Portal"
+            f"— Agrawal Samaj Mansrovar Jaipur Community Portal"
         )
         res_sid = send_whatsapp_text(recipient.mobile, formatted_msg)
         
         # Fallback to SMS if WhatsApp sidecar is unlinked or failed
         if res_sid in ("failed_sid", None):
-            await send_sms(recipient.mobile, f"Agrawal Samaj: New contact request from {payload.sender_name} ({payload.sender_mobile}): {payload.message}")
+            await send_sms(recipient.mobile, f"Agrawal Samaj Mansrovar Jaipur: New contact request from {payload.sender_name} ({payload.sender_mobile}): {payload.message}")
 
     return {
         "status": "success",
@@ -489,16 +538,48 @@ async def apply_for_membership_with_otp(
         user = User(
             first_name=payload.first_name.strip(),
             surname=payload.surname.strip(),
+            father_name=payload.father_name.strip() if payload.father_name else None,
             mobile=payload.mobile.strip(),
             email=payload.email.strip().lower() if payload.email else None,
             profession=payload.profession.strip() if payload.profession else None,
+            native_place=payload.native_place.strip() if payload.native_place else None,
+            bio=payload.bio.strip() if payload.bio else None,
             address=payload.address.strip() if payload.address else None,
+            profile_photo=payload.profile_photo.strip() if payload.profile_photo else None,
+            mobile_private=payload.mobile_private,
+            email_private=payload.email_private,
+            address_private=payload.address_private,
+            profession_private=payload.profession_private,
+            native_place_private=payload.native_place_private,
+            bio_private=payload.bio_private,
             role=UserRole.GUEST,
             is_active=True,
             is_member=False
         )
         db.add(user)
         await db.flush()
+    else:
+        # Update details if user already exists
+        if payload.father_name:
+            user.father_name = payload.father_name.strip()
+        if payload.email:
+            user.email = payload.email.strip().lower()
+        if payload.profession:
+            user.profession = payload.profession.strip()
+        if payload.native_place:
+            user.native_place = payload.native_place.strip()
+        if payload.bio:
+            user.bio = payload.bio.strip()
+        if payload.address:
+            user.address = payload.address.strip()
+        if payload.profile_photo:
+            user.profile_photo = payload.profile_photo.strip()
+        user.mobile_private = payload.mobile_private
+        user.email_private = payload.email_private
+        user.address_private = payload.address_private
+        user.profession_private = payload.profession_private
+        user.native_place_private = payload.native_place_private
+        user.bio_private = payload.bio_private
 
     # 3. Create pending MembershipRequest
     new_req = MembershipRequest(
@@ -556,13 +637,36 @@ async def send_member_edit_otp(
     db.add(otp_req)
     await db.commit()
 
+    # Actually deliver it. This was missing: the code was generated, hashed and
+    # stored, then discarded, while the response claimed it had been sent — so
+    # the member waited for a message that did not exist and every code they
+    # tried came back "Invalid or expired verification code."
+    message = (
+        f"Your Agrawal Samaj Mansrovar Jaipur verification code is {otp_code}. "
+        f"Valid for 5 minutes. Do not share this with anyone."
+    )
+    channel = await send_otp_message(target_mobile, message)
+
+    if channel not in DELIVERED_CHANNELS:
+        # Nothing reached the member. Saying "sent" here is what caused the
+        # original confusion, so fail instead and let them retry.
+        raise HTTPException(
+            status_code=502,
+            detail="Could not send the verification code right now. Please try again in a moment.",
+        )
+
     return {
         "status": "success",
+        "channel": channel,
         "user_id": str(user.user_id),
         "samaj_id": user.samaj_id,
         "member_name": f"{user.first_name} {user.surname}",
         "masked_phone": mask_phone_number(target_mobile),
-        "message": f"Verification code sent to registered mobile number ending in ...{target_mobile[-3:]}"
+        "message": (
+            f"Verification code sent on WhatsApp to the number ending in ...{target_mobile[-3:]}"
+            if channel == CHANNEL_WHATSAPP
+            else f"Verification code sent by SMS to the number ending in ...{target_mobile[-3:]}"
+        ),
     }
 
 
@@ -606,6 +710,8 @@ async def verify_member_edit_otp(
             "surname": user.surname,
             "father_name": user.father_name,
             "profession": user.profession,
+            "native_place": user.native_place,
+            "bio": user.bio,
             "email": user.email,
             "mobile": user.mobile,
             "mobile_masked": mask_phone_number(user.mobile),
@@ -614,6 +720,9 @@ async def verify_member_edit_otp(
             "mobile_private": user.mobile_private,
             "email_private": user.email_private,
             "address_private": user.address_private,
+            "profession_private": getattr(user, "profession_private", False),
+            "native_place_private": getattr(user, "native_place_private", False),
+            "bio_private": getattr(user, "bio_private", False),
         }
     }
 
@@ -645,6 +754,8 @@ async def submit_profile_update_request(
         "surname": user.surname,
         "father_name": user.father_name,
         "profession": user.profession,
+        "native_place": user.native_place,
+        "bio": user.bio,
         "email": user.email,
         "mobile": user.mobile,
         "address": user.address,
@@ -652,6 +763,9 @@ async def submit_profile_update_request(
         "mobile_private": user.mobile_private,
         "email_private": user.email_private,
         "address_private": user.address_private,
+        "profession_private": getattr(user, "profession_private", False),
+        "native_place_private": getattr(user, "native_place_private", False),
+        "bio_private": getattr(user, "bio_private", False),
     }
 
     new_details = {
@@ -659,13 +773,18 @@ async def submit_profile_update_request(
         "surname": payload.surname.strip(),
         "father_name": payload.father_name.strip() if payload.father_name else None,
         "profession": payload.profession.strip() if payload.profession else None,
+        "native_place": payload.native_place.strip() if payload.native_place else None,
+        "bio": payload.bio.strip() if payload.bio else None,
         "email": payload.email.strip().lower() if payload.email else None,
-        "mobile": user.mobile,  # Registered mobile number remains fixed!
+        "mobile": payload.mobile.strip() if payload.mobile else user.mobile,
         "address": payload.address.strip() if payload.address else None,
         "profile_photo": payload.profile_photo.strip() if payload.profile_photo else None,
         "mobile_private": payload.mobile_private,
         "email_private": payload.email_private,
         "address_private": payload.address_private,
+        "profession_private": payload.profession_private,
+        "native_place_private": payload.native_place_private,
+        "bio_private": payload.bio_private,
     }
 
     req = ProfileUpdateRequest(
@@ -735,6 +854,8 @@ async def approve_profile_update(
     user.surname = new_details.get("surname", user.surname)
     user.father_name = new_details.get("father_name", user.father_name)
     user.profession = new_details.get("profession", user.profession)
+    user.native_place = new_details.get("native_place", user.native_place)
+    user.bio = new_details.get("bio", user.bio)
     if "email" in new_details:
         user.email = new_details["email"]
     if "mobile" in new_details:
@@ -746,6 +867,9 @@ async def approve_profile_update(
     user.mobile_private = new_details.get("mobile_private", False)
     user.email_private = new_details.get("email_private", False)
     user.address_private = new_details.get("address_private", False)
+    user.profession_private = new_details.get("profession_private", False)
+    user.native_place_private = new_details.get("native_place_private", False)
+    user.bio_private = new_details.get("bio_private", False)
 
     req.status = RequestStatus.APPROVED
     await db.commit()

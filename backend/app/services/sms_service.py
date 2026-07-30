@@ -1,19 +1,40 @@
 import os
 import aiohttp
 
+
+def is_dummy_sms_mode() -> bool:
+    """True when send_sms would only print to the console instead of sending.
+
+    Callers that need to know whether a message actually left the machine must
+    check this: send_sms returns True in dummy mode, so a bare `if await
+    send_sms(...)` cannot tell real delivery from a console print. That
+    distinction is the difference between "your code is on its way" and a user
+    staring at a screen that will never receive anything.
+    """
+    provider = os.getenv("SMS_PROVIDER", "msg91").lower()
+
+    if provider == "dummy":
+        return True
+    if provider == "msg91":
+        key = os.getenv("SMS_API_KEY")
+        return not key or key == "dummy_key"
+    if provider == "twilio":
+        sid = os.getenv("TWILIO_ACCOUNT_SID")
+        return not sid or sid == "dummy_sid" or "your_" in sid
+    if provider == "2factor":
+        key = os.getenv("SMS_API_KEY")
+        return not os.getenv("TWOFACTOR_API_KEY") and (not key or key == "dummy_key")
+    return False
+
+
 async def send_sms(phone: str, message: str) -> bool:
     """
     Sends an SMS using the configured SMS provider.
     Fallback to console logging if dummy/development mode is active.
     """
     provider = os.getenv("SMS_PROVIDER", "msg91").lower()
-    
-    is_dummy_provider = provider == "dummy"
-    is_dummy_msg91 = (provider == "msg91" and (not os.getenv("SMS_API_KEY") or os.getenv("SMS_API_KEY") == "dummy_key"))
-    is_dummy_twilio = (provider == "twilio" and (not os.getenv("TWILIO_ACCOUNT_SID") or os.getenv("TWILIO_ACCOUNT_SID") == "dummy_sid" or "your_" in os.getenv("TWILIO_ACCOUNT_SID")))
-    is_dummy_2factor = (provider == "2factor" and (not os.getenv("TWOFACTOR_API_KEY") and (not os.getenv("SMS_API_KEY") or os.getenv("SMS_API_KEY") == "dummy_key")))
-    
-    if is_dummy_provider or is_dummy_msg91 or is_dummy_twilio or is_dummy_2factor:
+
+    if is_dummy_sms_mode():
         # Simulate SMS sending in development
         print(f"\n==========================================")
         print(f"[DUMMY SMS DISPATCHED]")

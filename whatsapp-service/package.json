@@ -2,7 +2,7 @@
   "name": "agrawal-samaj-whatsapp-service",
   "version": "1.0.0",
   "private": true,
-  "description": "whatsapp-web.js sidecar that delivers event pass QR codes over WhatsApp for the Agrawal Samaj portal.",
+  "description": "whatsapp-web.js sidecar that delivers event pass QR codes over WhatsApp for the Agrawal Samaj Mansrovar Jaipur portal.",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {

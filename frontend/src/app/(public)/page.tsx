@@ -1,4 +1,5 @@
 import CovenantHero from "@/components/home/CovenantHero";
+import Padadhikari from "@/components/home/Padadhikari";
 import Ledger from "@/components/home/Ledger";
 import PortalIndex from "@/components/home/PortalIndex";
 import Gallery from "@/components/home/Gallery";
@@ -12,6 +13,7 @@ export default function HomePage() {
     // stage. Horizontal bleed is clipped on <body> with `clip` instead.
     <div className="flex w-full flex-col bg-paper">
       <CovenantHero />
+      <Padadhikari />
       <Ledger />
       <PortalIndex />
       <Gallery />

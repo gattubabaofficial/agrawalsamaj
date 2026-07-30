@@ -172,10 +172,27 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider flex items-center gap-2">
-                    <Briefcase className="w-3.5 h-3.5" /> Profession
+                  <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider flex items-center justify-between">
+                    <span className="flex items-center gap-2"><Briefcase className="w-3.5 h-3.5" /> Profession / Business</span>
+                    {profile.profession_private ? <span title="Private"><Lock className="w-3 h-3 text-rose-500" /></span> : <span title="Public"><Unlock className="w-3 h-3 text-emerald-500" /></span>}
                   </label>
                   <p className="text-zinc-900 font-medium">{profile.profession || "Not provided"}</p>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider flex items-center justify-between">
+                    <span className="flex items-center gap-2">🚩 Native Place / Belonging From</span>
+                    {profile.native_place_private ? <span title="Private"><Lock className="w-3 h-3 text-rose-500" /></span> : <span title="Public"><Unlock className="w-3 h-3 text-emerald-500" /></span>}
+                  </label>
+                  <p className="text-zinc-900 font-medium">{profile.native_place || "Not provided"}</p>
+                </div>
+
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider flex items-center justify-between">
+                    <span className="flex items-center gap-2">📝 About Me / Bio</span>
+                    {profile.bio_private ? <span title="Private"><Lock className="w-3 h-3 text-rose-500" /></span> : <span title="Public"><Unlock className="w-3 h-3 text-emerald-500" /></span>}
+                  </label>
+                  <p className="text-zinc-900 font-medium">{profile.bio || "Not provided"}</p>
                 </div>
 
                 <div className="space-y-1 sm:col-span-2">
@@ -229,8 +246,36 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2 sm:col-span-2">
-                  <label className="text-sm font-semibold text-zinc-700">Profession</label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm font-semibold text-zinc-700">Profession / Business</label>
+                    <label className="flex items-center gap-1.5 text-xs text-zinc-500 cursor-pointer">
+                      <input type="checkbox" checked={formData.profession_private} onChange={e => setFormData({...formData, profession_private: e.target.checked})} className="rounded text-amber-500 focus:ring-amber-500 border-zinc-300" />
+                      Keep Private
+                    </label>
+                  </div>
                   <input type="text" value={formData.profession || ""} onChange={(e) => setFormData({...formData, profession: e.target.value})} placeholder="e.g. Software Engineer, Business Owner" className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm" />
+                </div>
+
+                <div className="space-y-2 sm:col-span-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm font-semibold text-zinc-700">Where you belong from / Native Place</label>
+                    <label className="flex items-center gap-1.5 text-xs text-zinc-500 cursor-pointer">
+                      <input type="checkbox" checked={formData.native_place_private} onChange={e => setFormData({...formData, native_place_private: e.target.checked})} className="rounded text-amber-500 focus:ring-amber-500 border-zinc-300" />
+                      Keep Private
+                    </label>
+                  </div>
+                  <input type="text" value={formData.native_place || ""} onChange={(e) => setFormData({...formData, native_place: e.target.value})} placeholder="e.g. Agroha, Hisar, Jaipur" className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm" />
+                </div>
+
+                <div className="space-y-2 sm:col-span-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm font-semibold text-zinc-700">About Me / Bio</label>
+                    <label className="flex items-center gap-1.5 text-xs text-zinc-500 cursor-pointer">
+                      <input type="checkbox" checked={formData.bio_private} onChange={e => setFormData({...formData, bio_private: e.target.checked})} className="rounded text-amber-500 focus:ring-amber-500 border-zinc-300" />
+                      Keep Private
+                    </label>
+                  </div>
+                  <textarea value={formData.bio || ""} onChange={(e) => setFormData({...formData, bio: e.target.value})} rows={2} placeholder="Brief introduction about yourself..." className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm" />
                 </div>
 
                 <div className="space-y-2 sm:col-span-2">

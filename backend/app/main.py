@@ -19,10 +19,11 @@ from app.routers.blog import router as blog_router
 from app.routers.admin import router as admin_router
 from app.routers.receipts import router as receipts_router
 from app.routers.vouchers import router as vouchers_router
+from app.routers.role import router as role_router
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="Backend API for Agrawal Samaj Management Portal",
+    description="Backend API for Agrawal Samaj Mansrovar Jaipur Management Portal",
     version="1.0.0",
 )
 
@@ -32,6 +33,7 @@ async def on_startup():
     from app.database import engine, Base
     import app.models.user
     import app.models.requests
+    import app.models.role
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         # SQLite's create_all only creates missing tables, never adds columns to an
@@ -45,6 +47,12 @@ async def on_startup():
             "ALTER TABLE users ADD COLUMN house_no VARCHAR(60)",
             "ALTER TABLE users ADD COLUMN contact_mobile VARCHAR(20)",
             "ALTER TABLE users ADD COLUMN member_status VARCHAR(30) DEFAULT 'active'",
+            "ALTER TABLE users ADD COLUMN native_place VARCHAR(200)",
+            "ALTER TABLE users ADD COLUMN bio VARCHAR(1000)",
+            "ALTER TABLE users ADD COLUMN profession_private BOOLEAN DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN native_place_private BOOLEAN DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN bio_private BOOLEAN DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN custom_role_id VARCHAR(36)",
         ):
             try:
                 await conn.execute(text(ddl))
@@ -89,6 +97,7 @@ app.include_router(admin_router)
 app.include_router(receipts_router)
 app.include_router(vouchers_router)
 app.include_router(special_events_router)
+app.include_router(role_router)
 
 
 @app.get("/")

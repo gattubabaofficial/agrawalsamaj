@@ -15,6 +15,7 @@ from app.models.requests import (
 )
 from app.models.blog import Blog, BlogComment, BlogLike, BlogStatus
 from app.models.voucher import Voucher, DiscountType, VoucherScope
+from app.models.role import CustomRole
 
 # Ensure all models are exported
 __all__ = [

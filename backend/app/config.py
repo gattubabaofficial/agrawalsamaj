@@ -54,6 +54,24 @@ class Settings(BaseSettings):
     WHATSAPP_WEB_API_KEY: str = ""
     WHATSAPP_WEB_TIMEOUT: int = 60
 
+    # Deliver phone OTPs over WhatsApp, falling back to SMS when the sidecar
+    # is down or the number has no WhatsApp account. Set false to go back to
+    # SMS only.
+    OTP_PREFER_WHATSAPP: bool = True
+    # Separate, much shorter timeout for OTP sends. Someone is sitting on a
+    # login screen waiting: better to give up quickly and fall back to SMS
+    # than to hold the request open for WHATSAPP_WEB_TIMEOUT seconds.
+    OTP_WHATSAPP_TIMEOUT: int = 12
+
+    # Local development only: return the OTP in the API response and accept a
+    # console-only "send" as delivered.
+    #
+    # Defaults to False deliberately, and is NOT keyed off ENVIRONMENT —
+    # ENVIRONMENT itself defaults to "development", so anything derived from it
+    # would expose OTPs on any deployment that forgot to set it. Leaking
+    # verification codes has to require someone explicitly opting in.
+    OTP_DEBUG_RETURN_CODE: bool = False
+
     # Email
     FROM_EMAIL: str = "noreply@agrawalsamaj.org"
     SENDGRID_API_KEY: Optional[str] = None

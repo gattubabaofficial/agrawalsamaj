@@ -64,7 +64,7 @@ export default function PaymentGateway({
       key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_123",
       amount: Math.round(amount * 100), // Razorpay expects amount in paise
       currency: "INR",
-      name: "Agrawal Samaj Portal",
+      name: "Agrawal Samaj Mansrovar Jaipur Portal",
       description: purpose,
       handler: function (response: any) {
         setIsProcessing(false);

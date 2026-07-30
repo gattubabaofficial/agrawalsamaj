@@ -9,6 +9,7 @@ import { formatDateDDMonthYYYY } from "@/utils/date";
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
   
   const [activeTab, setActiveTab] = useState<"bookings" | "rooms">("bookings");
   const [rooms, setRooms] = useState<any[]>([]);
@@ -182,7 +183,17 @@ export default function AdminBookingsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <p className="text-zinc-900 font-medium">{b.user_name}</p>
-                        <p className="text-xs text-zinc-500">{b.user_mobile || "No Mobile"}</p>
+                        <p className="text-xs text-zinc-500 font-mono">{b.user_mobile || "No Mobile"}</p>
+                        {b.user_mobile && (
+                          <a
+                            href={`https://wa.me/91${b.user_mobile.replace(/\D/g, "")}?text=${encodeURIComponent(`Hello ${b.user_name}, regarding your Bhavan booking request for ${b.room_name} (${formatDateDDMonthYYYY(b.start_date)} to ${formatDateDDMonthYYYY(b.end_date)}).`)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 hover:text-emerald-700 mt-1 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200"
+                          >
+                            💬 Contact via WhatsApp
+                          </a>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <p className="text-zinc-900 font-medium">{formatDateDDMonthYYYY(b.start_date)} — {formatDateDDMonthYYYY(b.end_date)}</p>
@@ -210,18 +221,48 @@ export default function AdminBookingsPage() {
                               onClick={async () => {
                                 try {
                                   const token = localStorage.getItem("token");
-                                  await axios.post(`${getApiBaseUrl()}/bookings/${b.booking_id}/approve`, {}, {
+                                  const res = await axios.post(`${getApiBaseUrl()}/bookings/${b.booking_id}/approve`, {}, {
                                     headers: { Authorization: `Bearer ${token}` }
+                                  });
+                                  setSelectedReceipt({
+                                    number: res.data.receipt_number,
+                                    url: res.data.receipt_url,
+                                    user: b.user_name,
+                                    room: b.room_name,
+                                    amount: b.total_amount,
+                                    approver: b.approved_by_name || "Admin"
                                   });
                                   fetchData();
                                 } catch (error) {
                                   alert("Failed to approve booking");
                                 }
                               }}
-                              className="px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 text-xs font-bold rounded-lg transition-colors border border-emerald-200"
+                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-1"
                             >
-                              Approve & Mark Paid
+                              <CheckCircle className="w-3.5 h-3.5" /> Accept Request & Issue Receipt
                             </button>
+                          )}
+
+                          {b.booking_status === 'approved' && (
+                            <div className="space-y-1">
+                              {b.approved_by_name && (
+                                <p className="text-[11px] text-zinc-500 font-medium">
+                                  Accepted by: <span className="font-bold text-zinc-800">{b.approved_by_name}</span>
+                                </p>
+                              )}
+                              {b.receipt_url ? (
+                                <a
+                                  href={`${getApiBaseUrl().replace("/api/v1", "")}${b.receipt_url}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 rounded-md text-xs font-semibold transition-colors"
+                                >
+                                  📄 View Receipt ({b.receipt_number || "PDF"})
+                                </a>
+                              ) : (
+                                <span className="text-[11px] text-zinc-400 italic">Receipt Generated</span>
+                              )}
+                            </div>
                           )}
                         </div>
                       </td>
@@ -358,6 +399,76 @@ export default function AdminBookingsPage() {
                 )}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {selectedReceipt && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-zinc-900 text-lg">Booking Accepted!</h3>
+                  <p className="text-xs text-zinc-500">Official receipt has been generated</p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedReceipt(null)} className="p-1 text-zinc-400 hover:text-zinc-600 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 bg-zinc-50 p-4 rounded-2xl border border-zinc-200 text-sm">
+              <div className="flex justify-between">
+                <span className="text-zinc-500 font-medium">Receipt No:</span>
+                <span className="font-mono font-bold text-amber-700">{selectedReceipt.number || "AGS-BKG-2026"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500 font-medium">Applicant:</span>
+                <span className="font-semibold text-zinc-900">{selectedReceipt.user}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500 font-medium">Facility / Room:</span>
+                <span className="font-semibold text-zinc-900">{selectedReceipt.room}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500 font-medium">Amount Paid:</span>
+                <span className="font-bold text-emerald-700">₹{selectedReceipt.amount}</span>
+              </div>
+              <div className="flex justify-between pt-2 border-t border-zinc-200/80">
+                <span className="text-zinc-500 font-medium">Accepted & Issued By:</span>
+                <span className="font-bold text-zinc-900">{selectedReceipt.approver}</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <button
+                onClick={() => setSelectedReceipt(null)}
+                className="w-full sm:w-1/2 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-sm font-semibold rounded-xl transition-colors"
+              >
+                Close
+              </button>
+              {selectedReceipt.url ? (
+                <a
+                  href={`${getApiBaseUrl().replace("/api/v1", "")}${selectedReceipt.url}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full sm:w-1/2 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-center text-sm font-semibold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-1.5"
+                >
+                  📄 View / Print Receipt
+                </a>
+              ) : (
+                <button
+                  onClick={() => setSelectedReceipt(null)}
+                  className="w-full sm:w-1/2 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl"
+                >
+                  Done
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

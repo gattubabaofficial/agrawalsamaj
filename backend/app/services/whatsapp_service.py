@@ -74,7 +74,7 @@ def send_whatsapp_web_qr(
         f"🎟️ *{event_name}*\n\n"
         f"Your entry pass {pass_number} of {total_passes} is attached.\n"
         f"Please show this QR code at the venue entrance.\n\n"
-        f"— Agrawal Samaj"
+        f"— Agrawal Samaj Mansrovar Jaipur"
     )
 
     try:
@@ -233,8 +233,16 @@ def send_whatsapp_document(
     )
 
 
-def send_whatsapp_text(to_number: str, message: str) -> str:
-    """Deliver a text message over WhatsApp using whatsapp-web.js sidecar or dummy mode."""
+def send_whatsapp_text(to_number: str, message: str, timeout: int | None = None) -> str:
+    """Deliver a text message over WhatsApp using whatsapp-web.js sidecar or dummy mode.
+
+    `timeout` overrides WHATSAPP_WEB_TIMEOUT for this send. Callers on a
+    latency-sensitive path (OTP, for instance) should pass a short one so a
+    stalled sidecar does not hold the request open.
+
+    NOTE: this is a blocking call. From async code, run it in a threadpool
+    (`asyncio.to_thread`) rather than awaiting the event loop into a stall.
+    """
     if not to_number:
         logger.error("Recipient phone number is empty.")
         return "failed_sid"
@@ -256,7 +264,7 @@ def send_whatsapp_text(to_number: str, message: str) -> str:
 
     url = f"{settings.WHATSAPP_WEB_URL.rstrip('/')}/send-text"
     try:
-        with httpx.Client(timeout=settings.WHATSAPP_WEB_TIMEOUT) as client:
+        with httpx.Client(timeout=timeout or settings.WHATSAPP_WEB_TIMEOUT) as client:
             response = client.post(url, json=payload, headers=headers)
 
         if response.status_code == 200:

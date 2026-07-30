@@ -42,6 +42,106 @@ export default function EventDetailsPage() {
     code: string; discountAmount: number; finalAmount: number; forAmount: number;
   } | null>(null);
 
+  // Multi-Member Selection & Pass Limits (Member max 10, User max 4)
+  const [allMembersList, setAllMembersList] = useState<any[]>([]);
+  const [memberSearchQuery, setMemberSearchQuery] = useState("");
+  const [memberSearchResults, setMemberSearchResults] = useState<any[]>([]);
+  const [showMemberDropdown, setShowMemberDropdown] = useState(false);
+  
+  // Selected Attendees List for Multi-Member / Multi-Ticket Booking
+  const [selectedAttendees, setSelectedAttendees] = useState<Array<{
+    id: string; name: string; phone: string; email: string; samaj_id: string;
+  }>>([]);
+
+  const maxPassAllowed = attendeeType === "member" ? 10 : 4;
+
+  useEffect(() => {
+    // Pre-fetch directory members for instant search dropdown
+    axios.get(`${getApiBaseUrl()}/membership/members`).then((res) => {
+      if (Array.isArray(res.data)) {
+        setAllMembersList(res.data);
+      }
+    }).catch((err) => console.error("Could not fetch member list for dropdown", err));
+  }, []);
+
+  const handleMemberSearch = (query: string) => {
+    setMemberSearchQuery(query);
+    setGuestName(query);
+    const q = query.toLowerCase().trim();
+    if (!q) {
+      setMemberSearchResults(allMembersList.slice(0, 10));
+      setShowMemberDropdown(true);
+      return;
+    }
+    const matches = allMembersList.filter((m) => {
+      const name = `${m.first_name || ''} ${m.surname || ''}`.toLowerCase();
+      const father = (m.father_name || '').toLowerCase();
+      const mob = (m.mobile || m.contact_mobile || '').toLowerCase();
+      const samajId = (m.samaj_id || '').toLowerCase();
+      return name.includes(q) || father.includes(q) || mob.includes(q) || samajId.includes(q);
+    });
+    setMemberSearchResults(matches.slice(0, 10));
+    setShowMemberDropdown(true);
+  };
+
+  const selectMemberFromDropdown = (m: any) => {
+    const fullName = `${m.first_name || ''} ${m.surname || ''}`.trim();
+    const phone = m.mobile || m.contact_mobile || "";
+    const email = m.email || "";
+    const samajId = m.samaj_id || "";
+    const id = m.user_id || `m-${Date.now()}`;
+
+    if (selectedAttendees.some((item) => item.id === id || item.name.toLowerCase() === fullName.toLowerCase())) {
+      setShowMemberDropdown(false);
+      return;
+    }
+
+    if (selectedAttendees.length >= maxPassAllowed) {
+      alert(`Maximum ${maxPassAllowed} tickets allowed per booking.`);
+      setShowMemberDropdown(false);
+      return;
+    }
+
+    const updated = [...selectedAttendees, { id, name: fullName, phone, email, samaj_id: samajId }];
+    setSelectedAttendees(updated);
+    setPassCount(updated.length);
+    setGuestName(updated[0].name);
+    setGuestPhone(updated[0].phone);
+    setGuestEmail(updated[0].email);
+    setMemberSearchQuery("");
+    setShowMemberDropdown(false);
+  };
+
+  const addCustomAttendee = () => {
+    if (!guestName.trim()) return;
+    if (selectedAttendees.length >= maxPassAllowed) {
+      alert(`Maximum ${maxPassAllowed} tickets allowed per booking.`);
+      return;
+    }
+    const updated = [
+      ...selectedAttendees,
+      { id: `c-${Date.now()}`, name: guestName.trim(), phone: guestPhone || "", email: guestEmail || "", samaj_id: "" }
+    ];
+    setSelectedAttendees(updated);
+    setPassCount(updated.length);
+    setGuestName(updated[0].name);
+  };
+
+  const removeAttendee = (index: number) => {
+    const updated = selectedAttendees.filter((_, i) => i !== index);
+    setSelectedAttendees(updated);
+    setPassCount(Math.max(1, updated.length));
+    if (updated.length > 0) {
+      setGuestName(updated[0].name);
+      setGuestPhone(updated[0].phone);
+      setGuestEmail(updated[0].email);
+    } else {
+      setGuestName("");
+      setGuestPhone("");
+      setGuestEmail("");
+    }
+  };
+
   useEffect(() => {
     // Check login status and auto-prefill registered member details
     const token = localStorage.getItem("token");
@@ -268,55 +368,169 @@ export default function EventDetailsPage() {
                 {/* Step 2: Attendee Details */}
                 <div className="space-y-4 pt-3 border-t border-zinc-100">
                   {attendeeType === "member" ? (
-                    isLoggedIn && (guestName || guestPhone) ? (
-                      <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1">
-                        <p className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
-                          <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> Member Details Loaded from DB
-                        </p>
-                        <p className="text-xs text-zinc-700 font-medium">Name: <span className="font-semibold">{guestName || "Registered Member"}</span></p>
-                        <p className="text-xs text-zinc-700 font-medium">Phone: <span className="font-semibold">{guestPhone || "Registered Phone"}</span></p>
+                    <div className="space-y-3 p-3.5 bg-zinc-50 border border-zinc-200 rounded-xl relative">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-zinc-600 font-medium">Type name, father name or mobile to search Member Directory:</p>
+                        <span className="text-[10px] font-bold text-amber-700 bg-amber-100/80 px-2.5 py-0.5 rounded-full">
+                          {allMembersList.length} Members Listed
+                        </span>
                       </div>
-                    ) : (
-                      <div className="space-y-3 p-3.5 bg-zinc-50 border border-zinc-200 rounded-xl">
-                        <p className="text-xs text-zinc-600 font-medium">Enter details to retrieve member info from DB:</p>
-                        <div className="space-y-2">
-                          <label className="text-xs font-semibold text-zinc-700">Full Name *</label>
-                          <input required type="text" placeholder="Member Full Name" value={guestName} onChange={(e) => setGuestName(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white focus:outline-none focus:border-amber-500" />
+
+                      {/* Selected Attendees Cards List */}
+                      {selectedAttendees.length > 0 && (
+                        <div className="space-y-2 p-3 bg-amber-50 rounded-xl border border-amber-200">
+                          <div className="flex items-center justify-between text-xs font-bold text-amber-900 border-b border-amber-200/60 pb-1.5">
+                            <span>Selected Attendees ({selectedAttendees.length} / {maxPassAllowed} Max):</span>
+                            <span className="text-[10px] bg-amber-200 text-amber-900 px-2.5 py-0.5 rounded-full font-bold">
+                              {selectedAttendees.length} Ticket{selectedAttendees.length > 1 ? "s" : ""} Total
+                            </span>
+                          </div>
+                          <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                            {selectedAttendees.map((att, idx) => (
+                              <div key={att.id} className="p-2 bg-white rounded-lg border border-amber-200/80 flex items-center justify-between text-xs shadow-sm">
+                                <div>
+                                  <span className="font-bold text-zinc-900">Ticket #{idx + 1}: {att.name}</span>
+                                  {att.phone && <span className="text-[11px] text-zinc-500 ml-2">📱 {att.phone}</span>}
+                                  {att.samaj_id && <span className="text-[10px] font-mono text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded ml-1.5">{att.samaj_id}</span>}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeAttendee(idx)}
+                                  className="text-rose-600 hover:text-rose-800 text-xs font-bold px-1.5 py-0.5 rounded hover:bg-rose-50 transition-colors"
+                                >
+                                  ✕ Remove
+                                </button>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-xs font-semibold text-zinc-700">Registered Mobile Number *</label>
-                          <input required type="tel" pattern="[0-9+]{10,13}" placeholder="Registered Mobile" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white focus:outline-none focus:border-amber-500" />
+                      )}
+
+                      <div className="space-y-1 relative">
+                        <label className="text-xs font-semibold text-zinc-700 block">Search Member Directory or Type Attendee Name *</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Type member name, father name or phone (e.g. Ramesh)..."
+                            value={guestName}
+                            onChange={(e) => handleMemberSearch(e.target.value)}
+                            onFocus={() => { handleMemberSearch(guestName); }}
+                            onBlur={() => { setTimeout(() => setShowMemberDropdown(false), 250); }}
+                            className="flex-1 px-3.5 py-2.5 border border-zinc-200 rounded-xl text-sm bg-white focus:outline-none focus:border-amber-500 shadow-sm font-medium"
+                          />
+                          <button
+                            type="button"
+                            onClick={addCustomAttendee}
+                            disabled={!guestName.trim()}
+                            className="px-3.5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm disabled:opacity-50 transition-all shrink-0 cursor-pointer"
+                          >
+                            + Add Ticket
+                          </button>
                         </div>
+
+                        {/* Dropdown List */}
+                        {showMemberDropdown && memberSearchResults.length > 0 && (
+                          <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-amber-200 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto divide-y divide-zinc-100">
+                            <div className="p-2 bg-amber-50 text-[11px] font-bold text-amber-800 border-b border-amber-100 flex justify-between items-center sticky top-0 bg-amber-50 z-10">
+                              <span>Click member to add ticket ({memberSearchResults.length} matches):</span>
+                              <button type="button" onClick={() => setShowMemberDropdown(false)} className="text-zinc-400 hover:text-zinc-600 font-bold px-1">✕</button>
+                            </div>
+                            {memberSearchResults.map((m) => (
+                              <div
+                                key={m.user_id}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  selectMemberFromDropdown(m);
+                                }}
+                                className="p-3 hover:bg-amber-50 cursor-pointer flex items-center justify-between transition-colors group"
+                              >
+                                <div>
+                                  <p className="text-xs font-bold text-zinc-900 group-hover:text-amber-700">
+                                    {m.first_name} {m.surname} {m.father_name ? `(S/o ${m.father_name})` : ''}
+                                  </p>
+                                  <p className="text-[11px] text-zinc-500">
+                                    📱 {m.mobile || m.contact_mobile || "No Mobile"} {m.samaj_id ? `· ID: ${m.samaj_id}` : ''}
+                                  </p>
+                                </div>
+                                <span className="text-[10px] font-bold text-white bg-amber-500 group-hover:bg-amber-600 px-3 py-1 rounded-full shadow-sm">
+                                  + Add Ticket
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-zinc-700 block">Primary Contact Mobile Number *</label>
+                        <input
+                          required
+                          type="tel"
+                          pattern="[0-9+]{10,13}"
+                          placeholder="Primary Contact Mobile Number"
+                          value={guestPhone}
+                          onChange={(e) => setGuestPhone(e.target.value)}
+                          className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white focus:outline-none focus:border-amber-500"
+                        />
+                      </div>
+                    </div>
                   ) : (
                     <div className="space-y-3 p-3.5 bg-zinc-50 border border-zinc-200 rounded-xl">
-                      <p className="text-xs text-zinc-600 font-medium">Enter your contact details:</p>
-                      <div className="space-y-2">
-                        <label className="text-xs font-semibold text-zinc-700">Full Name *</label>
+                      <p className="text-xs text-zinc-600 font-medium">Enter your contact details (General User):</p>
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-zinc-700 block">Full Name *</label>
                         <input required type="text" placeholder="Your Name" value={guestName} onChange={(e) => setGuestName(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white focus:outline-none focus:border-amber-500" />
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-semibold text-zinc-700">Mobile Number *</label>
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-zinc-700 block">Mobile Number *</label>
                         <input required type="tel" pattern="[0-9+]{10,13}" placeholder="Your Mobile Number" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white focus:outline-none focus:border-amber-500" />
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-semibold text-zinc-700">Email Address *</label>
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-zinc-700 block">Email Address *</label>
                         <input required type="email" placeholder="Your Email Address" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white focus:outline-none focus:border-amber-500" />
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* Step 3: Number of Passes */}
+                {/* Step 3: Number of Passes & Limit Info */}
                 <div className="space-y-2 pt-2 border-t border-zinc-100">
-                  <label className="text-sm font-semibold text-zinc-700">Number of Passes</label>
-                  <div className="flex items-center">
-                    <button type="button" onClick={() => setPassCount(Math.max(1, passCount - 1))} className="w-10 h-10 flex items-center justify-center border border-zinc-200 rounded-l-xl bg-zinc-50 hover:bg-zinc-100 text-zinc-600 font-bold">-</button>
-                    <input type="number" min="1" max={event.max_per_user || 10} readOnly value={passCount} className="w-16 h-10 text-center border-y border-zinc-200 focus:outline-none font-semibold text-zinc-900" />
-                    <button type="button" onClick={() => setPassCount(Math.min(event.max_per_user || 10, passCount + 1))} className="w-10 h-10 flex items-center justify-center border border-zinc-200 rounded-r-xl bg-zinc-50 hover:bg-zinc-100 text-zinc-600 font-bold">+</button>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-semibold text-zinc-700">Number of Passes</label>
+                    <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+                      {attendeeType === "member" ? "Member Cap: Max 10 Tickets" : "User Cap: Max 4 Tickets"}
+                    </span>
                   </div>
-                  <p className="text-xs text-zinc-500">Max {event.max_per_user || 10} per person</p>
+
+                  <div className="flex items-center">
+                    <button
+                      type="button"
+                      onClick={() => setPassCount(Math.max(1, passCount - 1))}
+                      className="w-10 h-10 flex items-center justify-center border border-zinc-200 rounded-l-xl bg-zinc-50 hover:bg-zinc-100 text-zinc-600 font-bold"
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      max={maxPassAllowed}
+                      readOnly
+                      value={passCount > maxPassAllowed ? maxPassAllowed : passCount}
+                      className="w-16 h-10 text-center border-y border-zinc-200 focus:outline-none font-semibold text-zinc-900"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setPassCount(Math.min(maxPassAllowed, passCount + 1))}
+                      className="w-10 h-10 flex items-center justify-center border border-zinc-200 rounded-r-xl bg-zinc-50 hover:bg-zinc-100 text-zinc-600 font-bold"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <p className="text-xs text-zinc-500">
+                    {attendeeType === "member"
+                      ? "Registered members can buy maximum 10 tickets."
+                      : "General users can buy maximum 4 tickets."}
+                  </p>
                 </div>
 
                 {event.pricing_type === "paid" && (
@@ -381,15 +595,9 @@ export default function EventDetailsPage() {
                       </div>
                     )}
 
-                    <div className="space-y-2">
-                      <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${paymentMode === "pay_online" ? "border-amber-500 bg-amber-50" : "border-zinc-200 hover:bg-zinc-50"}`}>
-                        <input type="radio" name="payment_mode" value="pay_online" checked={paymentMode === "pay_online"} onChange={() => setPaymentMode("pay_online")} className="text-amber-500 focus:ring-amber-500" />
-                        <span className="text-sm font-semibold text-zinc-800">Pay Online Now</span>
-                      </label>
-                      <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${paymentMode === "pay_at_venue" ? "border-amber-500 bg-amber-50" : "border-zinc-200 hover:bg-zinc-50"}`}>
-                        <input type="radio" name="payment_mode" value="pay_at_venue" checked={paymentMode === "pay_at_venue"} onChange={() => setPaymentMode("pay_at_venue")} className="text-amber-500 focus:ring-amber-500" />
-                        <span className="text-sm font-semibold text-zinc-800">Pay at Venue</span>
-                      </label>
+                    <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/80 flex items-center justify-between text-xs font-semibold text-amber-900">
+                      <span>Online Payment &amp; Instant Pass</span>
+                      <span className="bg-amber-500 text-white px-2 py-0.5 rounded-md text-[10px] font-bold uppercase">Online Only</span>
                     </div>
                   </div>
                 )}

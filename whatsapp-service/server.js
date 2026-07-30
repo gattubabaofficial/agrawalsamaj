@@ -1,5 +1,5 @@
 /**
- * WhatsApp delivery sidecar for the Agrawal Samaj portal.
+ * WhatsApp delivery sidecar for the Agrawal Samaj Mansrovar Jaipur portal.
  *
  * The FastAPI backend cannot run whatsapp-web.js (it is Node-only), so this
  * process owns the WhatsApp session and exposes a small HTTP API the backend

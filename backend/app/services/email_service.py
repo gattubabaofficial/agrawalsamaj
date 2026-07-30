@@ -16,7 +16,7 @@ def send_email(to_email: str, subject: str, message_body: str) -> bool:
     sendgrid_key = os.getenv("SENDGRID_API_KEY")
     brevo_key = os.getenv("BREVO_API_KEY")
     from_email = os.getenv("FROM_EMAIL")
-    from_name = os.getenv("EMAIL_FROM_NAME", "Agrawal Samaj")
+    from_name = os.getenv("EMAIL_FROM_NAME", "Agrawal Samaj Mansrovar Jaipur")
     
     smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
     smtp_port = int(os.getenv("SMTP_PORT", "587"))

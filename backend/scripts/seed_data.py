@@ -20,12 +20,14 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 from app.database import engine, Base, SessionLocal
+import app.models
 from app.models.user import User, UserRole, Family
 from app.models.event import (
     Event, EventStatus, EventCategory, EventVisibility,
     EventPricingType, EventRegistration, PaymentStatus, EventPaymentMode
 )
 from app.models.booking import Booking, Room, BookingStatus, PaymentMode
+from app.models.blog import Blog, BlogStatus
 
 # ─────────────────────────────────────────
 #  Data Definitions
@@ -126,7 +128,7 @@ EVENTS = [
     {
         "title": "Maharaja Agrasen Jayanti Mahotsav 2026",
         "description": "Annual grand celebration of Maharaja Agrasen Jayanti featuring procession, cultural performances, youth awards, and community feast at Agrasen Bhawan Mansarovar.",
-        "organizer_name": "Agrawal Samaj Samiti Mansarovar",
+        "organizer_name": "Agrawal Samaj Mansrovar Jaipur Samiti",
         "venue": "Agrasen Bhawan Main Ground & Hall",
         "address": "Rajat Path, Mansarovar, Jaipur, Rajasthan 302020",
         "category": EventCategory.CULTURAL,
@@ -182,7 +184,7 @@ EVENTS = [
     },
     {
         "title": "Agrawal Youth Premier League (Cricket Tournament)",
-        "description": "Annual inter-colony T20 cricket tournament for Agrawal Samaj youth teams. Trophy, medals, and refreshments provided.",
+        "description": "Annual inter-colony T20 cricket tournament for Agrawal Samaj Mansrovar Jaipur youth teams. Trophy, medals, and refreshments provided.",
         "organizer_name": "Agrawal Yuva Sangathan",
         "venue": "Mansarovar Sports Academy Ground",
         "address": "Mansarovar, Jaipur",
@@ -457,8 +459,163 @@ async def seed():
         print("    OK  Sunil Mittal -> Second Unit (First Floor Rooms) [30-31 days, PENDING]")
         print("    OK  Amit Bansal  -> Individual AC Room [5-8 days, APPROVED]")
 
+        # ── Community Blogs ───────────────────────
+        print("\n[+] Seeding community blogs...")
+        
+        cblog1 = Blog(
+            author_id=admin_user.user_id,
+            title="भव्य महाराजा अग्रसेन जयंती महोत्सव 2026: तैयारियाँ एवं कार्यक्रम रूपरेखा",
+            slug="maharaja-agrasen-jayanti-mahotsav-2026-preparations",
+            content="""# भव्य महाराजा अग्रसेन जयंती महोत्सव 2026
+
+मानसरोवर अग्रवाल समाज समिति द्वारा आगामी **२४ अगस्त २०२६** को महाराजा अग्रसेन जयंती महोत्सव का आयोजन भव्य रूप से किया जा रहा है। 
+
+## कार्यक्रम की प्रमुख गतिविधियाँ:
+1. **शोभायात्रा (प्रभात फेरी):** प्रातः ७:०० बजे अग्रसेन भवन से भव्य शोभायात्रा का आरम्भ।
+2. **सांस्कृतिक प्रस्तुतियाँ:** सायं ५:०० बजे बच्चों एवं युवाओं द्वारा सांस्कृतिक प्रस्तुतियाँ एवं नाटक।
+3. **प्रतिभा सम्मान समारोह:** शिक्षा, खेल एवं समाज सेवा में उत्कृष्ट प्रदर्शन करने वाले समाज के मेधावी छात्र-छात्राओं का सम्मान।
+4. **महाप्रसाद (सामूहिक प्रीतिभोज):** रात्रि ८:०० बजे से महाप्रसाद का आयोजन।
+
+आप सभी समाज बन्धुओं से सपरिवार पधारने का सप्रेम आग्रह है।""",
+            cover_image_url="https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1200&q=80",
+            tags=["जयंती", "उत्सव", "मानसरोवर", "अग्रवाल_समाज"],
+            status=BlogStatus.PUBLISHED,
+            views=340,
+        )
+        db.add(cblog1)
+
+        cblog2 = Blog(
+            author_id=admin_user.user_id,
+            title="अग्रवाल समाज मेधावी छात्रवृत्ति योजना 2026: आवेदन आमंत्रण",
+            slug="agrawal-samaj-scholarship-scheme-2026",
+            content="""# अग्रवाल समाज मेधावी छात्रवृत्ति योजना 2026
+
+मानसरोवर अग्रवाल समाज शिक्षा कोष द्वारा कक्षा १०वीं, १२वीं एवं उच्च शिक्षा (Engineering, Medical, CA, Civil Services) में अध्ययनरत मेधावी एवं जरूरतमंद विद्यार्थियों के लिए छात्रवृत्ति हेतु आवेदन आमंत्रित किए जाते हैं।
+
+## पात्रता एवं आवश्यक दस्तावेज:
+- आवेदक का अग्रवाल समाज का सदस्य होना अनिवार्य है।
+- पिछली परीक्षा में न्यूनतम ८०% अंक होना आवश्यक।
+- अंकतालिका, आय प्रमाण पत्र एवं समाज परिचय पत्र की प्रति संलग्न करें।
+
+**अंतिम तिथि:** ३१ अगस्त २०२६""",
+            cover_image_url="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80",
+            tags=["शिक्षा", "छात्रवृत्ति", "युवा", "कल्याण"],
+            status=BlogStatus.PUBLISHED,
+            views=520,
+        )
+        db.add(cblog2)
+
+        cblog3 = Blog(
+            author_id=member_user.user_id,
+            title="निःशुल्क नेत्र जाँच एवं रक्तदान शिविर का सफल आयोजन",
+            slug="free-eye-checkup-blood-donation-camp-success",
+            content="""# निःशुल्क स्वास्थ्य जाँच एवं रक्तदान शिविर का सफल आयोजन
+
+मानसरोवर अग्रवाल भवन के मुख्य सभागार में मेट्रो मास अस्पताल के सहयोग से निःशुल्क नेत्र जाँच एवं रक्तदान शिविर आयोजित किया गया। 
+
+## शिविर की प्रमुख उपलब्धियाँ:
+- ३५० से अधिक नागरिकों की निःशुल्क नेत्र एवं मोतियाबिंद जाँच की गई।
+- १२० यूनिट से अधिक रक्तदान समाज के युवाओं द्वारा किया गया।
+- वरिष्ठ नागरिकों को निःशुल्क चश्मे एवं दवाइयाँ वितरित की गईं।
+
+मानसरोवर अग्रवाल समाज सेवा मण्डल सभी रक्तदाताओं एवं चिकित्सकों का हृदय से आभार व्यक्त करता है।""",
+            cover_image_url="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1200&q=80",
+            tags=["स्वास्थ्य", "रक्तदान", "सेवा", "मानसरोवर"],
+            status=BlogStatus.PUBLISHED,
+            views=280,
+        )
+        db.add(cblog3)
+
+        cblog4 = Blog(
+            author_id=sunil_user.user_id,
+            title="अग्रवाल युवा क्रिकेट प्रीमियर लीग 2026: उत्साहवर्धक मुकाबले एवं पुरस्कार वितरण",
+            slug="agrawal-youth-premier-league-2026-highlights",
+            content="""# अग्रवाल युवा प्रीमियर लीग (AYPL) 2026
+
+मानसरोवर स्पोर्ट्स अकादमी ग्राउण्ड पर आयोजित ३-दिवसीय अग्रवाल युवा टी-२० क्रिकेट प्रतियोगिता का समापन हुआ।
+
+## प्रतियोगिता परिणाम:
+- **विजेता:** जयपुर रॉयल्स लायंस (अग्रवाल युवा संघ)
+- **उपविजेता:** मानसरोवर वॉरियर्स
+- **मैन ऑफ द सीरीज:** गौरव गर्ग (१8५ रन एवं ८ विकेट)
+
+सभी विजेता टीमों को ट्राफी, मेडल एवं नकद पुरस्कार देकर सम्मानित किया गया।""",
+            cover_image_url="https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=1200&q=80",
+            tags=["खेल", "क्रिकेट", "युवा", "प्रतियोगिता"],
+            status=BlogStatus.PUBLISHED,
+            views=410,
+        )
+        db.add(cblog4)
+
+        cblog5 = Blog(
+            author_id=admin_user.user_id,
+            title="लहर लहर लहराए लहरिया - लहरिया महोत्सव (सावन के रंगों और उल्लास का उत्सव)",
+            slug="leheriya-mahotsav-teej-sawan-festival-mansarovar",
+            content="""# 🇮🇳 जय अग्रसेन 🇮🇳
+
+## 🎊 राजस्थान का पारम्परिक त्योहार तीज सावन की फुहारों के साथ 🎊
+### 👘 लहर लहर लहराए लहरिया — (लहरिया महोत्सव 🥻)
+
+**आयोजक:** मानसरोवर अग्रवाल समाज समिति (*महिला मण्डल*)  
+*सावन के रंगों और उल्लास का उत्सव मनाएँ* 🎊 👘 👫 👭 👘 🎊
+
+---
+
+### 🌸 सावन में लहरिया तीज का त्यौहार
+लो आ गया सावन में लहरिया तीज का त्यौहार! आओ इसे मनाएँ हर्षोल्लास के साथ मानसरोवर अग्रवाल प्रांगण में सभी सखी-सहेलियों के साथ मिलकर।
+
+### 📋 कार्यक्रम विवरण:
+1. **गैम्स (Games)** 🎯
+2. **प्रश्नोत्तरी (Quiz Competition)** 🧠
+3. **बच्चों द्वारा राधा-कृष्ण की प्रस्तुति** 🎭
+4. **बड़े बच्चों द्वारा राधा-कृष्ण के साथ डांस प्रस्तुति** 💃🕺
+5. **महिलाओं एवं गर्ल्स द्वारा लहरिया पहन खूब सज-धज कर रैम्प वॉक (Ramp Walk) प्रस्तुति एवं प्रश्नोत्तरी** 🥻👠
+
+---
+
+### 🏆 पुरस्कार एवं सम्मान:
+> **कार्यक्रम के समापन के अवसर पर हमारी समिति के पदाधिकारियों द्वारा सभी प्रतिभागियों को सम्मानित किया जाएगा।**
+
+आप सभी से सप्रेम आग्रह है कि इस लहरिया महोत्सव में शामिल होकर कार्यक्रम की शान बढ़ाएँ।  
+*सावन की फुहार, लहरिया की बहार! आइए इस रंग-बिरंगे लहरिया महोत्सव में खूब सज-धज कर शामिल होकर उत्सव की खुशियों को दोगुना करें और हर पल को यादगार बनाएँ।*
+
+---
+
+### 🌟 सांस्कृतिक परम्परा एवं परिवार भावना:
+आज की भागदौड़ भरी जिंदगी में हमारे समाज समिति द्वारा आयोजित इस प्रकार के कार्यक्रम बच्चों के व्यक्तित्व निर्माण में महत्वपूर्ण भूमिका निभाते हैं। ये कार्यक्रम हमारी पारम्परिक सांस्कृतिक धरोहर को संजोकर रखने में अग्रशीलता, आत्मविश्वास तथा परिवार भाव का विकास करते हैं। 
+
+मानसरोवर अग्रवाल समाज समिति द्वारा भविष्य में भी ऐसे पारम्परिक त्यौहारों एवं सांस्कृतिक परम्पराओं से परिपूर्ण कार्यक्रमों का आयोजन निरंतर किया जाता रहेगा।
+
+---
+
+### 👥 कार्यक्रम पदाधिकारी:
+- **महिला मण्डल संयोजक:** श्रीमती सुनीता अग्रवाल
+- **सहसंयोजक:** श्रीमती कविता मित्तल
+- **सांस्कृतिक मंत्री:** श्रीमती मनोज गर्ग
+- **सलाहकार (अतिरिक्त महामंत्री):** श्री मनोज गुप्ता  
+*(एवं समस्त महिला मण्डल द्वारा प्रस्तुत)*
+
+### ⏰ कार्यक्रम तिथि एवं समय:
+- **दिनांक:** २२ अगस्त (शनिवार)
+- **समय:** दोपहर २:०० बजे से
+- **स्थान:** मानसरोवर अग्रवाल प्रांगण (अग्रसेन भवन), मानसरोवर, जयपुर
+
+---
+
+### 🏛️ आयोजक:
+**मानसरोवर अग्रवाल समाज समिति**  
+- **श्री रामगोपाल सिंघल** *(अध्यक्ष)*  
+- **श्री लक्ष्मी चन्द सिंघल** *(महामंत्री)*  
+*(एवं समस्त कार्यकारिणी)*""",
+            cover_image_url="/leheriya.jpg",
+            tags=["तीज", "लहरिया_महोत्सव", "सावन", "महिला_मण्डल", "मानसरोवर"],
+            status=BlogStatus.PUBLISHED,
+            views=680,
+        )
+        db.add(cblog5)
+
         await db.commit()
-        print("\n[DONE] Database seeded successfully with fresh Agrasen Bhawan dummy entries!\n")
+        print("\n[DONE] Database seeded successfully with fresh Agrasen Bhawan entries & Community Blogs!\n")
         print("=" * 55)
         print("  LOGIN CREDENTIALS")
         print("=" * 55)

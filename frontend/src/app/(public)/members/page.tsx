@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { 
   Search, Phone, MapPin, Lock, Award, Edit3, UserPlus,
-  CheckCircle2, AlertCircle, ShieldCheck, X, Send, KeyRound, UserCheck, RefreshCw, Eye, MessageSquare, User
+  CheckCircle2, AlertCircle, ShieldCheck, X, Send, KeyRound, UserCheck, RefreshCw, Eye, MessageSquare, User, Camera, Upload, Globe
 } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
@@ -21,6 +21,8 @@ interface Member {
   surname: string;
   father_name: string | null;
   profession: string | null;
+  native_place?: string | null;
+  bio?: string | null;
   profile_photo: string | null;
   family_relation: string | null;
   email: string | null;
@@ -30,6 +32,9 @@ interface Member {
   mobile_private: boolean;
   email_private: boolean;
   address_private: boolean;
+  profession_private?: boolean;
+  native_place_private?: boolean;
+  bio_private?: boolean;
   role: string;
   is_member: boolean;
 }
@@ -88,12 +93,19 @@ export default function PublicMembersPage() {
   const [editSurname, setEditSurname] = useState("");
   const [editFatherName, setEditFatherName] = useState("");
   const [editProfession, setEditProfession] = useState("");
+  const [editNativePlace, setEditNativePlace] = useState("");
+  const [editBio, setEditBio] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [editMobile, setEditMobile] = useState("");
   const [editAddress, setEditAddress] = useState("");
   const [editPhotoUrl, setEditPhotoUrl] = useState("");
   const [editMobilePrivate, setEditMobilePrivate] = useState(false);
   const [editEmailPrivate, setEditEmailPrivate] = useState(false);
   const [editAddressPrivate, setEditAddressPrivate] = useState(false);
+  const [editProfessionPrivate, setEditProfessionPrivate] = useState(false);
+  const [editNativePlacePrivate, setEditNativePlacePrivate] = useState(false);
+  const [editBioPrivate, setEditBioPrivate] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [submittingEdit, setSubmittingEdit] = useState(false);
   const [editSuccessMsg, setEditSuccessMsg] = useState("");
 
@@ -105,7 +117,17 @@ export default function PublicMembersPage() {
   const [regMobile, setRegMobile] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regProfession, setRegProfession] = useState("");
+  const [regNativePlace, setRegNativePlace] = useState("");
+  const [regBio, setRegBio] = useState("");
   const [regAddress, setRegAddress] = useState("");
+  const [regPhotoUrl, setRegPhotoUrl] = useState("");
+  const [regMobilePrivate, setRegMobilePrivate] = useState(false);
+  const [regEmailPrivate, setRegEmailPrivate] = useState(false);
+  const [regAddressPrivate, setRegAddressPrivate] = useState(false);
+  const [regProfessionPrivate, setRegProfessionPrivate] = useState(false);
+  const [regNativePlacePrivate, setRegNativePlacePrivate] = useState(false);
+  const [regBioPrivate, setRegBioPrivate] = useState(false);
+  const [regUploadingPhoto, setRegUploadingPhoto] = useState(false);
   const [regOtp, setRegOtp] = useState("");
   const [regSendingOtp, setRegSendingOtp] = useState(false);
   const [regSubmitting, setRegSubmitting] = useState(false);
@@ -128,6 +150,41 @@ export default function PublicMembersPage() {
     }
   };
 
+  // Helper to handle photo file selection & upload
+  const handlePhotoFileUpload = async (
+    file: File,
+    setPhotoUrl: (url: string) => void,
+    setUploading: (val: boolean) => void,
+    setError: (msg: string) => void
+  ) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Please select a valid image file (JPG, PNG, WEBP).");
+      return;
+    }
+    setUploading(true);
+    setError("");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await axios.post(`${getApiBaseUrl()}/membership/upload-photo`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setPhotoUrl(`${getApiBaseUrl()}${res.data.url}`);
+    } catch (err: any) {
+      console.error("Photo upload failed, converting to local preview data URL", err);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === "string") {
+          setPhotoUrl(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   // Multi-keyword / multi-field search logic
   const filteredMembers = members.filter((m) => {
     if (!searchQuery.trim()) return true;
@@ -143,6 +200,8 @@ export default function PublicMembersPage() {
       m.zone || "",
       m.house_no || "",
       m.profession || "",
+      m.native_place || "",
+      m.bio || "",
       m.address || "",
       m.mobile || "",
       m.mobile_masked || "",
@@ -162,6 +221,7 @@ export default function PublicMembersPage() {
     setOtpSentMessage("");
     setEditSuccessMsg("");
     setEditPhone("");
+    setEditMobile("");
     setEditOtp("");
     setIdentifierInput("");
     if (member) {
@@ -226,12 +286,18 @@ export default function PublicMembersPage() {
         setEditSurname(user.surname || "");
         setEditFatherName(user.father_name || "");
         setEditProfession(user.profession || "");
+        setEditNativePlace(user.native_place || "");
+        setEditBio(user.bio || "");
         setEditEmail(user.email || "");
+        setEditMobile(user.mobile || "");
         setEditAddress(user.address || "");
         setEditPhotoUrl(user.profile_photo || "");
         setEditMobilePrivate(user.mobile_private || false);
         setEditEmailPrivate(user.email_private || false);
         setEditAddressPrivate(user.address_private || false);
+        setEditProfessionPrivate(user.profession_private || false);
+        setEditNativePlacePrivate(user.native_place_private || false);
+        setEditBioPrivate(user.bio_private || false);
       }
 
       setEditStep("form");
@@ -263,15 +329,21 @@ export default function PublicMembersPage() {
         surname: editSurname.trim(),
         father_name: editFatherName.trim() || null,
         profession: editProfession.trim() || null,
+        native_place: editNativePlace.trim() || null,
+        bio: editBio.trim() || null,
         email: editEmail.trim() || null,
+        mobile: editMobile.trim() || null,
         address: editAddress.trim() || null,
         profile_photo: editPhotoUrl.trim() || null,
         mobile_private: editMobilePrivate,
         email_private: editEmailPrivate,
         address_private: editAddressPrivate,
+        profession_private: editProfessionPrivate,
+        native_place_private: editNativePlacePrivate,
+        bio_private: editBioPrivate,
       });
 
-      setEditSuccessMsg("Your profile updates have been submitted to Agrawal Samaj Admin for verification! Once approved by Admin, your updated details will appear on the live website.");
+      setEditSuccessMsg("Your profile updates have been submitted to Agrawal Samaj Mansrovar Jaipur Admin for verification! Once approved by Admin, your updated details will appear on the live website.");
     } catch (err: any) {
       setOtpError(err.response?.data?.detail || "Failed to submit profile update request.");
     } finally {
@@ -340,7 +412,16 @@ export default function PublicMembersPage() {
         mobile: regMobile.trim(),
         email: regEmail.trim() || null,
         profession: regProfession.trim() || null,
+        native_place: regNativePlace.trim() || null,
+        bio: regBio.trim() || null,
         address: regAddress.trim() || null,
+        profile_photo: regPhotoUrl.trim() || null,
+        mobile_private: regMobilePrivate,
+        email_private: regEmailPrivate,
+        address_private: regAddressPrivate,
+        profession_private: regProfessionPrivate,
+        native_place_private: regNativePlacePrivate,
+        bio_private: regBioPrivate,
         otp: regOtp.trim(),
       });
       setRegSuccessMsg("Registration application submitted successfully! Our executive committee will verify your details and approve your membership.");
@@ -374,10 +455,10 @@ export default function PublicMembersPage() {
                 <ShieldCheck className="w-4 h-4" /> Verified Samaj Directory
               </span>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight">
-                Agrawal Samaj Members Directory
+                Agrawal Samaj Mansrovar Jaipur Members Directory
               </h1>
               <p className="text-amber-100 text-sm sm:text-base leading-relaxed">
-                Explore, search, and connect with registered members of Agrawal Samaj. Search by name, phone number, member ID, address, or profession.
+                Explore, search, and connect with registered members of Agrawal Samaj Mansrovar Jaipur. Search by name, phone number, member ID, address, or profession.
               </p>
             </div>
 
@@ -444,7 +525,7 @@ export default function PublicMembersPage() {
               </p>
             </div>
             <div className="pt-2">
-              <p className="text-xs text-zinc-400 mb-3 font-semibold uppercase tracking-wider">Are you a member of Agrawal Samaj?</p>
+              <p className="text-xs text-zinc-400 mb-3 font-semibold uppercase tracking-wider">Are you a member of Agrawal Samaj Mansrovar Jaipur?</p>
               <button
                 onClick={() => {
                   setShowRegisterModal(true);
@@ -545,6 +626,14 @@ export default function PublicMembersPage() {
                     ) : (
                       <div className="hidden md:block" />
                     )}
+
+                    {/* Native Place */}
+                    {m.native_place ? (
+                      <div className="flex items-center gap-1.5 min-w-0 col-span-2 md:col-span-2">
+                        <span className="text-zinc-500 font-semibold flex-shrink-0">Origin:</span>
+                        <span className="text-zinc-700 font-medium truncate">🚩 {m.native_place}</span>
+                      </div>
+                    ) : null}
 
                     {/* Address (full width) */}
                     <div className="col-span-2 md:col-span-4 flex items-start gap-1.5 min-w-0">
@@ -759,14 +848,113 @@ export default function PublicMembersPage() {
                       />
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-zinc-700">Profession / Business</label>
+                    {/* Profile Photo File Upload */}
+                    <div className="space-y-1.5 p-3 bg-amber-50/50 rounded-2xl border border-amber-200/80">
+                      <label className="text-xs font-bold text-zinc-700 block">Profile Photo (Upload Image File)</label>
+                      <div className="flex items-center gap-3">
+                        {editPhotoUrl ? (
+                          <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-amber-500/40 shadow-sm flex-shrink-0">
+                            <img src={editPhotoUrl} alt="Profile Preview" className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => setEditPhotoUrl("")}
+                              className="absolute top-0.5 right-0.5 bg-black/60 text-white p-1 rounded-full hover:bg-black/80 transition-colors"
+                              title="Remove photo"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="w-16 h-16 rounded-2xl bg-amber-100/70 border border-dashed border-amber-400 flex flex-col items-center justify-center text-amber-700 flex-shrink-0">
+                            <Camera className="w-6 h-6" />
+                          </div>
+                        )}
+                        <div className="flex-1 space-y-1">
+                          <label className="inline-flex items-center gap-2 px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors shadow-sm">
+                            {uploadingPhoto ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                            {editPhotoUrl ? "Change Image File" : "Choose Image File"}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              disabled={uploadingPhoto}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handlePhotoFileUpload(file, setEditPhotoUrl, setUploadingPhoto, setOtpError);
+                              }}
+                            />
+                          </label>
+                          <p className="text-[11px] text-zinc-500">Formats: JPG, PNG, WEBP (Max 5MB)</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Profession / Business + Privacy Toggle */}
+                    <div className="space-y-1.5 p-3 bg-zinc-50 rounded-2xl border border-zinc-200">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-zinc-700">Job / Business / Profession</label>
+                        <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-zinc-600 select-none">
+                          <input
+                            type="checkbox"
+                            checked={editProfessionPrivate}
+                            onChange={(e) => setEditProfessionPrivate(e.target.checked)}
+                            className="rounded text-amber-500 focus:ring-amber-500"
+                          />
+                          <span>🔒 Hide on public directory</span>
+                        </label>
+                      </div>
                       <input
                         type="text"
-                        placeholder="e.g. Doctor, Businessman, Architect"
+                        placeholder="e.g. Doctor, Business Owner, Architect"
                         value={editProfession}
                         onChange={(e) => setEditProfession(e.target.value)}
-                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none bg-white"
+                      />
+                    </div>
+
+                    {/* Native Place + Privacy Toggle */}
+                    <div className="space-y-1.5 p-3 bg-zinc-50 rounded-2xl border border-zinc-200">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-zinc-700">Where you belong from / Native Place</label>
+                        <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-zinc-600 select-none">
+                          <input
+                            type="checkbox"
+                            checked={editNativePlacePrivate}
+                            onChange={(e) => setEditNativePlacePrivate(e.target.checked)}
+                            className="rounded text-amber-500 focus:ring-amber-500"
+                          />
+                          <span>🔒 Hide on public directory</span>
+                        </label>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="e.g. Agroha, Hisar, Jaipur, Mathura"
+                        value={editNativePlace}
+                        onChange={(e) => setEditNativePlace(e.target.value)}
+                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none bg-white"
+                      />
+                    </div>
+
+                    {/* Bio / Description + Privacy Toggle */}
+                    <div className="space-y-1.5 p-3 bg-zinc-50 rounded-2xl border border-zinc-200">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-zinc-700">About Me / Personal Bio</label>
+                        <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-zinc-600 select-none">
+                          <input
+                            type="checkbox"
+                            checked={editBioPrivate}
+                            onChange={(e) => setEditBioPrivate(e.target.checked)}
+                            className="rounded text-amber-500 focus:ring-amber-500"
+                          />
+                          <span>🔒 Hide on public directory</span>
+                        </label>
+                      </div>
+                      <textarea
+                        rows={2}
+                        placeholder="Brief introduction about yourself, interests, social work..."
+                        value={editBio}
+                        onChange={(e) => setEditBio(e.target.value)}
+                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none bg-white"
                       />
                     </div>
 
@@ -793,13 +981,10 @@ export default function PublicMembersPage() {
                       />
                     </div>
 
-                    {/* Mobile Field (Fixed) + Privacy Toggle */}
+                    {/* Mobile Field + Privacy Toggle */}
                     <div className="space-y-1.5 p-3 bg-zinc-50 rounded-2xl border border-zinc-200">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <label className="text-xs font-bold text-zinc-700">Mobile Number</label>
-                          <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">Verified & Fixed</span>
-                        </div>
+                        <label className="text-xs font-bold text-zinc-700">Mobile / Phone Number *</label>
                         <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-zinc-600">
                           <input
                             type="checkbox"
@@ -812,10 +997,11 @@ export default function PublicMembersPage() {
                       </div>
                       <input
                         type="tel"
-                        value={targetMember?.mobile_masked || "Registered Phone Number"}
-                        readOnly
-                        disabled
-                        className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-sm bg-zinc-100/80 text-zinc-600 font-mono cursor-not-allowed select-none"
+                        required
+                        placeholder="e.g. 9876543210"
+                        value={editMobile}
+                        onChange={(e) => setEditMobile(e.target.value)}
+                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none bg-white font-mono"
                       />
                     </div>
 
@@ -839,17 +1025,6 @@ export default function PublicMembersPage() {
                         value={editAddress}
                         onChange={(e) => setEditAddress(e.target.value)}
                         className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none bg-white"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-zinc-700">Profile Photo Image URL (Optional)</label>
-                      <input
-                        type="url"
-                        placeholder="https://..."
-                        value={editPhotoUrl}
-                        onChange={(e) => setEditPhotoUrl(e.target.value)}
-                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
                       />
                     </div>
 
@@ -968,8 +1143,38 @@ export default function PublicMembersPage() {
 
                   {/* Profession */}
                   <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-200/60 flex items-center justify-between">
-                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Profession</span>
-                    <span className="font-semibold text-zinc-900">{viewMemberModal.profession || "Not specified"}</span>
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Profession / Business</span>
+                    {viewMemberModal.profession_private || !viewMemberModal.profession ? (
+                      <span className="text-xs font-bold text-zinc-400 flex items-center gap-1">
+                        <Lock className="w-3.5 h-3.5 text-amber-600" /> Hidden (Private)
+                      </span>
+                    ) : (
+                      <span className="font-semibold text-zinc-900">{viewMemberModal.profession}</span>
+                    )}
+                  </div>
+
+                  {/* Native Place */}
+                  <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-200/60 flex items-center justify-between">
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Native Place / Belonging From</span>
+                    {viewMemberModal.native_place_private || !viewMemberModal.native_place ? (
+                      <span className="text-xs font-bold text-zinc-400 flex items-center gap-1">
+                        <Lock className="w-3.5 h-3.5 text-amber-600" /> Hidden (Private)
+                      </span>
+                    ) : (
+                      <span className="font-semibold text-zinc-900">{viewMemberModal.native_place}</span>
+                    )}
+                  </div>
+
+                  {/* Personal Bio */}
+                  <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-200/60 flex items-start justify-between gap-3">
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex-shrink-0">About / Bio</span>
+                    {viewMemberModal.bio_private || !viewMemberModal.bio ? (
+                      <span className="text-xs font-bold text-zinc-400 flex items-center gap-1">
+                        <Lock className="w-3.5 h-3.5 text-amber-600" /> Hidden (Private)
+                      </span>
+                    ) : (
+                      <span className="font-semibold text-zinc-900 text-right">{viewMemberModal.bio}</span>
+                    )}
                   </div>
 
                   {/* Phone */}
@@ -1185,7 +1390,7 @@ export default function PublicMembersPage() {
               <div className="px-6 py-5 bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 text-white flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <UserPlus className="w-5 h-5" />
-                  <h3 className="font-bold text-lg">Apply for Agrawal Samaj Membership</h3>
+                  <h3 className="font-bold text-lg">Apply for Agrawal Samaj Mansrovar Jaipur Membership</h3>
                 </div>
                 <button
                   onClick={() => setShowRegisterModal(false)}
@@ -1214,12 +1419,12 @@ export default function PublicMembersPage() {
                   <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
                     <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-2 text-xs text-amber-900">
                       <p className="font-bold text-amber-800 flex items-center gap-1.5 text-sm">
-                        <AlertCircle className="w-4 h-4 text-amber-600" /> Agrawal Samaj Membership Criteria & Rules:
+                        <AlertCircle className="w-4 h-4 text-amber-600" /> Agrawal Samaj Mansrovar Jaipur Membership Criteria & Rules:
                       </p>
                       <ul className="list-disc list-inside space-y-1 leading-relaxed text-amber-900/90 pl-1">
                         <li>Applicant must belong to the Agrawal / Vaishya community.</li>
                         <li>Valid mobile number and address are compulsory for identification.</li>
-                        <li>All applications are cross-verified by the Agrawal Samaj Executive Committee prior to approval.</li>
+                        <li>All applications are cross-verified by the Agrawal Samaj Mansrovar Jaipur Executive Committee prior to approval.</li>
                       </ul>
                     </div>
 
@@ -1282,25 +1487,183 @@ export default function PublicMembersPage() {
                       />
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-zinc-700">Profession / Occupation</label>
+                    {/* Profile Photo Image File Upload */}
+                    <div className="space-y-1.5 p-3 bg-amber-50/50 rounded-2xl border border-amber-200/80">
+                      <label className="text-xs font-bold text-zinc-700 block">Profile Photo (Upload Image File)</label>
+                      <div className="flex items-center gap-3">
+                        {regPhotoUrl ? (
+                          <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-amber-500/40 shadow-sm flex-shrink-0">
+                            <img src={regPhotoUrl} alt="Profile Preview" className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => setRegPhotoUrl("")}
+                              className="absolute top-0.5 right-0.5 bg-black/60 text-white p-1 rounded-full hover:bg-black/80 transition-colors"
+                              title="Remove photo"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="w-16 h-16 rounded-2xl bg-amber-100/70 border border-dashed border-amber-400 flex flex-col items-center justify-center text-amber-700 flex-shrink-0">
+                            <Camera className="w-6 h-6" />
+                          </div>
+                        )}
+                        <div className="flex-1 space-y-1">
+                          <label className="inline-flex items-center gap-2 px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors shadow-sm">
+                            {regUploadingPhoto ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                            {regPhotoUrl ? "Change Image File" : "Choose Image File"}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              disabled={regUploadingPhoto}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handlePhotoFileUpload(file, setRegPhotoUrl, setRegUploadingPhoto, setRegError);
+                              }}
+                            />
+                          </label>
+                          <p className="text-[11px] text-zinc-500">Formats: JPG, PNG, WEBP (Max 5MB)</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Profession / Business + Privacy Toggle */}
+                    <div className="space-y-1.5 p-3 bg-zinc-50 rounded-2xl border border-zinc-200">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-zinc-700">Profession / Occupation / Business</label>
+                        <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-zinc-600 select-none">
+                          <input
+                            type="checkbox"
+                            checked={regProfessionPrivate}
+                            onChange={(e) => setRegProfessionPrivate(e.target.checked)}
+                            className="rounded text-amber-500 focus:ring-amber-500"
+                          />
+                          <span>🔒 Hide on public directory</span>
+                        </label>
+                      </div>
                       <input
                         type="text"
-                        placeholder="e.g. Business, Doctor, Engineer"
+                        placeholder="e.g. Business Owner, Doctor, Engineer"
                         value={regProfession}
                         onChange={(e) => setRegProfession(e.target.value)}
-                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none bg-white"
                       />
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-zinc-700">Address / Location</label>
+                    {/* Native Place + Privacy Toggle */}
+                    <div className="space-y-1.5 p-3 bg-zinc-50 rounded-2xl border border-zinc-200">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-zinc-700">Where you belong from / Native Place</label>
+                        <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-zinc-600 select-none">
+                          <input
+                            type="checkbox"
+                            checked={regNativePlacePrivate}
+                            onChange={(e) => setRegNativePlacePrivate(e.target.checked)}
+                            className="rounded text-amber-500 focus:ring-amber-500"
+                          />
+                          <span>🔒 Hide on public directory</span>
+                        </label>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="e.g. Agroha, Hisar, Jaipur, Mathura"
+                        value={regNativePlace}
+                        onChange={(e) => setRegNativePlace(e.target.value)}
+                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none bg-white"
+                      />
+                    </div>
+
+                    {/* Personal Bio + Privacy Toggle */}
+                    <div className="space-y-1.5 p-3 bg-zinc-50 rounded-2xl border border-zinc-200">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-zinc-700">Personal Description / Bio</label>
+                        <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-zinc-600 select-none">
+                          <input
+                            type="checkbox"
+                            checked={regBioPrivate}
+                            onChange={(e) => setRegBioPrivate(e.target.checked)}
+                            className="rounded text-amber-500 focus:ring-amber-500"
+                          />
+                          <span>🔒 Hide on public directory</span>
+                        </label>
+                      </div>
+                      <textarea
+                        rows={2}
+                        placeholder="Brief background, interests, community work..."
+                        value={regBio}
+                        onChange={(e) => setRegBio(e.target.value)}
+                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none bg-white"
+                      />
+                    </div>
+
+                    {/* Mobile Number + Privacy Toggle */}
+                    <div className="space-y-1.5 p-3 bg-zinc-50 rounded-2xl border border-zinc-200">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-zinc-700">Mobile Number *</label>
+                        <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-zinc-600 select-none">
+                          <input
+                            type="checkbox"
+                            checked={regMobilePrivate}
+                            onChange={(e) => setRegMobilePrivate(e.target.checked)}
+                            className="rounded text-amber-500 focus:ring-amber-500"
+                          />
+                          <span>🔒 Hide on public directory</span>
+                        </label>
+                      </div>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="10-digit mobile number"
+                        value={regMobile}
+                        onChange={(e) => setRegMobile(e.target.value)}
+                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none bg-white font-mono"
+                      />
+                    </div>
+
+                    {/* Email Address + Privacy Toggle */}
+                    <div className="space-y-1.5 p-3 bg-zinc-50 rounded-2xl border border-zinc-200">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-zinc-700">Email Address (Optional)</label>
+                        <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-zinc-600 select-none">
+                          <input
+                            type="checkbox"
+                            checked={regEmailPrivate}
+                            onChange={(e) => setRegEmailPrivate(e.target.checked)}
+                            className="rounded text-amber-500 focus:ring-amber-500"
+                          />
+                          <span>🔒 Hide on public directory</span>
+                        </label>
+                      </div>
+                      <input
+                        type="email"
+                        placeholder="name@example.com"
+                        value={regEmail}
+                        onChange={(e) => setRegEmail(e.target.value)}
+                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none bg-white"
+                      />
+                    </div>
+
+                    {/* Address + Privacy Toggle */}
+                    <div className="space-y-1.5 p-3 bg-zinc-50 rounded-2xl border border-zinc-200">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-zinc-700">Address / Location</label>
+                        <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-zinc-600 select-none">
+                          <input
+                            type="checkbox"
+                            checked={regAddressPrivate}
+                            onChange={(e) => setRegAddressPrivate(e.target.checked)}
+                            className="rounded text-amber-500 focus:ring-amber-500"
+                          />
+                          <span>🔒 Hide on public directory</span>
+                        </label>
+                      </div>
                       <input
                         type="text"
                         placeholder="Sector, Colony, City"
                         value={regAddress}
                         onChange={(e) => setRegAddress(e.target.value)}
-                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none bg-white"
                       />
                     </div>
 

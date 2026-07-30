@@ -40,11 +40,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Agrawal Samaj Jaipur — One brick, one rupee",
-    template: "%s · Agrawal Samaj Jaipur",
+    default: "Agrawal Samaj Mansrovar Jaipur — One brick, one rupee",
+    template: "%s · Agrawal Samaj Mansrovar Jaipur",
   },
   description:
-    "The community portal for Agrawal Samaj Jaipur. Book the Bhavan, register for gatherings, find a household in the directory, and support the welfare schemes.",
+    "The community portal for Agrawal Samaj Mansrovar Jaipur. Book the Bhavan, register for gatherings, find a household in the directory, and support the welfare schemes.",
 };
 
 export default function RootLayout({

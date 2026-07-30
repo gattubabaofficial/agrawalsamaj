@@ -11,7 +11,7 @@ import { formatDateDDMonthYYYY } from "@/utils/date";
 // Mock data as fallback
 const mockEvents = [
   {
-    event_id: "1",
+    event_id: "06eb74adc8744fca9fd6b812ecf84596",
     title: "Maharaja Agrasen Jayanti Mahotsav 2026",
     description: "Annual grand celebration of Maharaja Agrasen Jayanti with cultural programs, awards, and food.",
     venue: "Agrawal Bhavan Main Hall",
@@ -21,7 +21,7 @@ const mockEvents = [
     status: "upcoming",
   },
   {
-    event_id: "2",
+    event_id: "0fbbe5b2addf48cdbc5bb8e8f2b49c8e",
     title: "Shri Krishna Janmashtami Pooja",
     description: "Divine pooja, bhajans, and kids Jhanki competition followed by Maha Prasad.",
     venue: "Bhavan Temple Ground",
@@ -31,13 +31,13 @@ const mockEvents = [
     status: "upcoming",
   },
   {
-    event_id: "3",
-    title: "Agrawal Youth Cricket League",
-    description: "Inter-colony cricket tournament for Samaj youths. Registrations open.",
-    venue: "Samaj Sports Ground",
-    category: "sports",
+    event_id: "85ab391e784f421eb7687db150b0dce6",
+    title: "Free Eye Check-up & Medical Camp",
+    description: "Free eye checkup, blood pressure, sugar testing & consultation for all samaj members.",
+    venue: "Samaj Medical Center",
+    category: "social",
     start_datetime: "2026-11-05T08:00:00Z",
-    pass_price: 200,
+    pass_price: 0,
     status: "upcoming",
   }
 ];

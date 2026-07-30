@@ -80,6 +80,8 @@ class User(Base, TimestampMixin):
     # Values: active | shifted | expired | sold_out | shifted_sold_out | double_name
     member_status: Mapped[str] = mapped_column(String(30), default="active", nullable=False)
     profession: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    native_place: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    bio: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
     address: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     profile_photo: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     
@@ -87,6 +89,9 @@ class User(Base, TimestampMixin):
     mobile_private: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     email_private: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     address_private: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    profession_private: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    native_place_private: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    bio_private: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     google_id: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True)
@@ -99,11 +104,20 @@ class User(Base, TimestampMixin):
     )
     admin_notes: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
 
+    custom_role_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("custom_roles.role_id", ondelete="SET NULL"),
+        nullable=True
+    )
+
     # Relationships
+    custom_role: Mapped[Optional["CustomRole"]] = relationship(
+        "CustomRole",
+        back_populates="users"
+    )
     family: Mapped[Optional[Family]] = relationship(
         "Family",
         back_populates="members",
-        foreign_keys=[family_id]
+        foreign_keys="[User.family_id]"
     )
     
     event_registrations: Mapped[List["EventRegistration"]] = relationship(

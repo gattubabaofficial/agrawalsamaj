@@ -117,6 +117,7 @@ class EventRegistrationRequest(BaseModel):
     guest_email: Optional[str] = None
     payment_mode: Optional[EventPaymentMode] = None
     voucher_code: Optional[str] = None
+    attendees: Optional[List[dict]] = None
 
 class PaymentVerifyRequest(BaseModel):
     razorpay_payment_id: Optional[str] = None
@@ -238,30 +239,45 @@ async def get_all_registrations(
 
 @router.get("/{event_id}", response_model=EventResponse)
 async def get_event(
-    event_id: uuid.UUID,
+    event_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_current_user),
 ):
-    result = await db.execute(select(Event).filter(Event.event_id == event_id))
+    try:
+        e_uuid = uuid.UUID(event_id)
+    except Exception:
+        try:
+            e_uuid = uuid.UUID(hex=event_id)
+        except Exception:
+            raise HTTPException(status_code=404, detail="Event not found")
+
+    result = await db.execute(select(Event).filter(Event.event_id == e_uuid))
     event = result.scalar_one_or_none()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
-    # Pretend it doesn't exist for non-members — same as list_events, but here
-    # it also stops someone reaching the detail page directly via a shared link.
+    # Pretend it doesn't exist for non-members — same as list_events
     if event.visibility == EventVisibility.MEMBERS_ONLY and not _can_view_members_only(current_user):
         raise HTTPException(status_code=404, detail="Event not found")
     return event
 
 @router.post("/{event_id}/register", status_code=status.HTTP_201_CREATED)
 async def register_event(
-    event_id: uuid.UUID,
+    event_id: str,
     reg_data: EventRegistrationRequest,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_current_user)
 ):
+    try:
+        e_uuid = uuid.UUID(event_id)
+    except Exception:
+        try:
+            e_uuid = uuid.UUID(hex=event_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid Event ID format")
+
     # Fetch event
-    result = await db.execute(select(Event).filter(Event.event_id == event_id))
+    result = await db.execute(select(Event).filter(Event.event_id == e_uuid))
     event = result.scalar_one_or_none()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
@@ -271,6 +287,15 @@ async def register_event(
         
     if event.total_passes and (event.passes_sold + reg_data.pass_count > event.total_passes):
         raise HTTPException(status_code=400, detail="Not enough passes available")
+
+    # Pass count limits: Members max 10, General Users max 4
+    is_member_user = bool(current_user and current_user.is_member)
+    max_tickets_allowed = 10 if is_member_user else 4
+    if reg_data.pass_count > max_tickets_allowed:
+        if is_member_user:
+            raise HTTPException(status_code=400, detail="Registered members can purchase maximum 10 tickets per event.")
+        else:
+            raise HTTPException(status_code=400, detail="General users can purchase maximum 4 tickets per event.")
 
     # 1. Visibility Check
     if event.visibility == EventVisibility.MEMBERS_ONLY:
@@ -297,15 +322,11 @@ async def register_event(
         payment_mode = None
         total_amount = 0.0
     else:
-        if not reg_data.payment_mode:
-            raise HTTPException(status_code=400, detail="Payment mode is required for paid events")
+        if reg_data.payment_mode == EventPaymentMode.PAY_AT_VENUE:
+            raise HTTPException(status_code=400, detail="Cash bookings are disabled for events. Please pay online.")
 
-        payment_mode = reg_data.payment_mode
-
-        if payment_mode == EventPaymentMode.PAY_AT_VENUE:
-            payment_status = PaymentStatus.PENDING
-        elif payment_mode == EventPaymentMode.PAY_ONLINE:
-            payment_status = PaymentStatus.PENDING
+        payment_mode = EventPaymentMode.PAY_ONLINE
+        payment_status = PaymentStatus.PENDING
 
         if reg_data.voucher_code:
             voucher, discount_amount, voucher_err = await apply_voucher(db, reg_data.voucher_code, total_amount, "event")

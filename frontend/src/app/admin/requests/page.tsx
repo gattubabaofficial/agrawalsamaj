@@ -275,12 +275,40 @@ export default function AdminRequestsPage() {
 
                         {/* Profession */}
                         <tr>
-                          <td className="py-2.5 px-4 font-bold text-zinc-700">Profession</td>
-                          <td className="py-2.5 px-4 text-zinc-600">{oldD.profession || "—"}</td>
+                          <td className="py-2.5 px-4 font-bold text-zinc-700">Profession / Business</td>
+                          <td className="py-2.5 px-4 text-zinc-600">
+                            {oldD.profession || "—"} {oldD.profession_private ? "(🔒 Private)" : "(Public)"}
+                          </td>
                           <td className={`py-2.5 px-4 font-semibold ${
-                            oldD.profession !== newD.profession ? "text-amber-700 bg-amber-50/50" : "text-zinc-800"
+                            oldD.profession !== newD.profession || oldD.profession_private !== newD.profession_private ? "text-amber-700 bg-amber-50/50" : "text-zinc-800"
                           }`}>
-                            {newD.profession || "—"}
+                            {newD.profession || "—"} {newD.profession_private ? "🔒 Private" : "👁️ Public"}
+                          </td>
+                        </tr>
+
+                        {/* Native Place */}
+                        <tr>
+                          <td className="py-2.5 px-4 font-bold text-zinc-700">Native Place / Origin</td>
+                          <td className="py-2.5 px-4 text-zinc-600">
+                            {oldD.native_place || "—"} {oldD.native_place_private ? "(🔒 Private)" : "(Public)"}
+                          </td>
+                          <td className={`py-2.5 px-4 font-semibold ${
+                            oldD.native_place !== newD.native_place || oldD.native_place_private !== newD.native_place_private ? "text-amber-700 bg-amber-50/50" : "text-zinc-800"
+                          }`}>
+                            {newD.native_place || "—"} {newD.native_place_private ? "🔒 Private" : "👁️ Public"}
+                          </td>
+                        </tr>
+
+                        {/* Bio */}
+                        <tr>
+                          <td className="py-2.5 px-4 font-bold text-zinc-700">About Me / Bio</td>
+                          <td className="py-2.5 px-4 text-zinc-600">
+                            {oldD.bio || "—"} {oldD.bio_private ? "(🔒 Private)" : "(Public)"}
+                          </td>
+                          <td className={`py-2.5 px-4 font-semibold ${
+                            oldD.bio !== newD.bio || oldD.bio_private !== newD.bio_private ? "text-amber-700 bg-amber-50/50" : "text-zinc-800"
+                          }`}>
+                            {newD.bio || "—"} {newD.bio_private ? "🔒 Private" : "👁️ Public"}
                           </td>
                         </tr>
 

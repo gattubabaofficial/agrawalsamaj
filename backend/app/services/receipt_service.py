@@ -56,7 +56,7 @@ def _render_pdf(receipt: Receipt, extra: dict) -> Optional[str]:
     # Header
     c.setFillColor(colors.HexColor("#b45309"))
     c.setFont("Helvetica-Bold", 20)
-    c.drawString(left, y, "Agrawal Samaj")
+    c.drawString(left, y, "Agrawal Samaj Mansrovar Jaipur")
     c.setFont("Helvetica", 10)
     c.setFillColor(colors.HexColor("#6b7280"))
     y -= 6 * mm

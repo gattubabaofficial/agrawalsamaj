@@ -195,7 +195,7 @@ export default function RegisterPage() {
             <div className="space-y-2">
               <h2 className="text-2xl font-bold text-zinc-900">Registration Successful!</h2>
               <p className="text-sm text-zinc-500">
-                Welcome to the Agrawal Samaj community portal. Your account is ready.
+                Welcome to the Agrawal Samaj Mansrovar Jaipur community portal. Your account is ready.
               </p>
             </div>
 
@@ -217,7 +217,7 @@ export default function RegisterPage() {
           <>
             <div className="text-center space-y-2">
               <Link href="/" className="inline-block text-2xl font-bold bg-gradient-to-r from-amber-500 to-rose-600 bg-clip-text text-transparent">
-                Agrawal Samaj
+                Agrawal Samaj Mansrovar Jaipur
               </Link>
               <h2 className="text-2xl font-bold text-zinc-900">Create your account</h2>
               <p className="text-xs text-zinc-500">Register through email or mobile number with instant OTP validation.</p>

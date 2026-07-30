@@ -45,17 +45,14 @@ export default function RoomBookingPage() {
     code: string; discountAmount: number; finalAmount: number; forAmount: number;
   } | null>(null);
 
-  // Event Purpose Selector
-  const [eventPurpose, setEventPurpose] = useState<string>("wedding_saava");
+  // Event Purpose Selector (4 distinct categories)
+  const [eventPurpose, setEventPurpose] = useState<string>("saava");
   // Agrawal Member Toggle
   const [isAgrawalMember, setIsAgrawalMember] = useState(true);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   // Backend-authoritative special-event / availability info for the selected dates.
-  // Purely additive: never used to compute totalAmount below, only to show an
-  // event badge, warn about stay-length restrictions, and disable booking when
-  // the room is blocked or fully booked for these dates.
   const [quoteInfo, setQuoteInfo] = useState<any>(null);
 
   useEffect(() => {
@@ -90,9 +87,6 @@ export default function RoomBookingPage() {
     if (roomId) fetchRoom();
   }, [roomId]);
 
-  // Ask the backend whether these dates fall under a special event or are
-  // blocked/full, so we can surface that to the customer. The backend remains
-  // the sole authority for price/availability at booking time regardless.
   useEffect(() => {
     if (!roomId || !startDate || !endDate) {
       setQuoteInfo(null);
@@ -108,7 +102,7 @@ export default function RoomBookingPage() {
     return () => { cancelled = true; clearTimeout(timer); };
   }, [roomId, startDate, endDate]);
 
-  // Compute exact official 2020 rate list breakdown
+  // Compute exact rate list breakdown according to selected Purpose Category
   const computeOfficialQuote = () => {
     if (!startDate || !endDate || !room) {
       return { days: 0, baseFixedRent: 0, purposeRent: 0, memberDiscount: 0, netRent: 0, cleaningCharge: 0, totalPayable: 0 };
@@ -118,49 +112,68 @@ export default function RoomBookingPage() {
     const end = new Date(endDate);
     const diffTime = end.getTime() - start.getTime();
     const days = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-
     const roomName = (room.name || "").toLowerCase();
 
-    // 1. Calculate Base Fixed Rent based on Multi-Day Slab
+    // 1. Calculate Base Rent according to selected Purpose Category
     let baseFixedRent = 0;
-    if (roomName.includes("first unit") || roomName.includes("ground floor")) {
-      if (days === 1) baseFixedRent = 15000;
-      else if (days === 2) baseFixedRent = 25000;
-      else if (days === 3) baseFixedRent = 33000;
-      else baseFixedRent = 33000 + (days - 3) * 11000;
-    } else if (roomName.includes("second unit") || roomName.includes("first floor")) {
-      if (days === 1) baseFixedRent = 14000;
-      else if (days === 2) baseFixedRent = 21000;
-      else if (days === 3) baseFixedRent = 27000;
-      else baseFixedRent = 27000 + (days - 3) * 9000;
-    } else if (roomName.includes("third unit") || roomName.includes("basement")) {
-      if (days === 1) baseFixedRent = 4000;
-      else if (days === 2) baseFixedRent = 8000;
-      else if (days === 3) baseFixedRent = 12000;
-      else baseFixedRent = 12000 + (days - 3) * 4000;
-    } else if (roomName.includes("ac room")) {
-      baseFixedRent = days * 600;
-    } else if (roomName.includes("non-ac")) {
-      baseFixedRent = days * 400;
+
+    if (eventPurpose === "free") {
+      baseFixedRent = 0; // Complimentary Free / Welfare
+    } else if (eventPurpose === "social") {
+      // Social Functions: Discounted slab
+      if (roomName.includes("first unit") || roomName.includes("ground floor")) {
+        baseFixedRent = days === 1 ? 8000 : days === 2 ? 14000 : 20000;
+      } else if (roomName.includes("second unit") || roomName.includes("first floor")) {
+        baseFixedRent = days === 1 ? 7000 : days === 2 ? 12000 : 16000;
+      } else if (roomName.includes("third unit") || roomName.includes("basement")) {
+        baseFixedRent = days === 1 ? 2500 : days === 2 ? 4500 : 6500;
+      } else if (roomName.includes("ac room")) {
+        baseFixedRent = days * 450;
+      } else {
+        baseFixedRent = days * 300;
+      }
+    } else if (eventPurpose === "other_days") {
+      // Other Days (Regular non-saava)
+      if (roomName.includes("first unit") || roomName.includes("ground floor")) {
+        baseFixedRent = days === 1 ? 12000 : days === 2 ? 20000 : 28000;
+      } else if (roomName.includes("second unit") || roomName.includes("first floor")) {
+        baseFixedRent = days === 1 ? 11000 : days === 2 ? 18000 : 24000;
+      } else if (roomName.includes("third unit") || roomName.includes("basement")) {
+        baseFixedRent = days === 1 ? 3500 : days === 2 ? 7000 : 10000;
+      } else if (roomName.includes("ac room")) {
+        baseFixedRent = days * 550;
+      } else {
+        baseFixedRent = days * 350;
+      }
     } else {
-      baseFixedRent = days * room.price_per_day;
+      // Wedding Saava Days (Peak Saava)
+      if (roomName.includes("first unit") || roomName.includes("ground floor")) {
+        if (days === 1) baseFixedRent = 15000;
+        else if (days === 2) baseFixedRent = 25000;
+        else if (days === 3) baseFixedRent = 33000;
+        else baseFixedRent = 33000 + (days - 3) * 11000;
+      } else if (roomName.includes("second unit") || roomName.includes("first floor")) {
+        if (days === 1) baseFixedRent = 14000;
+        else if (days === 2) baseFixedRent = 21000;
+        else if (days === 3) baseFixedRent = 27000;
+        else baseFixedRent = 27000 + (days - 3) * 9000;
+      } else if (roomName.includes("third unit") || roomName.includes("basement")) {
+        if (days === 1) baseFixedRent = 4000;
+        else if (days === 2) baseFixedRent = 8000;
+        else if (days === 3) baseFixedRent = 12000;
+        else baseFixedRent = 12000 + (days - 3) * 4000;
+      } else if (roomName.includes("ac room")) {
+        baseFixedRent = days * 600;
+      } else if (roomName.includes("non-ac")) {
+        baseFixedRent = days * 400;
+      } else {
+        baseFixedRent = days * room.price_per_day;
+      }
     }
 
-    // 2. Apply Event Purpose Discount Multiplier
     let purposeRent = baseFixedRent;
-    if (eventPurpose === "wedding_non_saava") {
-      purposeRent = baseFixedRent * 0.75;
-    } else if (eventPurpose === "engagement_birthday_party") {
-      purposeRent = baseFixedRent * 0.50;
-    } else if (eventPurpose === "religious_spiritual_social") {
-      // 20% of first day rate per day
-      const day1Rate = baseFixedRent / days;
-      purposeRent = days * (day1Rate * 0.20);
-    } else if (eventPurpose === "charitable_free_service") {
-      purposeRent = 0; // FREE
-    }
 
-    // 3. Apply Agrawal Community Member 25% Extra Discount
+    // 2. Apply Agrawal Community Member 25% Extra Discount if applicable
     let memberDiscount = 0;
     if (isAgrawalMember && purposeRent > 0) {
       memberDiscount = Math.round(purposeRent * 0.25);
@@ -168,9 +181,9 @@ export default function RoomBookingPage() {
 
     const netRent = Math.max(0, purposeRent - memberDiscount);
 
-    // 4. Mandatory Cleaning Charge (₹1,000 per day for units; included for individual rooms)
+    // 3. Mandatory Cleaning Charge (₹1,000 / day for units; included for individual rooms)
     const isIndividualRoom = roomName.includes("ac room") || roomName.includes("non-ac");
-    const cleaningCharge = isIndividualRoom ? 0 : days * 1000;
+    const cleaningCharge = (isIndividualRoom || eventPurpose === "free") ? 0 : days * 1000;
 
     const totalPayable = netRent + cleaningCharge;
 
@@ -259,7 +272,7 @@ export default function RoomBookingPage() {
         room_id: roomId,
         start_date: startDate,
         end_date: endDate,
-        payment_mode: paymentMode,
+        payment_mode: "cash",
         notes: `Purpose: ${eventPurpose} | Agrawal Member: ${isAgrawalMember ? 'Yes' : 'No'} | ${notes || ''}`
       };
 
@@ -274,38 +287,14 @@ export default function RoomBookingPage() {
 
       const res = await axios.post(`${getApiBaseUrl()}/bookings/`, payload, { headers });
 
-      const { booking_id, razorpay_order_id } = res.data;
+      const { booking_id } = res.data;
       setBookingId(booking_id);
-
-      if (paymentMode !== "cash" && razorpay_order_id) {
-        setShowPaymentGateway(true);
-      } else {
-        setSuccessStatus("pending_venue");
-      }
+      setSuccessStatus("pending_venue");
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Booking failed");
+      setError(err.response?.data?.detail || "Booking request failed");
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handlePaymentSuccess = async (paymentId?: string) => {
-    setShowPaymentGateway(false);
-    try {
-      if (bookingId) {
-        await axios.post(`${getApiBaseUrl()}/bookings/${bookingId}/verify-payment`, {
-          razorpay_payment_id: paymentId
-        });
-      }
-      setSuccessStatus("verified");
-    } catch (err: any) {
-      setError(err.response?.data?.detail || "Payment was received but verification failed. Please contact the office.");
-    }
-  };
-
-  const handlePaymentCancel = () => {
-    setShowPaymentGateway(false);
-    setError("Payment was cancelled. Please try booking again.");
   };
 
   if (loading) return <div className="py-20 text-center text-zinc-500">Loading Room Details...</div>;
@@ -322,23 +311,27 @@ export default function RoomBookingPage() {
 
         {successStatus !== "none" ? (
           <div className="glass-panel rounded-[2rem] shadow-xl p-8 md:p-12 text-center space-y-6">
-            <div className="mx-auto w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
+            <div className="mx-auto w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shadow-inner">
               <CheckCircle className="w-8 h-8" />
             </div>
-            <div>
-              <h2 className="text-3xl font-bold text-zinc-900">Booking Requested Successfully!</h2>
-              {successStatus === "pending_venue" ? (
-                <p className="text-zinc-500 mt-2">Your request is pending admin approval. Please pay ₹{payableAmount} at the venue.</p>
-              ) : (
-                <p className="text-zinc-500 mt-2">Your booking has been confirmed. The admin will verify and approve it shortly.</p>
-              )}
+            <div className="max-w-xl mx-auto space-y-3">
+              <h2 className="text-3xl font-bold text-zinc-900">Booking Request Submitted Successfully!</h2>
+              <p className="text-zinc-600 text-sm leading-relaxed">
+                Your booking request for <strong className="text-zinc-900">{room.name}</strong> from <strong className="text-zinc-900">{formatDateDDMonthYYYY(startDate)}</strong> to <strong className="text-zinc-900">{formatDateDDMonthYYYY(endDate)}</strong> has been sent to the Agrawal Samaj Mansrovar Jaipur Management Team.
+              </p>
+              <div className="p-4 bg-amber-50/80 rounded-2xl border border-amber-200 text-amber-900 text-xs font-medium space-y-1">
+                <p className="font-bold text-sm text-amber-950">📞 Next Steps / Admin Contact</p>
+                <p>
+                  Our admin representative will contact you shortly on your WhatsApp / Phone number (<span className="font-bold font-mono">{guestPhone || userProfile?.mobile || "your provided mobile"}</span>) to verify function details, finalize rent payment, and confirm your booking.
+                </p>
+              </div>
             </div>
             {isLoggedIn ? (
-              <Link href="/dashboard/bookings" className="inline-block mt-8 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl">
-                View My Bookings
+              <Link href="/dashboard/bookings" className="inline-block mt-6 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm rounded-xl shadow-md transition-all">
+                View My Booking Requests
               </Link>
             ) : (
-              <p className="text-sm text-zinc-500 mt-4">We'll reach out on WhatsApp with confirmation details.</p>
+              <p className="text-xs text-zinc-500 mt-4">Thank you for connecting with Agrawal Samaj Mansrovar Jaipur.</p>
             )}
           </div>
         ) : (
@@ -424,11 +417,10 @@ export default function RoomBookingPage() {
                       onChange={e => setEventPurpose(e.target.value)}
                       className="w-full px-3 py-2.5 bg-white border border-zinc-200 rounded-xl text-xs font-semibold text-zinc-800 focus:outline-none focus:border-amber-500"
                     >
-                      <option value="wedding_saava">Wedding (Auspicious Saava Date)</option>
-                      <option value="wedding_non_saava">Wedding (Other / General Date)</option>
-                      <option value="engagement_birthday_party">Engagement / Birthday / Retirement / Function</option>
-                      <option value="religious_spiritual_social">Religious / Spiritual / Social Gathering</option>
-                      <option value="charitable_free_service">Charitable Camp / Eye Camp / Teeya (Condolence)</option>
+                      <option value="saava">💍 Wedding Saava Days (सावा दिवस - विवाह)</option>
+                      <option value="other_days">🗓️ Other Days (अन्य सामान्य दिवस - विवाह/निजी कार्य)</option>
+                      <option value="social">👥 Social Functions (सामाजिक कार्यक्रम - जन्मदिन/सगाई/पूजा/बैठक)</option>
+                      <option value="free">🎁 Free & Welfare Usage (निःशुल्क/चिकित्सा एवं समाज सेवा कार्य)</option>
                     </select>
                   </div>
 
@@ -634,15 +626,13 @@ export default function RoomBookingPage() {
                   </AnimatePresence>
 
                   <div className="space-y-3 pt-3 border-t border-zinc-100">
-                    <div className="space-y-2">
-                      <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${paymentMode === "upi" ? "border-amber-500 bg-amber-50" : "border-zinc-200 hover:bg-zinc-50"}`}>
-                        <input type="radio" name="payment_mode" value="upi" checked={paymentMode === "upi"} onChange={() => setPaymentMode("upi")} className="text-amber-500 focus:ring-amber-500" />
-                        <span className="text-xs font-semibold text-zinc-800">Pay Online Now</span>
-                      </label>
-                      <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${paymentMode === "cash" ? "border-amber-500 bg-amber-50" : "border-zinc-200 hover:bg-zinc-50"}`}>
-                        <input type="radio" name="payment_mode" value="cash" checked={paymentMode === "cash"} onChange={() => setPaymentMode("cash")} className="text-amber-500 focus:ring-amber-500" />
-                        <span className="text-xs font-semibold text-zinc-800">Pay at Venue (Cash)</span>
-                      </label>
+                    <div className="p-3.5 bg-amber-50/90 border border-amber-200 rounded-xl space-y-1 text-xs">
+                      <span className="font-bold text-amber-900 flex items-center gap-1.5">
+                        📩 Booking Request to Admin
+                      </span>
+                      <p className="text-zinc-600 leading-relaxed">
+                        Submitting this form sends your booking request directly to the Agrawal Samaj Mansrovar Jaipur Admin Team. An admin will contact you on your phone number to discuss details and finalize the reservation.
+                      </p>
                     </div>
 
                     <label className="flex items-start gap-2.5 cursor-pointer pt-1">
@@ -660,10 +650,10 @@ export default function RoomBookingPage() {
 
                   <button disabled={isSubmitting || quote.days <= 0 || !agreedToTerms || isBlockedOrFull} type="submit" className="w-full py-3.5 mt-4 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-600 hover:via-orange-600 hover:to-rose-700 text-white font-bold text-sm rounded-xl transition-all disabled:opacity-50 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 active:scale-[0.98] disabled:active:scale-100">
                     {isSubmitting
-                      ? "Processing..."
+                      ? "Sending Request to Admin..."
                       : isBlockedOrFull
                         ? (isFull ? "FULL" : "Not Available During This Event")
-                        : (paymentMode === "upi" ? `Pay ₹${payableAmount}` : "Submit Booking Request")}
+                        : "Submit Booking Request to Admin"}
                   </button>
                 </form>
               </div>
@@ -671,15 +661,6 @@ export default function RoomBookingPage() {
           </div>
         )}
       </div>
-
-      {showPaymentGateway && (
-        <PaymentGateway
-          amount={payableAmount}
-          purpose={`Booking for ${room.name}`}
-          onSuccess={handlePaymentSuccess} 
-          onCancel={handlePaymentCancel} 
-        />
-      )}
     </div>
   );
 }

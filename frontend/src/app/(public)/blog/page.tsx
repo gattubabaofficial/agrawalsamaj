@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Search, Tag, Heart, MessageCircle, Eye, Clock, ArrowRight, BookOpen } from "lucide-react";
+import { Search, Tag, Heart, MessageCircle, Eye, Clock, ArrowRight, BookOpen, Upload, X } from "lucide-react";
 import { getApiBaseUrl } from "@/utils/api";
 
 interface Blog {
@@ -43,12 +43,50 @@ export default function BlogPage() {
 
   const allTags = Array.from(new Set(blogs.flatMap((b) => b.tags || [])));
 
-  const fetchBlogs = async (pg = 1, q = search, tag = activeTag) => {
+  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // New Blog State
+  const [newTitle, setNewTitle] = useState("");
+  const [newContent, setNewContent] = useState("");
+  const [newCover, setNewCover] = useState("");
+  const [newTags, setNewTags] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
+
+  const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCoverUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`${getApiBaseUrl()}/blog/upload`, {
+        method: "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNewCover(data.url);
+      } else {
+        alert("Failed to upload image.");
+      }
+    } catch {
+      alert("Failed to upload image.");
+    } finally {
+      setCoverUploading(false);
+    }
+  };
+
+  const fetchBlogs = async (pg = 1, q = search, tag = activeTag, yr = selectedYear, mn = selectedMonth) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page: String(pg), per_page: String(PER_PAGE) });
       if (q) params.set("search", q);
       if (tag) params.set("tag", tag);
+      if (yr) params.set("year", yr);
+      if (mn) params.set("month", mn);
       const res = await fetch(`${getApiBaseUrl()}/blog/?${params}`);
       if (res.ok) {
         const data = await res.json();
@@ -65,14 +103,57 @@ export default function BlogPage() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-    fetchBlogs(1, search, activeTag);
+    fetchBlogs(1, search, activeTag, selectedYear, selectedMonth);
   };
 
   const handleTag = (tag: string) => {
     const next = activeTag === tag ? "" : tag;
     setActiveTag(next);
     setPage(1);
-    fetchBlogs(1, search, next);
+    fetchBlogs(1, search, next, selectedYear, selectedMonth);
+  };
+
+  const handleYearChange = (yr: string) => {
+    setSelectedYear(yr);
+    setPage(1);
+    fetchBlogs(1, search, activeTag, yr, selectedMonth);
+  };
+
+  const handleMonthChange = (mn: string) => {
+    setSelectedMonth(mn);
+    setPage(1);
+    fetchBlogs(1, search, activeTag, selectedYear, mn);
+  };
+
+  const handleCreateBlogSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTitle.trim() || !newContent.trim()) return;
+    setIsSubmitting(true);
+    try {
+      const tagsList = newTags.split(",").map(t => t.trim()).filter(Boolean);
+      const res = await fetch(`${getApiBaseUrl()}/blog/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: newTitle.trim(),
+          content: newContent.trim(),
+          cover_image_url: newCover.trim() || null,
+          tags: tagsList,
+          status: "published"
+        })
+      });
+      if (res.ok) {
+        setShowCreateModal(false);
+        setNewTitle(""); setNewContent(""); setNewCover(""); setNewTags("");
+        fetchBlogs(1);
+      } else {
+        alert("Failed to publish blog post.");
+      }
+    } catch (err) {
+      alert("Failed to publish blog post.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const totalPages = Math.ceil(total / PER_PAGE);
@@ -101,22 +182,67 @@ export default function BlogPage() {
               <span className="text-gradient-vivid">Stories, News &amp; Insights</span>
             </h1>
             <p className="text-zinc-400 text-lg max-w-xl mx-auto mb-8">
-              Discover stories, announcements, and wisdom shared by our Agrawal Samaj community.
+              Discover stories, announcements, and wisdom shared by our Agrawal Samaj Mansrovar Jaipur community.
             </p>
 
-            {/* Search */}
-            <form onSubmit={handleSearch} className="relative max-w-xl mx-auto">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search blogs..."
-                className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/10 backdrop-blur border border-white/20 text-white placeholder-zinc-400 focus:outline-none focus:border-amber-400/60 focus:bg-white/15 transition-all"
-              />
-              <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white text-sm font-semibold shadow-md shadow-amber-500/30 transition-all active:scale-95">
-                Search
-              </button>
+            {/* Search & Filter Controls */}
+            <form onSubmit={handleSearch} className="space-y-4 max-w-xl mx-auto">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search blogs by keyword..."
+                  className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/10 backdrop-blur border border-white/20 text-white placeholder-zinc-400 focus:outline-none focus:border-amber-400/60 focus:bg-white/15 transition-all"
+                />
+                <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white text-sm font-semibold shadow-md shadow-amber-500/30 transition-all active:scale-95">
+                  Search
+                </button>
+              </div>
+
+              {/* Year & Month Date-wise Filters */}
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                <select
+                  value={selectedYear}
+                  onChange={(e) => handleYearChange(e.target.value)}
+                  className="px-3.5 py-2 rounded-xl bg-zinc-800/90 text-white border border-zinc-700 text-xs font-semibold focus:outline-none focus:border-amber-500 cursor-pointer"
+                >
+                  <option value="">🗓️ All Years</option>
+                  <option value="2026">2026</option>
+                  <option value="2025">2025</option>
+                  <option value="2024">2024</option>
+                  <option value="2023">2023</option>
+                </select>
+
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => handleMonthChange(e.target.value)}
+                  className="px-3.5 py-2 rounded-xl bg-zinc-800/90 text-white border border-zinc-700 text-xs font-semibold focus:outline-none focus:border-amber-500 cursor-pointer"
+                >
+                  <option value="">📅 All Months</option>
+                  <option value="1">January</option>
+                  <option value="2">February</option>
+                  <option value="3">March</option>
+                  <option value="4">April</option>
+                  <option value="5">May</option>
+                  <option value="6">June</option>
+                  <option value="7">July</option>
+                  <option value="8">August</option>
+                  <option value="9">September</option>
+                  <option value="10">October</option>
+                  <option value="11">November</option>
+                  <option value="12">December</option>
+                </select>
+
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(true)}
+                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-lg shadow-amber-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  ✍️ Write a Blog
+                </button>
+              </div>
             </form>
           </motion.div>
         </div>
@@ -185,7 +311,7 @@ export default function BlogPage() {
                 <Link href={`/blog/${blog.slug}`} className="block overflow-hidden">
                   {blog.cover_image_url ? (
                     <img
-                      src={blog.cover_image_url.startsWith('http') ? blog.cover_image_url : `${getApiBaseUrl().replace('/api/v1', '')}${blog.cover_image_url.startsWith("/") ? blog.cover_image_url : `/${blog.cover_image_url}`}`}
+                      src={blog.cover_image_url.startsWith('http') || blog.cover_image_url.startsWith('https') ? blog.cover_image_url : blog.cover_image_url.startsWith('/uploads/') ? `${getApiBaseUrl().replace('/api/v1', '')}${blog.cover_image_url}` : blog.cover_image_url}
                       alt={blog.title}
                       className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
                     />
@@ -271,6 +397,110 @@ export default function BlogPage() {
             >
               Next
             </button>
+          </div>
+        )}
+
+        {/* Create Blog Modal */}
+        {showCreateModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-2xl animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
+                <div>
+                  <h3 className="font-bold text-zinc-900 text-xl">✍️ Write a Blog Post</h3>
+                  <p className="text-xs text-zinc-500">Publish your story directly — no approval needed!</p>
+                </div>
+                <button type="button" onClick={() => setShowCreateModal(false)} className="p-1 text-zinc-400 hover:text-zinc-600 rounded-lg">
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateBlogSubmit} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block">Blog Title *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Enter engaging blog title..."
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 text-sm focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block">Upload Cover Image / Poster</label>
+                  {newCover ? (
+                    <div className="relative w-full h-44 rounded-2xl overflow-hidden border border-zinc-200 group">
+                      <img src={newCover.startsWith("http") ? newCover : `${getApiBaseUrl().replace("/api/v1", "")}${newCover}`} alt="Cover preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setNewCover("")}
+                        className="absolute top-2 right-2 p-1.5 bg-zinc-900/80 text-white rounded-full hover:bg-rose-600 transition-colors shadow-md cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-zinc-300 rounded-2xl cursor-pointer hover:border-amber-500 hover:bg-amber-50/50 transition-all">
+                      <div className="flex flex-col items-center justify-center pt-4 pb-5 text-zinc-500">
+                        {coverUploading ? (
+                          <div className="flex items-center gap-2 font-semibold text-amber-600 text-xs">
+                            <span className="animate-spin">⏳</span> Uploading Image to Storage...
+                          </div>
+                        ) : (
+                          <>
+                            <Upload className="w-6 h-6 mb-2 text-amber-500" />
+                            <p className="text-xs font-semibold text-zinc-700">Click to pick photo or poster directly from your device</p>
+                            <p className="text-[11px] text-zinc-400 mt-0.5">PNG, JPG, JPEG or WEBP (Max 20MB)</p>
+                          </>
+                        )}
+                      </div>
+                      <input type="file" accept="image/*" onChange={handleImageFileUpload} disabled={coverUploading} className="hidden" />
+                    </label>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block">Tags (comma separated)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Samaj News, Event, Health, Jaipur"
+                    value={newTags}
+                    onChange={(e) => setNewTags(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 text-sm focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block">Blog Content (Markdown / Text) *</label>
+                  <textarea
+                    required
+                    rows={8}
+                    placeholder="Write your story, announcement, or article here..."
+                    value={newContent}
+                    onChange={(e) => setNewContent(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-zinc-200 text-sm focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="px-5 py-2.5 rounded-xl border border-zinc-200 text-sm font-semibold text-zinc-600 hover:bg-zinc-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || !newTitle.trim() || !newContent.trim()}
+                    className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white text-sm font-bold rounded-xl shadow-md disabled:opacity-50 transition-all"
+                  >
+                    {isSubmitting ? "Publishing..." : "Publish Immediately 🚀"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
       </div>
