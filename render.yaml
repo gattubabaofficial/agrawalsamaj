@@ -1,0 +1,28 @@
+services:
+  # ── Python FastAPI Backend Web Service ─────────────────────
+  - type: web
+    name: agrawalsamaj-backend
+    env: python
+    region: virginia
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    rootDir: backend
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql+asyncpg://agrawal_user:FSVrY0dsB7WXBtepD5MMNC03otIieoLD@dpg-d9lnid7qj5pc739e9o1g-a.virginia-postgres.render.com/agrawalsamaj
+      - key: ENVIRONMENT
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+
+  # ── Next.js Frontend Service ──────────────────────────────
+  - type: web
+    name: agrawalsamaj-frontend
+    env: node
+    region: virginia
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    rootDir: frontend
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://agrawalsamaj-backend.onrender.com/api/v1
