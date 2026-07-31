@@ -44,6 +44,7 @@ class BlogUpdate(BaseModel):
 class CommentCreate(BaseModel):
     content: str
     parent_id: Optional[uuid.UUID] = None
+    guest_name: Optional[str] = None
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -66,11 +67,17 @@ def user_dict(user: User) -> dict:
 
 
 def comment_dict(comment: BlogComment, include_replies: bool = True) -> dict:
+    author = user_dict(comment.author) if comment.author else {
+        "user_id": None,
+        "first_name": comment.guest_name or "Guest",
+        "surname": "",
+        "profile_photo": None,
+    }
     return {
         "comment_id": str(comment.comment_id),
         "blog_id": str(comment.blog_id),
-        "user_id": str(comment.user_id),
-        "author": user_dict(comment.author) if comment.author else None,
+        "user_id": str(comment.user_id) if comment.user_id else None,
+        "author": author,
         "content": comment.content,
         "parent_id": str(comment.parent_id) if comment.parent_id else None,
         "created_at": comment.created_at.isoformat() + "Z" if comment.created_at else None,
@@ -98,7 +105,7 @@ def blog_dict(blog: Blog, like_count: int = 0, user_liked: bool = False, comment
     }
 
 
-async def get_blog_stats(db: AsyncSession, blog_id: uuid.UUID, user_id: Optional[uuid.UUID] = None):
+async def get_blog_stats(db: AsyncSession, blog_id: uuid.UUID, user_id: Optional[uuid.UUID] = None, guest_id: Optional[str] = None):
     like_count = await db.scalar(
         select(func.count()).select_from(BlogLike).where(BlogLike.blog_id == blog_id)
     )
@@ -109,6 +116,11 @@ async def get_blog_stats(db: AsyncSession, blog_id: uuid.UUID, user_id: Optional
     if user_id:
         existing = await db.scalar(
             select(BlogLike).where(BlogLike.blog_id == blog_id, BlogLike.user_id == user_id)
+        )
+        user_liked = existing is not None
+    elif guest_id:
+        existing = await db.scalar(
+            select(BlogLike).where(BlogLike.blog_id == blog_id, BlogLike.guest_id == guest_id)
         )
         user_liked = existing is not None
     return like_count or 0, user_liked, comment_count or 0
@@ -239,6 +251,8 @@ async def list_all_blogs_admin(
 @router.get("/{slug}")
 async def get_blog(
     slug: str,
+    guest_id: Optional[str] = Query(None),
+    current_user: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Get a single blog by slug (public). Increments view counter."""
@@ -252,8 +266,10 @@ async def get_blog(
     await db.commit()
     await db.refresh(blog)
 
-    like_count, _, comment_count = await get_blog_stats(db, blog.blog_id)
-    return blog_dict(blog, like_count, False, comment_count)
+    user_id = current_user.user_id if current_user else None
+    like_count, user_liked, comment_count = await get_blog_stats(db, blog.blog_id, user_id=user_id, guest_id=guest_id)
+    return blog_dict(blog, like_count, user_liked, comment_count)
+
 
 
 # ─── Blog Writing & Admin CRUD ───────────────────────────────────────────────────
@@ -390,24 +406,45 @@ async def delete_blog(
 @router.post("/{blog_id}/like")
 async def toggle_like(
     blog_id: uuid.UUID,
+    guest_id: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ):
     result = await db.execute(select(Blog).where(Blog.blog_id == blog_id))
     blog = result.scalar_one_or_none()
     if not blog or blog.status != BlogStatus.PUBLISHED:
         raise HTTPException(status_code=404, detail="Blog not found")
 
-    existing = await db.scalar(
-        select(BlogLike).where(
-            BlogLike.blog_id == blog_id, BlogLike.user_id == current_user.user_id
+    user_id = current_user.user_id if current_user else None
+    if user_id:
+        existing = await db.scalar(
+            select(BlogLike).where(
+                BlogLike.blog_id == blog_id, BlogLike.user_id == user_id
+            )
         )
-    )
+    elif guest_id:
+        existing = await db.scalar(
+            select(BlogLike).where(
+                BlogLike.blog_id == blog_id, BlogLike.guest_id == guest_id
+            )
+        )
+    else:
+        guest_id = "anonymous-guest"
+        existing = await db.scalar(
+            select(BlogLike).where(
+                BlogLike.blog_id == blog_id, BlogLike.guest_id == guest_id
+            )
+        )
+
     if existing:
         await db.delete(existing)
         liked = False
     else:
-        like = BlogLike(blog_id=blog_id, user_id=current_user.user_id)
+        like = BlogLike(
+            blog_id=blog_id,
+            user_id=user_id,
+            guest_id=guest_id if not user_id else None
+        )
         db.add(like)
         liked = True
 
@@ -443,7 +480,7 @@ async def post_comment(
     blog_id: uuid.UUID,
     data: CommentCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ):
     result = await db.execute(select(Blog).where(Blog.blog_id == blog_id))
     blog = result.scalar_one_or_none()
@@ -457,16 +494,19 @@ async def post_comment(
         if not parent:
             raise HTTPException(status_code=404, detail="Parent comment not found")
 
+    user_id = current_user.user_id if current_user else None
     comment = BlogComment(
         blog_id=blog_id,
-        user_id=current_user.user_id,
+        user_id=user_id,
+        guest_name=data.guest_name.strip() if (not user_id and data.guest_name) else ("Guest" if not user_id else None),
         content=data.content.strip(),
         parent_id=data.parent_id,
     )
     db.add(comment)
     await db.commit()
     await db.refresh(comment)
-    comment.author = current_user
+    if current_user:
+        comment.author = current_user
     return comment_dict(comment, include_replies=False)
 
 
