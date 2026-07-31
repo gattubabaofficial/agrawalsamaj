@@ -60,15 +60,13 @@ async def on_startup():
                 pass
 
 
-# CORS middleware configuration
-local_origin_regex = r"https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?"
-
+# CORS middleware configuration - allow all origins for online deployment (Vercel / Render / Custom Domain)
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=local_origin_regex,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
