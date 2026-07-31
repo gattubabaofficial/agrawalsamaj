@@ -66,7 +66,11 @@ from pathlib import Path
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://agrawalsamaj.vercel.app",
+        "https://agrawalsamaj-backend-production.up.railway.app",
+        "http://localhost:3000", # Keeping localhost so your local development doesn't break!
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
