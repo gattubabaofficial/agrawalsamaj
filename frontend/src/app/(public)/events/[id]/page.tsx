@@ -632,7 +632,7 @@ export default function EventDetailsPage() {
                 )}
               </div>
               <h1 className="text-3xl sm:text-4xl font-bold text-zinc-900 mb-4">{event.title}</h1>
-              <p className="text-zinc-600 leading-relaxed mb-8">{event.description}</p>
+              <p className="text-zinc-600 leading-relaxed mb-8 whitespace-pre-wrap">{event.description}</p>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 bg-zinc-50 rounded-2xl border border-zinc-100">
                 <div className="flex items-start gap-3">
