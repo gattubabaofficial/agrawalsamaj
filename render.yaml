@@ -9,7 +9,7 @@ services:
     rootDir: backend
     envVars:
       - key: DATABASE_URL
-        value: postgresql+asyncpg://agrawal_user:FSVrY0dsB7WXBtepD5MMNC03otIieoLD@dpg-d9lnid7qj5pc739e9o1g-a.virginia-postgres.render.com/agrawalsamaj
+        value: postgresql+asyncpg://neondb_owner:npg_tnmNUj0B3vDl@ep-ancient-salad-aymdzbjr-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require
       - key: ENVIRONMENT
         value: production
       - key: SECRET_KEY

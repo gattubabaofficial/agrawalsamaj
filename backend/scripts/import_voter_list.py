@@ -107,12 +107,11 @@ async def import_to_db(db_url: str, db_name: str):
     await engine.dispose()
 
 
-async def main():
-    # Import into local SQLite first
-    await import_to_db(LOCAL_DB_URL, "Local SQLite")
-    # Import into live Render PostgreSQL
-    await import_to_db(RENDER_DB_URL, "Render PostgreSQL")
+from app.database import db_url as ENV_DB_URL
 
+async def main():
+    # Import into configured database from .env
+    await import_to_db(ENV_DB_URL, "Configured (.env)")
 
 if __name__ == "__main__":
     asyncio.run(main())

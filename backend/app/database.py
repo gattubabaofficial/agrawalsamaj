@@ -16,12 +16,14 @@ try:
     url_obj = make_url(db_url)
     if url_obj.drivername.startswith("postgres"):
         db_url = url_obj.set(drivername="postgresql+asyncpg").render_as_string(hide_password=False)
+        db_url = db_url.replace("sslmode=require", "ssl=require").replace("sslmode=prefer", "ssl=prefer").replace("sslmode=disable", "ssl=disable")
     elif url_obj.drivername.startswith("sqlite"):
         db_url = url_obj.set(drivername="sqlite+aiosqlite").render_as_string(hide_password=False)
         connect_args = {"check_same_thread": False}
 except Exception:
     if re.match(r"^(postgres|postgresql)(\+[a-zA-Z0-9_-]+)?://", db_url, flags=re.IGNORECASE):
         db_url = re.sub(r"^(postgres|postgresql)(\+[a-zA-Z0-9_-]+)?://", "postgresql+asyncpg://", db_url, flags=re.IGNORECASE)
+        db_url = db_url.replace("sslmode=require", "ssl=require").replace("sslmode=prefer", "ssl=prefer").replace("sslmode=disable", "ssl=disable")
     elif db_url.lower().startswith("sqlite"):
         db_url = re.sub(r"^sqlite://", "sqlite+aiosqlite://", db_url, flags=re.IGNORECASE)
         connect_args = {"check_same_thread": False}
