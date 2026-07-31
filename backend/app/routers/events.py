@@ -124,7 +124,7 @@ class PaymentVerifyRequest(BaseModel):
     razorpay_signature: Optional[str] = None
 
 # Routes
-@router.post("/", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
 async def create_event(
     event_data: EventCreate,
     db: AsyncSession = Depends(get_db),
@@ -154,7 +154,7 @@ async def create_event(
     await db.refresh(new_event)
     return new_event
 
-@router.get("/", response_model=List[EventResponse])
+@router.get("", response_model=List[EventResponse])
 async def list_events(
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_current_user),
