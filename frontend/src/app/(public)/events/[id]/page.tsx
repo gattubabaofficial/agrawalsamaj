@@ -595,38 +595,9 @@ export default function EventDetailsPage() {
                       </div>
                     )}
 
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMode("pay_online")}
-                        className={`flex-1 p-3 rounded-xl border text-left flex items-center justify-between transition-colors ${
-                          paymentMode === "pay_online"
-                            ? "bg-amber-50 border-amber-500 ring-1 ring-amber-500/50"
-                            : "bg-white border-zinc-200 hover:bg-zinc-50"
-                        }`}
-                      >
-                        <span className={`text-sm font-semibold ${paymentMode === "pay_online" ? "text-amber-900" : "text-zinc-700"}`}>
-                          Pay Online
-                        </span>
-                        {paymentMode === "pay_online" && <CheckCircle className="w-5 h-5 text-amber-500" />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMode("pay_at_venue")}
-                        className={`flex-1 p-3 rounded-xl border text-left flex items-center justify-between transition-colors ${
-                          paymentMode === "pay_at_venue"
-                            ? "bg-amber-50 border-amber-500 ring-1 ring-amber-500/50"
-                            : "bg-white border-zinc-200 hover:bg-zinc-50"
-                        }`}
-                      >
-                        <div className="flex flex-col">
-                          <span className={`text-sm font-semibold ${paymentMode === "pay_at_venue" ? "text-amber-900" : "text-zinc-700"}`}>
-                            Pay at Venue
-                          </span>
-                          <span className="text-[10px] text-zinc-500 uppercase mt-0.5 font-bold">Book now, Pay later</span>
-                        </div>
-                        {paymentMode === "pay_at_venue" && <CheckCircle className="w-5 h-5 text-amber-500" />}
-                      </button>
+                    <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/80 flex items-center justify-between text-xs font-semibold text-amber-900">
+                      <span>Online Payment &amp; Instant Pass</span>
+                      <span className="bg-amber-500 text-white px-2 py-0.5 rounded-md text-[10px] font-bold uppercase">Online Only</span>
                     </div>
                   </div>
                 )}
