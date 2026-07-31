@@ -424,7 +424,10 @@ async def list_members(
     )
     users = result.scalars().all()
     
-    is_admin = (current_user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN)) if current_user else False
+    is_admin = False
+    if current_user:
+        r_str = str(getattr(current_user, "role", "")).upper()
+        is_admin = r_str in ("ADMIN", "SUPER_ADMIN")
     
     data = []
     for u in users:
