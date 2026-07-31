@@ -323,16 +323,21 @@ async def register_event(
         total_amount = 0.0
     else:
         if reg_data.payment_mode == EventPaymentMode.PAY_AT_VENUE:
-            raise HTTPException(status_code=400, detail="Cash bookings are disabled for events. Please pay online.")
-
-        payment_mode = EventPaymentMode.PAY_ONLINE
-        payment_status = PaymentStatus.PENDING
+            payment_mode = EventPaymentMode.PAY_AT_VENUE
+            payment_status = PaymentStatus.PENDING
+        else:
+            payment_mode = EventPaymentMode.PAY_ONLINE
+            payment_status = PaymentStatus.PENDING
 
         if reg_data.voucher_code:
             voucher, discount_amount, voucher_err = await apply_voucher(db, reg_data.voucher_code, total_amount, "event")
             if voucher_err:
                 raise HTTPException(status_code=400, detail=voucher_err)
             total_amount = round(total_amount - discount_amount, 2)
+            
+        if total_amount <= 0.0:
+            total_amount = 0.0
+            payment_status = PaymentStatus.VERIFIED
 
     # Store entered contact details, or fallback to current user's profile details
     guest_name = reg_data.guest_name or (f"{current_user.first_name} {current_user.surname}" if current_user else None)
