@@ -205,7 +205,7 @@ export default function AdminEventsPage() {
       if (editingId) {
         await axios.put(`${getApiBaseUrl()}/events/${editingId}`, payload, { headers });
       } else {
-        await axios.post(`${getApiBaseUrl()}/events/`, payload, { headers });
+        await axios.post(`${getApiBaseUrl()}/events`, payload, { headers });
       }
 
       setActiveView("events");
