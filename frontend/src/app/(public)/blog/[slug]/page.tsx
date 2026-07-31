@@ -80,21 +80,37 @@ export default function BlogReaderPage() {
   const [likeLoading, setLikeLoading] = useState(false);
 
   const [comment, setComment] = useState("");
+  const [guestName, setGuestName] = useState("");
   const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null);
   const [commentLoading, setCommentLoading] = useState(false);
 
   const [copied, setCopied] = useState(false);
   const [showAllComments, setShowAllComments] = useState(false);
+  const [guestId, setGuestId] = useState<string>("");
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      let gid = localStorage.getItem("guest_id");
+      if (!gid) {
+        gid = "guest_" + Math.random().toString(36).substring(2) + Date.now().toString(36);
+        localStorage.setItem("guest_id", gid);
+      }
+      setGuestId(gid);
+    }
+  }, []);
 
   useEffect(() => {
     if (!slug) return;
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${getApiBaseUrl()}/blog/${slug}`);
+        const headers: Record<string, string> = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        const gidParam = guestId ? `?guest_id=${guestId}` : "";
+        const res = await fetch(`${getApiBaseUrl()}/blog/${slug}${gidParam}`, { headers });
         if (res.ok) {
           const data = await res.json();
           setBlog(data);
@@ -107,7 +123,7 @@ export default function BlogReaderPage() {
         setLoading(false);
       }
     })();
-  }, [slug]);
+  }, [slug, guestId]);
 
   useEffect(() => {
     if (!blog) return;
@@ -115,12 +131,14 @@ export default function BlogReaderPage() {
   }, [blog]);
 
   const handleLike = async () => {
-    if (!token) { router.push("/login"); return; }
     setLikeLoading(true);
     try {
-      const res = await fetch(`${getApiBaseUrl()}/blog/${blog!.blog_id}/like`, {
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const gidParam = guestId ? `?guest_id=${guestId}` : "";
+      const res = await fetch(`${getApiBaseUrl()}/blog/${blog!.blog_id}/like${gidParam}`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers,
       });
       if (res.ok) {
         const data = await res.json();
@@ -145,14 +163,19 @@ export default function BlogReaderPage() {
 
   const handleComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) { router.push("/login"); return; }
     if (!comment.trim()) return;
     setCommentLoading(true);
     try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const body: any = { content: comment.trim(), parent_id: replyTo?.id || null };
+      if (!token && guestName.trim()) {
+        body.guest_name = guestName.trim();
+      }
       const res = await fetch(`${getApiBaseUrl()}/blog/${blog!.blog_id}/comments`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ content: comment.trim(), parent_id: replyTo?.id || null }),
+        headers,
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         setComment("");
@@ -307,40 +330,43 @@ export default function BlogReaderPage() {
             Comments ({comments.length})
           </h2>
 
-          {/* Comment Form */}
-          {token ? (
-            <form onSubmit={handleComment} className="mb-8">
-              {replyTo && (
-                <div className="flex items-center gap-2 mb-2 text-xs text-zinc-500 bg-zinc-50 px-3 py-2 rounded-lg">
-                  Replying to <span className="font-semibold text-zinc-700">{replyTo.name}</span>
-                  <button type="button" onClick={() => setReplyTo(null)} className="ml-auto text-zinc-400 hover:text-zinc-600">✕</button>
-                </div>
-              )}
-              <div className="relative">
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Write a thoughtful comment..."
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-2xl border border-zinc-200 bg-zinc-50 text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-300 focus:bg-white resize-none transition-all text-sm"
-                />
-                <button
-                  type="submit"
-                  disabled={commentLoading || !comment.trim()}
-                  className="absolute bottom-3 right-3 p-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
+          {/* Comment Form - Accessible to Everyone */}
+          <form onSubmit={handleComment} className="mb-8">
+            {replyTo && (
+              <div className="flex items-center gap-2 mb-2 text-xs text-zinc-500 bg-zinc-50 px-3 py-2 rounded-lg">
+                Replying to <span className="font-semibold text-zinc-700">{replyTo.name}</span>
+                <button type="button" onClick={() => setReplyTo(null)} className="ml-auto text-zinc-400 hover:text-zinc-600">✕</button>
               </div>
-            </form>
-          ) : (
-            <div className="mb-8 text-center py-6 rounded-2xl bg-zinc-50 border border-zinc-100">
-              <p className="text-zinc-500 text-sm mb-3">Login to post a comment</p>
-              <Link href="/login" className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-colors">
-                Login
-              </Link>
+            )}
+            {!token && (
+              <div className="mb-3">
+                <input
+                  type="text"
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  placeholder="Your Name (Optional, defaults to Guest)"
+                  className="w-full sm:w-72 px-4 py-2 rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-300 text-sm"
+                />
+              </div>
+            )}
+            <div className="relative">
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Write a thoughtful comment..."
+                rows={3}
+                className="w-full px-4 py-3 rounded-2xl border border-zinc-200 bg-zinc-50 text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-300 focus:bg-white resize-none transition-all text-sm"
+              />
+              <button
+                type="submit"
+                disabled={commentLoading || !comment.trim()}
+                className="absolute bottom-3 right-3 p-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Send className="w-4 h-4" />
+              </button>
             </div>
-          )}
+          </form>
+
 
           {/* Comments List */}
           <div className="space-y-4">

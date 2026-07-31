@@ -51,9 +51,10 @@ class BlogComment(Base, TimestampMixin):
     blog_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("blogs.blog_id", ondelete="CASCADE"), nullable=False
     )
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
+    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("users.user_id", ondelete="CASCADE"), nullable=True
     )
+    guest_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     # parent_id for 1-level nested replies
     parent_id: Mapped[Optional[uuid.UUID]] = mapped_column(
@@ -62,7 +63,7 @@ class BlogComment(Base, TimestampMixin):
 
     # Relationships
     blog: Mapped[Blog] = relationship("Blog", back_populates="comments")
-    author: Mapped["User"] = relationship("User", foreign_keys=[user_id])  # type: ignore[name-defined]
+    author: Mapped[Optional["User"]] = relationship("User", foreign_keys=[user_id])  # type: ignore[name-defined]
     replies: Mapped[List["BlogComment"]] = relationship(
         "BlogComment",
         back_populates="parent",
@@ -79,19 +80,20 @@ class BlogComment(Base, TimestampMixin):
 
 class BlogLike(Base):
     __tablename__ = "blog_likes"
-    __table_args__ = (UniqueConstraint("blog_id", "user_id", name="uq_blog_like"),)
 
     like_id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     blog_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("blogs.blog_id", ondelete="CASCADE"), nullable=False
     )
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
+    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("users.user_id", ondelete="CASCADE"), nullable=True
     )
+    guest_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, nullable=False
     )
 
     # Relationships
     blog: Mapped[Blog] = relationship("Blog", back_populates="likes")
-    user: Mapped["User"] = relationship("User")  # type: ignore[name-defined]
+    user: Mapped[Optional["User"]] = relationship("User")  # type: ignore[name-defined]
+
