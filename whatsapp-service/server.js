@@ -72,6 +72,8 @@ const client = new Client({
                     (fs.existsSync("/usr/bin/google-chrome") ? "/usr/bin/google-chrome" : 
                     (fs.existsSync("/usr/bin/chromium") ? "/usr/bin/chromium" : undefined)),
     headless: true,
+    protocolTimeout: 300000, // 5 minutes to prevent Runtime.callFunctionOn timeout
+    timeout: 60000,
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
