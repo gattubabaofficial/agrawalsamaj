@@ -68,7 +68,9 @@ async function removeDirWithRetry(dir, attempts = 5, delayMs = 1000) {
 const client = new Client({
   authStrategy: new LocalAuth({ dataPath: SESSION_DIR }),
   puppeteer: {
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || 
+                    (fs.existsSync("/usr/bin/google-chrome") ? "/usr/bin/google-chrome" : 
+                    (fs.existsSync("/usr/bin/chromium") ? "/usr/bin/chromium" : undefined)),
     headless: true,
     args: [
       "--no-sandbox",
