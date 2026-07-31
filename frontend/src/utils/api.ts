@@ -6,7 +6,11 @@
 export const getApiBaseUrl = (): string => {
   // Allow manual override via environment variables
   if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
+    let url = process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "");
+    if (!url.endsWith("/api/v1")) {
+      url += "/api/v1";
+    }
+    return url;
   }
 
   // Client-side: talk to our OWN origin and let the Next rewrite in
