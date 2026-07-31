@@ -1,0 +1,15 @@
+[providers]
+  node = "18"
+
+[variables]
+  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "1"
+  PUPPETEER_EXECUTABLE_PATH = "chromium"
+
+[phases.setup]
+  nixPkgs = ["nodejs_18", "chromium", "nss", "freetype", "harfbuzz", "ca-certificates"]
+
+[phases.build]
+  cmds = ["npm ci"]
+
+[start]
+  cmd = "npm start"

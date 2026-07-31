@@ -68,6 +68,7 @@ async function removeDirWithRetry(dir, attempts = 5, delayMs = 1000) {
 const client = new Client({
   authStrategy: new LocalAuth({ dataPath: SESSION_DIR }),
   puppeteer: {
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
     headless: true,
     args: [
       "--no-sandbox",
