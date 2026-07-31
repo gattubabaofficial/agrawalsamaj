@@ -139,8 +139,13 @@ export default function EventsPage() {
                   <h3 className="text-xl font-bold text-zinc-900 group-hover:text-amber-500 transition-colors">
                     {evt.title}
                   </h3>
-                  <p className="text-xs text-zinc-500 line-clamp-3 leading-relaxed">
-                    {evt.description}
+                  <p className="text-xs text-zinc-500 line-clamp-3 leading-relaxed whitespace-pre-wrap">
+                    {evt.description?.split(/(\*[^*]+\*)/g).map((part: string, i: number) => {
+                      if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+                        return <strong key={i} className="font-bold text-zinc-900">{part.slice(1, -1)}</strong>;
+                      }
+                      return <span key={i}>{part}</span>;
+                    })}
                   </p>
                 </div>
 
