@@ -33,6 +33,10 @@ class Blog(Base, TimestampMixin):
         nullable=False,
     )
     views: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    # Guest author info (filled when a non-logged-in user creates a blog)
+    guest_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    guest_email: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)
+    guest_phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
 
     # Relationships
     author: Mapped["User"] = relationship("User", foreign_keys=[author_id])  # type: ignore[name-defined]

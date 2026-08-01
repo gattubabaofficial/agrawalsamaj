@@ -47,13 +47,16 @@ export default function BlogPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // New Blog State
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
   const [newCover, setNewCover] = useState("");
   const [newTags, setNewTags] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
+  // Guest author fields
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
 
   const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -131,20 +134,26 @@ export default function BlogPage() {
     setIsSubmitting(true);
     try {
       const tagsList = newTags.split(",").map(t => t.trim()).filter(Boolean);
+      const body: Record<string, unknown> = {
+        title: newTitle.trim(),
+        content: newContent.trim(),
+        cover_image_url: newCover.trim() || null,
+        tags: tagsList,
+        status: "published",
+      };
+      // Always send guest fields — backend will validate if user is not logged in
+      if (guestName.trim()) body.guest_name = guestName.trim();
+      if (guestEmail.trim()) body.guest_email = guestEmail.trim();
+      if (guestPhone.trim()) body.guest_phone = guestPhone.trim();
       const res = await fetch(`${getApiBaseUrl()}/blog/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: newTitle.trim(),
-          content: newContent.trim(),
-          cover_image_url: newCover.trim() || null,
-          tags: tagsList,
-          status: "published"
-        })
+        body: JSON.stringify(body)
       });
       if (res.ok) {
         setShowCreateModal(false);
         setNewTitle(""); setNewContent(""); setNewCover(""); setNewTags("");
+        setGuestName(""); setGuestEmail(""); setGuestPhone("");
         fetchBlogs(1);
       } else {
         alert("Failed to publish blog post.");
@@ -425,6 +434,46 @@ export default function BlogPage() {
                     onChange={(e) => setNewTitle(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 text-sm focus:outline-none focus:border-amber-500"
                   />
+                </div>
+
+                {/* Guest Author Info */}
+                <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 space-y-3">
+                  <p className="text-xs font-bold text-amber-700 uppercase tracking-wider">👤 Your Details (as author)</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-[11px] font-semibold text-zinc-600 block mb-1">Full Name *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Your name"
+                        value={guestName}
+                        onChange={(e) => setGuestName(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-sm focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-zinc-600 block mb-1">Email *</label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="you@email.com"
+                        value={guestEmail}
+                        onChange={(e) => setGuestEmail(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-sm focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-zinc-600 block mb-1">Phone *</label>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="9876543210"
+                        value={guestPhone}
+                        onChange={(e) => setGuestPhone(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-sm focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-2">

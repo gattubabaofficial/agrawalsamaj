@@ -31,6 +31,10 @@ class BlogCreate(BaseModel):
     cover_image_url: Optional[str] = None
     tags: Optional[List[str]] = None
     status: BlogStatus = BlogStatus.DRAFT
+    # Guest author info — required when not logged in
+    guest_name: Optional[str] = None
+    guest_email: Optional[str] = None
+    guest_phone: Optional[str] = None
 
 
 class BlogUpdate(BaseModel):
@@ -86,10 +90,19 @@ def comment_dict(comment: BlogComment, include_replies: bool = True) -> dict:
 
 
 def blog_dict(blog: Blog, like_count: int = 0, user_liked: bool = False, comment_count: int = 0) -> dict:
+    # If guest fields are set, show guest as the display author
+    author_display = user_dict(blog.author) if blog.author else None
+    if getattr(blog, 'guest_name', None):
+        author_display = {
+            "user_id": None,
+            "first_name": blog.guest_name,
+            "surname": "",
+            "profile_photo": None,
+        }
     return {
         "blog_id": str(blog.blog_id),
         "author_id": str(blog.author_id),
-        "author": user_dict(blog.author) if blog.author else None,
+        "author": author_display,
         "title": blog.title,
         "slug": blog.slug,
         "content": blog.content,
@@ -97,6 +110,9 @@ def blog_dict(blog: Blog, like_count: int = 0, user_liked: bool = False, comment
         "tags": blog.tags or [],
         "status": blog.status,
         "views": blog.views,
+        "guest_name": getattr(blog, 'guest_name', None),
+        "guest_email": getattr(blog, 'guest_email', None),
+        "guest_phone": getattr(blog, 'guest_phone', None),
         "like_count": like_count,
         "user_liked": user_liked,
         "comment_count": comment_count,
@@ -283,6 +299,14 @@ async def create_blog(
     """Allow anyone (logged in or guest) to write & publish a blog without prior verification."""
     author_id = current_user.user_id if current_user else None
     if not author_id:
+        # Guest must provide name, email, and phone
+        if not data.guest_name or not data.guest_name.strip():
+            raise HTTPException(status_code=400, detail="Name is required for guest authors")
+        if not data.guest_email or not data.guest_email.strip():
+            raise HTTPException(status_code=400, detail="Email is required for guest authors")
+        if not data.guest_phone or not data.guest_phone.strip():
+            raise HTTPException(status_code=400, detail="Phone number is required for guest authors")
+        # Assign to the first admin user for the FK constraint
         first_user = await db.scalar(select(User).order_by(User.created_at.asc()).limit(1))
         author_id = first_user.user_id if first_user else None
 
@@ -302,6 +326,9 @@ async def create_blog(
         cover_image_url=data.cover_image_url,
         tags=data.tags,
         status=data.status,
+        guest_name=data.guest_name.strip() if data.guest_name else None,
+        guest_email=data.guest_email.strip() if data.guest_email else None,
+        guest_phone=data.guest_phone.strip() if data.guest_phone else None,
     )
     db.add(blog)
     await db.commit()
