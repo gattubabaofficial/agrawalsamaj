@@ -53,6 +53,9 @@ async def on_startup():
             "ALTER TABLE users ADD COLUMN native_place_private BOOLEAN DEFAULT 0",
             "ALTER TABLE users ADD COLUMN bio_private BOOLEAN DEFAULT 0",
             "ALTER TABLE users ADD COLUMN custom_role_id VARCHAR(36)",
+            "ALTER TABLE blogs ADD COLUMN guest_name VARCHAR(200)",
+            "ALTER TABLE blogs ADD COLUMN guest_email VARCHAR(300)",
+            "ALTER TABLE blogs ADD COLUMN guest_phone VARCHAR(20)",
         ):
             try:
                 await conn.execute(text(ddl))
