@@ -297,48 +297,52 @@ async def create_blog(
     current_user: Optional[User] = Depends(get_optional_current_user),
 ):
     """Allow anyone (logged in or guest) to write & publish a blog without prior verification."""
-    author_id = current_user.user_id if current_user else None
-    if not author_id:
-        # Guest must provide name, email, and phone
-        if not data.guest_name or not data.guest_name.strip():
-            raise HTTPException(status_code=400, detail="Name is required for guest authors")
-        if not data.guest_email or not data.guest_email.strip():
-            raise HTTPException(status_code=400, detail="Email is required for guest authors")
-        if not data.guest_phone or not data.guest_phone.strip():
-            raise HTTPException(status_code=400, detail="Phone number is required for guest authors")
-        # Assign to the first admin user for the FK constraint
-        first_user = await db.scalar(select(User).order_by(User.created_at.asc()).limit(1))
-        author_id = first_user.user_id if first_user else None
+    try:
+        author_id = current_user.user_id if current_user else None
+        if not author_id:
+            # Guest must provide name, email, and phone
+            if not data.guest_name or not data.guest_name.strip():
+                raise HTTPException(status_code=400, detail="Name is required for guest authors")
+            if not data.guest_email or not data.guest_email.strip():
+                raise HTTPException(status_code=400, detail="Email is required for guest authors")
+            if not data.guest_phone or not data.guest_phone.strip():
+                raise HTTPException(status_code=400, detail="Phone number is required for guest authors")
+            # Assign to the first admin user for the FK constraint
+            first_user = await db.scalar(select(User).order_by(User.created_at.asc()).limit(1))
+            author_id = first_user.user_id if first_user else None
 
-    base_slug = slugify(data.title)
-    slug = base_slug
-    # Ensure slug uniqueness
-    counter = 1
-    while await db.scalar(select(Blog).where(Blog.slug == slug)):
-        slug = f"{base_slug}-{counter}"
-        counter += 1
+        base_slug = slugify(data.title)
+        slug = base_slug
+        # Ensure slug uniqueness
+        counter = 1
+        while await db.scalar(select(Blog).where(Blog.slug == slug)):
+            slug = f"{base_slug}-{counter}"
+            counter += 1
 
-    blog = Blog(
-        author_id=author_id,
-        title=data.title,
-        slug=slug,
-        content=data.content,
-        cover_image_url=data.cover_image_url,
-        tags=data.tags,
-        status=data.status,
-        guest_name=data.guest_name.strip() if data.guest_name else None,
-        guest_email=data.guest_email.strip() if data.guest_email else None,
-        guest_phone=data.guest_phone.strip() if data.guest_phone else None,
-    )
-    db.add(blog)
-    await db.commit()
-    await db.refresh(blog)
-    # Load author relationship for the response
-    result = await db.execute(
-        select(Blog).options(selectinload(Blog.author)).where(Blog.blog_id == blog.blog_id)
-    )
-    blog = result.scalar_one()
-    return blog_dict(blog)
+        blog = Blog(
+            author_id=author_id,
+            title=data.title,
+            slug=slug,
+            content=data.content,
+            cover_image_url=data.cover_image_url,
+            tags=data.tags,
+            status=data.status,
+            guest_name=data.guest_name.strip() if data.guest_name else None,
+            guest_email=data.guest_email.strip() if data.guest_email else None,
+            guest_phone=data.guest_phone.strip() if data.guest_phone else None,
+        )
+        db.add(blog)
+        await db.commit()
+        await db.refresh(blog)
+        # Load author relationship for the response
+        result = await db.execute(
+            select(Blog).options(selectinload(Blog.author)).where(Blog.blog_id == blog.blog_id)
+        )
+        blog = result.scalar_one()
+        return blog_dict(blog)
+    except Exception as e:
+        import traceback
+        return {"debug_error": str(e), "traceback": traceback.format_exc()}
 
 
 @router.get("/id/{blog_id}")
