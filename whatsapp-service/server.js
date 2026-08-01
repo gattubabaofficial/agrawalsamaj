@@ -81,7 +81,6 @@ const client = new Client({
       "--disable-gpu",
       "--no-first-run",
       "--no-zygote",
-      "--single-process", // Highly reduces memory by running renderer in same process
       "--disable-accelerated-2d-canvas",
       "--disable-background-networking",
       "--disable-default-apps",
