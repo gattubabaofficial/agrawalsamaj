@@ -77,12 +77,12 @@ export default function AdminCustomRolesPage() {
 
   const fetchMembers = async () => {
     try {
-      const res = await fetch(`${getApiBaseUrl()}/admin/members?per_page=100`, {
+      const res = await fetch(`${getApiBaseUrl()}/membership/members`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
-        setMembers(data.items || []);
+        setMembers(Array.isArray(data) ? data : (data.items || []));
       }
     } catch (err) {
       console.error(err);
