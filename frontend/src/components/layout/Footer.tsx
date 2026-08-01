@@ -33,6 +33,8 @@ const COLUMNS = [
     heading: "Samaj Network",
     links: [
       { label: "Agrawal Matrimony (वैवाहिक)", href: "https://www.agrawalmatrimony.org" },
+      { label: "Agarwal 2 Agarwal Matrimony", href: "https://www.agarwal2agarwal.org" },
+      { label: "Akhil Bhartiya Agrawal Sammelan", href: "https://abasofficial.com" },
       { label: "Agroha Dham (अग्रोहा धाम)", href: "https://www.agrohadham.org" },
       { label: "Agrasen Foundation", href: "https://www.agrasenfoundation.org" },
       { label: "Agrawal Business Guild", href: "https://www.agrawalbusiness.org" },

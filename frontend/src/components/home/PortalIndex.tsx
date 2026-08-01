@@ -123,6 +123,39 @@ const ALL_SITES: SiteEntry[] = [
     icon: "💼",
     isExternal: true,
   },
+  {
+    title: "अग्रवाल 2 अग्रवाल वैवाहिक सेवा",
+    subtitle: "Agarwal 2 Agarwal Matrimony",
+    href: "https://www.agarwal2agarwal.org",
+    blurb: "Non-profit matrimonial initiative matching brides & grooms specifically within the Agarwal Samaj.",
+    category: "matrimony",
+    tag: "Matrimonial",
+    action: "Visit Site",
+    icon: "💍",
+    isExternal: true,
+  },
+  {
+    title: "अखिल भारतीय अग्रवाल सम्मेलन",
+    subtitle: "Akhil Bhartiya Agrawal Sammelan",
+    href: "https://abasofficial.com",
+    blurb: "Apex national organization bringing together Agrawal families across India for social and welfare initiatives.",
+    category: "network",
+    tag: "National Samaj",
+    action: "Visit Site",
+    icon: "🏛️",
+    isExternal: true,
+  },
+  {
+    title: "अग्रवाल संगम वैवाहिक मंच",
+    subtitle: "Agarwal Sangam",
+    href: "https://www.sangam.com",
+    blurb: "Verified Agarwal matrimonial profiles by Shaadi.com focused on family details, gotras, and professions.",
+    category: "matrimony",
+    tag: "Matrimonial",
+    action: "Visit Site",
+    icon: "💑",
+    isExternal: true,
+  },
 ];
 
 export default function PortalIndex() {
@@ -151,7 +184,7 @@ export default function PortalIndex() {
         <Reveal delay={0.1}>
           <div className="flex flex-wrap gap-2 bg-paper-2 p-1.5 rounded-2xl border border-rule">
             {[
-              { id: "all", label: "🌐 All Sites (10)" },
+              { id: "all", label: `🌐 All Sites (${ALL_SITES.length})` },
               { id: "portal", label: "🏢 Samaj Portals" },
               { id: "matrimony", label: "💍 Matrimonial" },
               { id: "network", label: "🤝 Community Network" },
