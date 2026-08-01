@@ -156,7 +156,8 @@ export default function BlogPage() {
         setGuestName(""); setGuestEmail(""); setGuestPhone("");
         fetchBlogs(1);
       } else {
-        alert("Failed to publish blog post.");
+        const errData = await res.json().catch(() => null);
+        alert(errData?.detail || "Failed to publish blog post.");
       }
     } catch (err) {
       alert("Failed to publish blog post.");
