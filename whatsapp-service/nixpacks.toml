@@ -1,5 +1,5 @@
 [providers]
-  node = "18"
+  node = "20"
 
 [phases.build]
   cmds = ["npm ci"]
