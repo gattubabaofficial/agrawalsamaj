@@ -194,10 +194,11 @@ export default function AdminCustomRolesPage() {
         fetchRoles();
         fetchMembers();
       } else {
-        alert("Failed to assign role.");
+        const err = await res.json().catch(() => ({ detail: "Failed to assign role." }));
+        alert(err.detail || "Failed to assign role.");
       }
-    } catch {
-      alert("Failed to assign role.");
+    } catch (err: any) {
+      alert(err?.message || "Failed to assign role.");
     } finally {
       setAssigning(false);
     }
