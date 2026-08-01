@@ -28,6 +28,8 @@ app = FastAPI(
 )
 
 
+@app.on_event("startup")
+async def on_startup():
     # SQLite's create_all only creates missing tables, never adds columns to an
     # existing one. Add newer columns idempotently (each ALTER fails harmlessly
     # once the column already exists).
