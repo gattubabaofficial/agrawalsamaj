@@ -101,3 +101,15 @@ class BlogLike(Base):
     blog: Mapped[Blog] = relationship("Blog", back_populates="likes")
     user: Mapped[Optional["User"]] = relationship("User")  # type: ignore[name-defined]
 
+
+from sqlalchemy import LargeBinary
+
+class UploadedFile(Base, TimestampMixin):
+    __tablename__ = "uploaded_files"
+
+    file_id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    filename: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    mimetype: Mapped[str] = mapped_column(String(100), nullable=False)
+    data: Mapped[LargeBinary] = mapped_column(LargeBinary, nullable=False)
+
+

@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 # Load environment variables before any other imports
 load_dotenv(override=True)
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.routers.auth import router as auth_router
@@ -37,6 +37,7 @@ async def on_startup():
     import app.models.user
     import app.models.requests
     import app.models.role
+    import app.models.blog
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         
@@ -80,6 +81,32 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/uploads/{category}/{filename}")
+async def serve_upload_file(category: str, filename: str):
+    from app.models.blog import UploadedFile
+    from app.database import get_db_session
+    from sqlalchemy import select
+    
+    try:
+        async for db in get_db_session():
+            result = await db.execute(select(UploadedFile).where(UploadedFile.filename == filename))
+            db_file = result.scalars().first()
+            if db_file:
+                return Response(content=db_file.data, media_type=db_file.mimetype)
+    except Exception as e:
+        print(f"Error reading file from DB: {e}")
+            
+    local_path = Path("uploads") / category / filename
+    if local_path.exists():
+        import mimetypes
+        mimetype, _ = mimetypes.guess_type(str(local_path))
+        return Response(content=local_path.read_bytes(), media_type=mimetype or "application/octet-stream")
+        
+    from fastapi import HTTPException
+    raise HTTPException(status_code=404, detail="File not found")
+
 
 static_dir = Path("static")
 static_dir.mkdir(parents=True, exist_ok=True)

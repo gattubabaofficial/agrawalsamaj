@@ -175,6 +175,15 @@ async def upload_file(
     with open(file_path, "wb") as f:
         f.write(contents)
 
+    from app.models.blog import UploadedFile
+    db_file = UploadedFile(
+        filename=unique_name,
+        mimetype=file.content_type or "application/octet-stream",
+        data=contents
+    )
+    db.add(db_file)
+    await db.commit()
+
     file_url = f"/uploads/blogs/{unique_name}"
     return {"url": file_url, "filename": unique_name}
 
