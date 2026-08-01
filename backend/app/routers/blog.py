@@ -295,7 +295,7 @@ async def create_blog(
         counter += 1
 
     blog = Blog(
-        author_id=current_user.user_id,
+        author_id=author_id,
         title=data.title,
         slug=slug,
         content=data.content,
@@ -306,7 +306,11 @@ async def create_blog(
     db.add(blog)
     await db.commit()
     await db.refresh(blog)
-    blog.author = current_user
+    # Load author relationship for the response
+    result = await db.execute(
+        select(Blog).options(selectinload(Blog.author)).where(Blog.blog_id == blog.blog_id)
+    )
+    blog = result.scalar_one()
     return blog_dict(blog)
 
 
