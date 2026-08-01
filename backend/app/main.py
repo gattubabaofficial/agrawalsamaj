@@ -28,39 +28,39 @@ app = FastAPI(
 )
 
 
-@app.on_event("startup")
-async def on_startup():
+    # SQLite's create_all only creates missing tables, never adds columns to an
+    # existing one. Add newer columns idempotently (each ALTER fails harmlessly
+    # once the column already exists).
     from app.database import engine, Base
     import app.models.user
     import app.models.requests
     import app.models.role
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        # SQLite's create_all only creates missing tables, never adds columns to an
-        # existing one. Add newer columns idempotently (each ALTER fails harmlessly
-        # once the column already exists).
-        from sqlalchemy import text
-        for ddl in (
-            "ALTER TABLE users ADD COLUMN father_name VARCHAR(100)",
-            "ALTER TABLE users ADD COLUMN lm_no INTEGER",
-            "ALTER TABLE users ADD COLUMN zone VARCHAR(60)",
-            "ALTER TABLE users ADD COLUMN house_no VARCHAR(60)",
-            "ALTER TABLE users ADD COLUMN contact_mobile VARCHAR(20)",
-            "ALTER TABLE users ADD COLUMN member_status VARCHAR(30) DEFAULT 'active'",
-            "ALTER TABLE users ADD COLUMN native_place VARCHAR(200)",
-            "ALTER TABLE users ADD COLUMN bio VARCHAR(1000)",
-            "ALTER TABLE users ADD COLUMN profession_private BOOLEAN DEFAULT 0",
-            "ALTER TABLE users ADD COLUMN native_place_private BOOLEAN DEFAULT 0",
-            "ALTER TABLE users ADD COLUMN bio_private BOOLEAN DEFAULT 0",
-            "ALTER TABLE users ADD COLUMN custom_role_id VARCHAR(36)",
-            "ALTER TABLE blogs ADD COLUMN guest_name VARCHAR(200)",
-            "ALTER TABLE blogs ADD COLUMN guest_email VARCHAR(300)",
-            "ALTER TABLE blogs ADD COLUMN guest_phone VARCHAR(20)",
-        ):
-            try:
+        
+    from sqlalchemy import text
+    for ddl in (
+        "ALTER TABLE users ADD COLUMN father_name VARCHAR(100)",
+        "ALTER TABLE users ADD COLUMN lm_no INTEGER",
+        "ALTER TABLE users ADD COLUMN zone VARCHAR(60)",
+        "ALTER TABLE users ADD COLUMN house_no VARCHAR(60)",
+        "ALTER TABLE users ADD COLUMN contact_mobile VARCHAR(20)",
+        "ALTER TABLE users ADD COLUMN member_status VARCHAR(30) DEFAULT 'active'",
+        "ALTER TABLE users ADD COLUMN native_place VARCHAR(200)",
+        "ALTER TABLE users ADD COLUMN bio VARCHAR(1000)",
+        "ALTER TABLE users ADD COLUMN profession_private BOOLEAN DEFAULT 0",
+        "ALTER TABLE users ADD COLUMN native_place_private BOOLEAN DEFAULT 0",
+        "ALTER TABLE users ADD COLUMN bio_private BOOLEAN DEFAULT 0",
+        "ALTER TABLE users ADD COLUMN custom_role_id VARCHAR(36)",
+        "ALTER TABLE blogs ADD COLUMN guest_name VARCHAR(200)",
+        "ALTER TABLE blogs ADD COLUMN guest_email VARCHAR(300)",
+        "ALTER TABLE blogs ADD COLUMN guest_phone VARCHAR(20)",
+    ):
+        try:
+            async with engine.begin() as conn:
                 await conn.execute(text(ddl))
-            except Exception:
-                pass
+        except Exception:
+            pass
 
 
 # CORS middleware configuration - allow all origins for online deployment (Vercel / Render / Custom Domain)
