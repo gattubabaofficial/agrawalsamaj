@@ -358,6 +358,22 @@ async def debug_files():
         return {"error": str(e)}
 
 
+@router.get("/debug/settings")
+async def debug_settings():
+    """Temporary debug route to check server environment variables."""
+    import re
+    db_masked = re.sub(r":[^:]+@", ":***@", settings.DATABASE_URL) if settings.DATABASE_URL else None
+    key_masked = "***" if settings.WHATSAPP_WEB_API_KEY else None
+    return {
+        "WHATSAPP_WEB_URL": settings.WHATSAPP_WEB_URL,
+        "WHATSAPP_PROVIDER": settings.WHATSAPP_PROVIDER,
+        "OTP_PREFER_WHATSAPP": settings.OTP_PREFER_WHATSAPP,
+        "ENVIRONMENT": settings.ENVIRONMENT,
+        "DATABASE_URL_MASKED": db_masked,
+        "WHATSAPP_WEB_API_KEY_MASKED": key_masked,
+    }
+
+
 @router.get("/id/{blog_id}")
 async def get_blog_by_id(
     blog_id: uuid.UUID,
