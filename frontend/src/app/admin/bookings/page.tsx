@@ -302,6 +302,7 @@ export default function AdminBookingsPage() {
                       <option value="room">Room</option>
                       <option value="hall">Hall</option>
                       <option value="facility">Facility</option>
+                      <option value="dormitory">Dormitory</option>
                     </select>
                   </div>
                 </div>
