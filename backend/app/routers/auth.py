@@ -2,7 +2,7 @@ import random
 import re
 import string
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
@@ -231,7 +231,7 @@ async def phone_send_otp(payload: PhoneOtpSendRequest, db: AsyncSession = Depend
         raise HTTPException(status_code=400, detail="Invalid mobile number format.")
 
     # 1. Rate limiting
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     one_hour_ago = now - timedelta(hours=1)
     
     recent_requests_query = await db.execute(
@@ -299,9 +299,9 @@ async def phone_verify_otp(payload: PhoneOtpVerifyRequest, db: AsyncSession = De
     if otp_req.attempts >= 5:
         raise HTTPException(status_code=400, detail="Maximum verification attempts exceeded. Request a new OTP.")
 
-    now = datetime.utcnow()
-    expires_naive = otp_req.expires_at.replace(tzinfo=None) if otp_req.expires_at.tzinfo else otp_req.expires_at
-    if expires_naive < now:
+    now = datetime.now(timezone.utc)
+    expires_at = otp_req.expires_at if otp_req.expires_at.tzinfo else otp_req.expires_at.replace(tzinfo=timezone.utc)
+    if expires_at < now:
         raise HTTPException(status_code=400, detail="OTP has expired. Request a new one.")
 
     # 2. Verify hash
@@ -359,7 +359,7 @@ async def email_send_otp(payload: EmailOtpSendRequest, db: AsyncSession = Depend
         raise HTTPException(status_code=400, detail="This email address is already registered.")
 
     # 2. Rate limiting
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     one_hour_ago = now - timedelta(hours=1)
     
     recent_requests_query = await db.execute(
@@ -451,9 +451,9 @@ async def email_verify_otp(payload: EmailOtpVerifyRequest, db: AsyncSession = De
     if otp_req.attempts >= 5:
         raise HTTPException(status_code=400, detail="Maximum verification attempts exceeded. Request a new OTP.")
 
-    now = datetime.utcnow()
-    expires_naive = otp_req.expires_at.replace(tzinfo=None) if otp_req.expires_at.tzinfo else otp_req.expires_at
-    if expires_naive < now:
+    now = datetime.now(timezone.utc)
+    expires_at = otp_req.expires_at if otp_req.expires_at.tzinfo else otp_req.expires_at.replace(tzinfo=timezone.utc)
+    if expires_at < now:
         raise HTTPException(status_code=400, detail="OTP has expired. Request a new one.")
 
     # 2. Verify hash
@@ -492,7 +492,7 @@ async def send_otp(
         )
 
     otp_code = "".join(random.choices(string.digits, k=6))
-    expires_at = datetime.utcnow() + timedelta(minutes=10)
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
 
     otp_log = OtpLog(
         target=normalized_val,
@@ -556,9 +556,9 @@ async def verify_otp_and_register(
         if otp_log is None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid OTP code.")
 
-        now = datetime.utcnow()
-        expires_naive = otp_log.expires_at.replace(tzinfo=None) if otp_log.expires_at.tzinfo else otp_log.expires_at
-        if expires_naive < now:
+        now = datetime.now(timezone.utc)
+        expires_at = otp_log.expires_at if otp_log.expires_at.tzinfo else otp_log.expires_at.replace(tzinfo=timezone.utc)
+        if expires_at < now:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OTP code has expired.")
         
         otp_log.is_used = True
