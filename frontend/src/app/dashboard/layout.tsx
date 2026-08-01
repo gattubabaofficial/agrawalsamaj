@@ -19,7 +19,10 @@ import {
   Contact,
   BookOpen,
   Menu,
-  X
+  X,
+  QrCode,
+  CalendarRange,
+  Ticket
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
