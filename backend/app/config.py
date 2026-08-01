@@ -52,7 +52,7 @@ class Settings(BaseSettings):
     # whatsapp-web.js sidecar (see /whatsapp-service)
     WHATSAPP_WEB_URL: str = "http://localhost:3001"
     WHATSAPP_WEB_API_KEY: str = ""
-    WHATSAPP_WEB_TIMEOUT: int = 60
+    WHATSAPP_WEB_TIMEOUT: int = 300
 
     # Deliver phone OTPs over WhatsApp, falling back to SMS when the sidecar
     # is down or the number has no WhatsApp account. Set false to go back to
