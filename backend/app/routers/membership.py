@@ -477,7 +477,8 @@ async def list_members(
             "native_place_private": getattr(u, "native_place_private", False),
             "bio_private": getattr(u, "bio_private", False),
             "role": u.role.value if hasattr(u.role, "value") else str(u.role),
-            "is_member": u.is_member
+            "is_member": u.is_member,
+            "custom_role_id": str(u.custom_role_id) if u.custom_role_id else None
         })
     return data
 

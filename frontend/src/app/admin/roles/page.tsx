@@ -209,6 +209,12 @@ export default function AdminCustomRolesPage() {
     return fullName.includes(q) || (m.mobile && m.mobile.includes(q));
   });
 
+  const getMemberCustomRoleName = (customRoleId: string | null | undefined) => {
+    if (!customRoleId) return null;
+    const role = roles.find((r) => r.role_id === customRoleId);
+    return role ? role.name : null;
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -480,13 +486,23 @@ export default function AdminCustomRolesPage() {
                   {filteredMembers.slice(0, 10).map((m) => (
                     <div
                       key={m.user_id}
-                      onClick={() => setSelectedMember(m)}
+                      onClick={() => {
+                        setSelectedMember(m);
+                        setAssignRoleId(m.custom_role_id || "");
+                      }}
                       className={`p-2.5 flex items-center justify-between cursor-pointer transition-colors ${
                         selectedMember?.user_id === m.user_id ? "bg-amber-100/70 text-amber-900 font-bold" : "hover:bg-white"
                       }`}
                     >
                       <div>
-                        <p className="text-xs font-semibold">{m.first_name} {m.surname}</p>
+                        <p className="text-xs font-semibold">
+                          {m.first_name} {m.surname}
+                          {m.custom_role_id && (
+                            <span className="ml-2 inline-block px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-bold">
+                              {getMemberCustomRoleName(m.custom_role_id) || "Custom Role"}
+                            </span>
+                          )}
+                        </p>
                         <p className="text-[11px] text-zinc-500">{m.mobile || m.email || "No contact"}</p>
                       </div>
                       {selectedMember?.user_id === m.user_id && <Check className="w-4 h-4 text-amber-600" />}
