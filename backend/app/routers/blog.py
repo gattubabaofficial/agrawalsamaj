@@ -345,6 +345,19 @@ async def create_blog(
         return {"debug_error": str(e), "traceback": traceback.format_exc()}
 
 
+@router.get("/debug/files")
+async def debug_files():
+    """Temporary debug route to list uploaded files."""
+    try:
+        path = Path("uploads/blogs")
+        if not path.exists():
+            return {"exists": False, "message": "uploads/blogs directory does not exist"}
+        files = [f.name for f in path.iterdir() if f.is_file()]
+        return {"exists": True, "files": files, "count": len(files)}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @router.get("/id/{blog_id}")
 async def get_blog_by_id(
     blog_id: uuid.UUID,
