@@ -208,8 +208,11 @@ function normalizePhone(raw) {
 async function resolveChatId(phone) {
   const digits = normalizePhone(phone);
   if (!digits) return null;
-  const numberId = await client.getNumberId(digits);
-  return numberId ? numberId._serialized : null;
+  
+  // By-pass getNumberId() because recent WhatsApp Web updates cause it to return 
+  // an internal @lid instead of @c.us, which causes sendMessage to silently fail 
+  // without throwing any error.
+  return `${digits}@c.us`;
 }
 
 function requireApiKey(req, res, next) {
