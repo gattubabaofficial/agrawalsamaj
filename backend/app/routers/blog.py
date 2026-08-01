@@ -361,6 +361,7 @@ async def debug_files():
 @router.get("/debug/settings")
 async def debug_settings():
     """Temporary debug route to check server environment variables."""
+    from app.config import settings
     import re
     db_masked = re.sub(r":[^:]+@", ":***@", settings.DATABASE_URL) if settings.DATABASE_URL else None
     key_masked = "***" if settings.WHATSAPP_WEB_API_KEY else None
