@@ -59,6 +59,7 @@ def send_whatsapp_web_qr(
     event_name: str,
     pass_number: int,
     total_passes: int,
+    caption: str | None = None,
 ) -> str:
     """Send the pass QR through the whatsapp-web.js sidecar.
 
@@ -70,12 +71,13 @@ def send_whatsapp_web_qr(
         logger.error("QR image not found at %s; cannot send pass.", qr_file_path)
         return "failed_sid"
 
-    caption = (
-        f"🎟️ *{event_name}*\n\n"
-        f"Your entry pass {pass_number} of {total_passes} is attached.\n"
-        f"Please show this QR code at the venue entrance.\n\n"
-        f"— Agrawal Samaj Mansrovar Jaipur"
-    )
+    if not caption:
+        caption = (
+            f"🎟️ *{event_name}*\n\n"
+            f"Your entry pass {pass_number} of {total_passes} is attached.\n"
+            f"Please show this QR code at the venue entrance.\n\n"
+            f"— Agrawal Samaj Mansrovar Jaipur"
+        )
 
     try:
         encoded = base64.b64encode(Path(qr_file_path).read_bytes()).decode("ascii")
@@ -301,6 +303,7 @@ def send_whatsapp_qr(
     pass_number: int,
     total_passes: int,
     qr_file_path: Path | None = None,
+    caption: str | None = None,
 ) -> str:
     """Deliver a pass QR over WhatsApp using the configured provider.
 
@@ -333,6 +336,7 @@ def send_whatsapp_qr(
         event_name=event_name,
         pass_number=pass_number,
         total_passes=total_passes,
+        caption=caption,
     )
 
 from app.database import SessionLocal
@@ -360,16 +364,33 @@ async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = Fal
             logger.info(f"Passes already delivered for {registration_id}")
             return
 
-        # Determine phone number
+        # Determine phone number & attendee name
         user_phone = registration.guest_phone
-        if not user_phone and registration.user_id:
+        attendee_name = registration.guest_name
+        
+        if registration.user_id:
             from app.models.user import User
             user_res = await db.execute(select(User).filter(User.user_id == registration.user_id))
             user = user_res.scalar_one_or_none()
             if user:
-                user_phone = user.mobile
-                
+                if not user_phone:
+                    user_phone = user.mobile
+                if not attendee_name:
+                    attendee_name = f"{user.first_name} {user.surname or ''}".strip()
+                    
         user_phone = user_phone.strip() if user_phone else None
+        if not attendee_name:
+            attendee_name = "Valued Guest"
+
+        # Format Event Date
+        event_date_str = event.start_datetime.strftime("%d %B %Y at %I:%M %p")
+        
+        # Format Venue/Address
+        venue_str = event.venue or ""
+        if event.address:
+            venue_str += f" ({event.address})"
+        if not venue_str:
+            venue_str = "Not Specified"
 
         # Check if we already have passes for this registration
         pass_result = await db.execute(
@@ -389,6 +410,16 @@ async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = Fal
                         logger.info("QR image missing for pass %s, regenerating.", event_pass.pass_id)
                         _, qr_file = generate_qr_code(event_pass.pass_id)
 
+                    caption = (
+                        f"🎟️ *{event.title}*\n\n"
+                        f"Hello *{attendee_name}*,\n"
+                        f"Your entry pass {pass_number} of {len(existing_passes)} is attached.\n\n"
+                        f"📅 *Date:* {event_date_str}\n"
+                        f"📍 *Venue:* {venue_str}\n\n"
+                        f"Please show this QR code at the venue entrance.\n\n"
+                        f"— Agrawal Samaj Mansrovar Jaipur"
+                    )
+
                     message_sid = await asyncio.to_thread(
                         send_whatsapp_qr,
                         to_number=user_phone,
@@ -397,6 +428,7 @@ async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = Fal
                         pass_number=pass_number,
                         total_passes=len(existing_passes),
                         qr_file_path=qr_file,
+                        caption=caption,
                     )
                     
                     event_pass.whatsapp_message_sid = message_sid
@@ -443,6 +475,17 @@ async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = Fal
         if user_phone:
             for idx, (event_pass, qr_url, qr_file) in enumerate(pass_records):
                 pass_number = idx + 1
+                
+                caption = (
+                    f"🎟️ *{event.title}*\n\n"
+                    f"Hello *{attendee_name}*,\n"
+                    f"Your entry pass {pass_number} of {registration.pass_count} is attached.\n\n"
+                    f"📅 *Date:* {event_date_str}\n"
+                    f"📍 *Venue:* {venue_str}\n\n"
+                    f"Please show this QR code at the venue entrance.\n\n"
+                    f"— Agrawal Samaj Mansrovar Jaipur"
+                )
+
                 message_sid = await asyncio.to_thread(
                     send_whatsapp_qr,
                     to_number=user_phone,
@@ -451,6 +494,7 @@ async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = Fal
                     pass_number=pass_number,
                     total_passes=registration.pass_count,
                     qr_file_path=qr_file,
+                    caption=caption,
                 )
 
                 event_pass.whatsapp_message_sid = message_sid
