@@ -89,8 +89,7 @@ const client = new Client({
       "--disable-translate",
       "--metrics-recording-only",
       "--mute-audio",
-      "--no-default-browser-check",
-      "--js-flags=--max-old-space-size=250"
+      "--no-default-browser-check"
     ],
   },
 });
