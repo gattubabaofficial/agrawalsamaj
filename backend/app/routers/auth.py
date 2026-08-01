@@ -828,6 +828,15 @@ class ProfileUpdate(BaseModel):
     bio_private: Optional[bool] = None
     profile_photo: Optional[str] = None
 
+class CustomRoleResponse(BaseModel):
+    role_id: uuid.UUID
+    name: str
+    description: Optional[str] = None
+    permissions: list[str] = []
+
+    class Config:
+        from_attributes = True
+
 class ProfileResponse(BaseModel):
     first_name: str
     surname: str
@@ -847,6 +856,8 @@ class ProfileResponse(BaseModel):
     profile_photo: Optional[str] = None
     is_member: bool
     role: str
+    custom_role_id: Optional[uuid.UUID] = None
+    custom_role: Optional[CustomRoleResponse] = None
     
     class Config:
         from_attributes = True

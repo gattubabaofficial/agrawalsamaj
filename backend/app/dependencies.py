@@ -57,8 +57,12 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid user ID format",
         )
-    
-    result = await db.execute(select(User).where(User.user_id == user_uuid))
+    from sqlalchemy.orm import selectinload
+    result = await db.execute(
+        select(User)
+        .options(selectinload(User.custom_role))
+        .where(User.user_id == user_uuid)
+    )
     user = result.scalars().first()
     if user is None:
         raise HTTPException(

@@ -32,6 +32,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isClient, setIsClient] = useState(false);
   const [role, setRole] = useState<string>("");
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [permissions, setPermissions] = useState<string[]>([]);
+  const [customRoleName, setCustomRoleName] = useState<string>("");
+  const [loadingMe, setLoadingMe] = useState(true);
+  const [userName, setUserName] = useState<string>("");
+  const [userEmail, setUserEmail] = useState<string>("");
   const [isManagementOpen, setIsManagementOpen] = useState(
     pathname.startsWith("/admin") &&
     !["/admin/profile", "/admin/family", "/admin/my-events", "/admin/my-bookings", "/admin/my-donations", "/admin/chat"].includes(pathname)
@@ -43,13 +48,46 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const storedRole = localStorage.getItem("userRole");
     setRole((storedRole || "").toUpperCase());
 
-    const r = storedRole?.toUpperCase();
-    if (!token || (r !== "ADMIN" && r !== "SUPER_ADMIN" && r !== "VOLUNTEER")) {
+    if (!token) {
       router.push("/admin-login");
-    } else if (r === "VOLUNTEER" && pathname === "/admin/dashboard") {
-      router.push("/admin/scan");
+      return;
     }
-  }, [router]);
+
+    const fetchMe = async () => {
+      try {
+        const { getApiBaseUrl } = await import("@/utils/api");
+        const res = await fetch(`${getApiBaseUrl()}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const p = data.custom_role?.permissions || [];
+          setPermissions(p);
+          setCustomRoleName(data.custom_role?.name || "");
+          setUserName(`${data.first_name} ${data.surname || ""}`);
+          setUserEmail(data.email || data.mobile || "");
+          
+          const r = (storedRole || "").toUpperCase();
+          const isAllowedRole = ["ADMIN", "SUPER_ADMIN", "VOLUNTEER"].includes(r);
+          const hasCustomRole = data.custom_role && p.length > 0;
+          
+          if (!isAllowedRole && !hasCustomRole) {
+            router.push("/admin-login");
+          } else if (r === "VOLUNTEER" && pathname === "/admin/dashboard" && !hasCustomRole) {
+            router.push("/admin/scan");
+          }
+        } else {
+          router.push("/admin-login");
+        }
+      } catch (err) {
+        console.error("Error fetching me profile in admin:", err);
+        router.push("/admin-login");
+      } finally {
+        setLoadingMe(false);
+      }
+    };
+    fetchMe();
+  }, [router, pathname]);
 
   useEffect(() => {
     const isGeneral = ["/admin/profile", "/admin/family", "/admin/my-events", "/admin/my-bookings", "/admin/my-donations", "/admin/chat"].includes(pathname);
@@ -76,6 +114,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isAdmin = role === "ADMIN";
   const isVolunteer = role === "VOLUNTEER";
 
+  const hasPermission = (perm: string) => {
+    if (isSuperAdmin || isAdmin) return true;
+    return permissions.includes(perm);
+  };
+
   const generalItems = [
     { name: "My Profile", href: "/admin/profile", icon: User },
     ...(isSuperAdmin || isAdmin ? [{ name: "My Performance", href: "/admin/performance", icon: Shield }] : []),
@@ -87,27 +130,39 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ];
 
   const managementItems = [
-    ...(isSuperAdmin || isAdmin ? [{ name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard }] : []),
+    ...((isSuperAdmin || isAdmin || permissions.length > 0) ? [{ name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard }] : []),
     ...(isSuperAdmin ? [{ name: "Admin Management", href: "/admin/admins", icon: Shield }] : []),
-    ...(isSuperAdmin || isAdmin ? [
+    ...((isSuperAdmin || isAdmin || hasPermission("manage_members")) ? [
       { name: "Membership Requests", href: "/admin/requests", icon: UserPlus },
       { name: "Members Directory", href: "/admin/members", icon: Contact },
+    ] : []),
+    ...((isSuperAdmin || isAdmin || hasPermission("manage_events")) ? [
       { name: "Events Management", href: "/admin/events", icon: Calendar },
     ] : []),
-    { name: "Pass Verification", href: "/admin/scan", icon: QrCode },
-    ...(isSuperAdmin || isAdmin ? [
+    ...((isSuperAdmin || isAdmin || isVolunteer || hasPermission("scan_passes")) ? [
+      { name: "Pass Verification", href: "/admin/scan", icon: QrCode },
+    ] : []),
+    ...((isSuperAdmin || isAdmin || hasPermission("manage_bhavan")) ? [
       { name: "Bhavan Bookings", href: "/admin/bookings", icon: Home },
       { name: "Room Pricing & Rules", href: "/admin/pricing", icon: Settings },
       { name: "Special Events", href: "/admin/special-events", icon: CalendarRange },
       { name: "Vouchers", href: "/admin/vouchers", icon: Ticket },
+    ] : []),
+    ...((isSuperAdmin || isAdmin || hasPermission("manage_donations")) ? [
       { name: "Donations Management", href: "/admin/donations", icon: Heart },
+    ] : []),
+    ...((isSuperAdmin || isAdmin || hasPermission("manage_bhavan")) ? [
       { name: "Receipts", href: "/admin/receipts", icon: BookOpen },
+    ] : []),
+    ...((isSuperAdmin || isAdmin || hasPermission("manage_blogs")) ? [
       { name: "Blog Management", href: "/admin/blog", icon: BookOpen },
+    ] : []),
+    ...((isSuperAdmin || isAdmin || hasPermission("manage_settings")) ? [
       { name: "Settings", href: "/admin/settings", icon: Settings },
     ] : [])
   ];
 
-  if (!isClient) return null; // Prevent hydration mismatch
+  if (!isClient || loadingMe) return null; // Prevent hydration mismatch & unauthorized flashing
 
   return (
     <div className="min-h-screen bg-zinc-50 flex flex-col md:flex-row">
@@ -212,12 +267,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
-                A
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white font-bold text-sm">
+                {userName ? userName.charAt(0).toUpperCase() : "A"}
               </div>
               <div className="hidden sm:block text-right">
-                <p className="text-sm font-medium text-zinc-900 leading-none">Administrator</p>
-                <p className="text-xs text-zinc-500 mt-1 leading-none">admin@gmail.com</p>
+                <p className="text-sm font-medium text-zinc-900 leading-none">{userName || "Administrator"}</p>
+                <p className="text-[10px] text-zinc-400 mt-1 leading-none">{customRoleName || (isSuperAdmin ? "Super Admin" : "Administrator")}</p>
               </div>
             </div>
             <button

@@ -28,6 +28,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [permissions, setPermissions] = useState<string[]>([]);
+  const [customRoleName, setCustomRoleName] = useState<string>("");
 
   useEffect(() => {
     setIsMobileNavOpen(false);
@@ -38,7 +40,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const token = localStorage.getItem("token");
     if (!token) {
       router.push("/login");
+      return;
     }
+
+    const fetchMe = async () => {
+      try {
+        const { getApiBaseUrl } = await import("@/utils/api");
+        const res = await fetch(`${getApiBaseUrl()}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.custom_role) {
+            setPermissions(data.custom_role.permissions || []);
+            setCustomRoleName(data.custom_role.name || "");
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching me profile:", err);
+      }
+    };
+    fetchMe();
   }, [router]);
 
   const handleLogout = () => {
@@ -50,7 +72,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const rawRole = typeof window !== "undefined" ? localStorage.getItem("userRole") : "GUEST";
   const role = rawRole ? rawRole.toUpperCase() : "GUEST";
-  const displayRole = role.charAt(0) + role.slice(1).toLowerCase();
+  const displayRole = customRoleName || (role.charAt(0) + role.slice(1).toLowerCase());
 
   const [isManagementOpen, setIsManagementOpen] = useState(pathname.startsWith("/admin") || pathname.startsWith("/dashboard"));
 
@@ -67,18 +89,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   ];
 
   const managementItems = [
-    { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-    { name: "Membership Requests", href: "/admin/requests", icon: UserPlus },
-    { name: "Members Directory", href: "/admin/members", icon: Contact },
-    { name: "Events Management", href: "/admin/events", icon: Calendar },
-    { name: "Bhavan Bookings", href: "/admin/bookings", icon: Home },
-    { name: "Donations Management", href: "/admin/donations", icon: Heart },
-    { name: "Settings", href: "/admin/settings", icon: Settings },
+    { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard, perm: "any" },
+    { name: "Membership Requests", href: "/admin/requests", icon: UserPlus, perm: "manage_members" },
+    { name: "Members Directory", href: "/admin/members", icon: Contact, perm: "manage_members" },
+    { name: "Events Management", href: "/admin/events", icon: Calendar, perm: "manage_events" },
+    { name: "Pass Verification", href: "/admin/scan", icon: QrCode, perm: "scan_passes" },
+    { name: "Bhavan Bookings", href: "/admin/bookings", icon: Home, perm: "manage_bhavan" },
+    { name: "Room Pricing & Rules", href: "/admin/pricing", icon: Settings, perm: "manage_bhavan" },
+    { name: "Special Events", href: "/admin/special-events", icon: CalendarRange, perm: "manage_bhavan" },
+    { name: "Vouchers", href: "/admin/vouchers", icon: Ticket, perm: "manage_bhavan" },
+    { name: "Donations Management", href: "/admin/donations", icon: Heart, perm: "manage_donations" },
+    { name: "Receipts", href: "/admin/receipts", icon: BookOpen, perm: "manage_bhavan" },
+    { name: "Blog Management", href: "/admin/blog", icon: BookOpen, perm: "manage_blogs" },
+    { name: "Settings", href: "/admin/settings", icon: Settings, perm: "manage_settings" },
   ];
+
+  const allowedManagementItems = managementItems.filter(item => {
+    if (role === "ADMIN" || role === "SUPER_ADMIN") return true;
+    if (item.perm === "any") return permissions.length > 0;
+    return permissions.includes(item.perm);
+  });
 
   const filteredGeneralItems = generalItems.filter(item => {
     if (item.href === "/dashboard/family" || item.href === "/dashboard/blog") {
-      return role === "MEMBER" || role === "ADMIN";
+      return role === "MEMBER" || role === "ADMIN" || permissions.length > 0;
     }
     return true;
   });
@@ -116,12 +150,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           
           <nav className="p-3 space-y-1">
-            {/* Management Dropdown Menu for Admin */}
-            {role === "ADMIN" && (
+            {/* Management Dropdown Menu for Admin and Custom Roles */}
+            {(role === "ADMIN" || allowedManagementItems.length > 0) && (
               <div>
                 <button
                   onClick={() => setIsManagementOpen(!isManagementOpen)}
-                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors cursor-pointer"
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${
+                    role === "ADMIN" ? "text-zinc-300 hover:bg-zinc-800 hover:text-white" : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900"
+                  }`}
                 >
                   <div className="flex items-center gap-3">
                     <Shield className="w-5 h-5 text-amber-500" />
@@ -136,8 +172,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 
                 {/* Sub-menu Items */}
                 {isManagementOpen && (
-                  <div className="mt-1 ml-4 pl-3 border-l border-zinc-800 space-y-0.5">
-                    {managementItems.map((item) => {
+                  <div className={`mt-1 ml-4 pl-3 border-l space-y-0.5 ${role === "ADMIN" ? "border-zinc-800" : "border-zinc-200"}`}>
+                    {allowedManagementItems.map((item) => {
                       const isActive = pathname.startsWith(item.href);
                       return (
                         <Link
@@ -146,7 +182,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
                             isActive
                               ? "bg-amber-500/10 text-amber-500 font-semibold"
-                              : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                              : role === "ADMIN"
+                                ? "text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                                : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
                           }`}
                         >
                           <item.icon className={`w-4 h-4 ${isActive ? "text-amber-500" : "text-zinc-500"}`} />
