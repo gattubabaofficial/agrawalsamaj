@@ -1,9 +1,9 @@
 /**
  * WhatsApp delivery sidecar for the Agrawal Samaj Mansrovar Jaipur portal.
  *
- * The FastAPI backend cannot run whatsapp-web.js (it is Node-only), so this
- * process owns the WhatsApp session and exposes a small HTTP API the backend
- * calls when an event payment is approved.
+ * Uses @whiskeysockets/baileys — a pure WebSocket WhatsApp Web client that
+ * does NOT need a headless Chrome browser. This lets it run comfortably on
+ * Railway Free Tier (512 MB RAM) where whatsapp-web.js + Puppeteer would OOM.
  *
  * Endpoints:
  *   GET  /status      — session state, safe to poll
@@ -11,8 +11,9 @@
  *   GET  /qr.png      — the same pairing QR as a raw image
  *   POST /send-media  — send an image (the pass QR) with a caption
  *   POST /send-text   — send a plain text message
+ *   POST /restart     — force a full session restart
  *
- * Every endpoint except /status and the /qr pair requires the x-api-key header.
+ * Every send endpoint requires the x-api-key header when WHATSAPP_API_KEY is set.
  */
 require("dotenv").config();
 
@@ -20,166 +21,146 @@ const fs = require("fs");
 const path = require("path");
 const express = require("express");
 const QRCode = require("qrcode");
-const qrcodeTerminal = require("qrcode-terminal");
-const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
+const pino = require("pino");
+
+const {
+  default: makeWASocket,
+  DisconnectReason,
+  useMultiFileAuthState,
+  fetchLatestBaileysVersion,
+  makeCacheableSignalKeyStore,
+} = require("@whiskeysockets/baileys");
 
 const PORT = parseInt(process.env.PORT || "3001", 10);
 const API_KEY = process.env.WHATSAPP_API_KEY || "";
-const SESSION_DIR = process.env.SESSION_DIR || path.join(__dirname, ".wwebjs_auth");
+const AUTH_DIR = process.env.SESSION_DIR || path.join(__dirname, "auth_info");
 const DEFAULT_COUNTRY_CODE = (process.env.DEFAULT_COUNTRY_CODE || "91").replace(/\D/g, "");
+
+// Baileys is very chatty by default; silence it to keep Railway logs clean.
+const logger = pino({ level: "warn" });
 
 // ─────────────────────────── Session state ───────────────────────────
 const state = {
-  status: "starting", // starting | qr | authenticated | ready | disconnected | auth_failure
+  status: "starting", // starting | qr | ready | disconnected | auth_failure
   qrString: null,
   lastError: null,
   readyAt: null,
   me: null,
 };
 
-// Guards against overlapping reinitialize attempts. whatsapp-web.js can emit
-// "disconnected" more than once for the same event (observed with LOGOUT),
-// and two concurrent client.initialize() calls fight over the same Chrome
-// profile directory — that's what produced "browser is already running" /
-// EBUSY crashes.
+let sock = null;
 let isRecovering = false;
 
-/**
- * Delete a directory, retrying past transient Windows file locks (EBUSY /
- * EPERM) left behind by a Chrome process that hasn't fully released its
- * profile files yet.
- */
-async function removeDirWithRetry(dir, attempts = 5, delayMs = 1000) {
-  for (let i = 1; i <= attempts; i++) {
-    try {
-      await fs.promises.rm(dir, { recursive: true, force: true });
-      return true;
-    } catch (e) {
-      if (i === attempts) {
-        console.error(`[whatsapp] Could not remove session dir after ${attempts} attempts:`, e.message);
-        return false;
-      }
-      await new Promise((r) => setTimeout(r, delayMs));
-    }
+// ─────────────────────────── Baileys setup ───────────────────────────
+
+async function startSocket() {
+  // Make sure auth dir exists
+  if (!fs.existsSync(AUTH_DIR)) {
+    fs.mkdirSync(AUTH_DIR, { recursive: true });
   }
-  return false;
-}
 
-const client = new Client({
-  authStrategy: new LocalAuth({ dataPath: SESSION_DIR }),
-  puppeteer: {
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || 
-                    (fs.existsSync("/usr/bin/google-chrome") ? "/usr/bin/google-chrome" : 
-                    (fs.existsSync("/usr/bin/chromium") ? "/usr/bin/chromium" : undefined)),
-    headless: true,
-    protocolTimeout: 300000, // 5 minutes to prevent Runtime.callFunctionOn timeout
-    timeout: 60000,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-gpu",
-      "--no-first-run",
-      "--no-zygote",
-      "--disable-accelerated-2d-canvas",
-      "--disable-background-networking",
-      "--disable-default-apps",
-      "--disable-extensions",
-      "--disable-sync",
-      "--disable-translate",
-      "--metrics-recording-only",
-      "--mute-audio",
-      "--no-default-browser-check"
-    ],
-  },
-});
+  const { state: authState, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
+  const { version } = await fetchLatestBaileysVersion();
 
-client.on("qr", (qr) => {
-  state.status = "qr";
-  state.qrString = qr;
-  console.log("\n[whatsapp] Scan this QR code with the sending WhatsApp account:");
-  console.log("[whatsapp] (WhatsApp > Settings > Linked devices > Link a device)\n");
-  qrcodeTerminal.generate(qr, { small: true });
-  console.log(`\n[whatsapp] Or open http://localhost:${PORT}/qr in a browser.\n`);
-});
+  sock = makeWASocket({
+    version,
+    logger,
+    auth: {
+      creds: authState.creds,
+      keys: makeCacheableSignalKeyStore(authState.keys, logger),
+    },
+    printQRInTerminal: true,
+    // Prevent Baileys from spamming the phone's "message history" sync
+    // on every reconnect — it can OOM small containers.
+    syncFullHistory: false,
+    // Mark messages as "received" automatically so the phone doesn't
+    // keep retrying delivery.
+    markOnlineOnConnect: false,
+  });
 
-client.on("authenticated", () => {
-  state.status = "authenticated";
-  state.qrString = null;
-  console.log("[whatsapp] Authenticated. Finishing handshake...");
-});
+  // ── QR code ──
+  sock.ev.on("connection.update", async (update) => {
+    const { connection, lastDisconnect, qr } = update;
 
-client.on("ready", () => {
-  state.status = "ready";
-  state.qrString = null;
-  state.readyAt = new Date().toISOString();
-  state.me = client.info?.wid?.user || null;
-  console.log(`[whatsapp] Ready. Sending as +${state.me}`);
-});
-
-client.on("auth_failure", (msg) => {
-  state.status = "auth_failure";
-  state.lastError = String(msg);
-  console.error("[whatsapp] Authentication failed:", msg);
-});
-
-client.on("disconnected", (reason) => {
-  state.status = "disconnected";
-  state.lastError = String(reason);
-  console.warn("[whatsapp] Disconnected:", reason);
-
-  if (isRecovering) {
-    console.warn("[whatsapp] Recovery already in progress, ignoring duplicate disconnect event.");
-    return;
-  }
-  isRecovering = true;
-
-  setTimeout(async () => {
-    try {
-      // Always try to fully close the old browser first — reinitializing
-      // (or deleting session files) while it's still holding the profile
-      // directory open is exactly what caused the EBUSY crash.
+    if (qr) {
+      state.status = "qr";
+      state.qrString = qr;
+      console.log("\n[whatsapp] Scan this QR code with the sending WhatsApp account:");
+      console.log("[whatsapp] (WhatsApp > Settings > Linked devices > Link a device)\n");
+      // Print QR to Railway deploy logs so you can scan from the dashboard
       try {
-        await client.destroy();
-      } catch (e) {
-        console.warn("[whatsapp] destroy() during recovery raised (ignoring):", e.message);
-      }
-
-      if (reason === "LOGOUT") {
-        // LOGOUT means the phone unlinked this device — the saved session is
-        // permanently invalid, not just disconnected. Reusing it would just
-        // reproduce the same crash, so wipe it and come back up needing a
-        // fresh QR scan instead of guessing at a silent reconnect.
-        console.warn("[whatsapp] Session was logged out on the phone. Clearing local session, a new QR scan will be required.");
-        await removeDirWithRetry(SESSION_DIR);
-      }
-
-      state.status = "starting";
-      await client.initialize();
-    } catch (e) {
-      state.status = "auth_failure";
-      state.lastError = String(e);
-      console.error("[whatsapp] Recovery failed:", e);
-    } finally {
-      isRecovering = false;
+        const smallQR = await QRCode.toString(qr, { type: "terminal", small: true });
+        console.log(smallQR);
+      } catch (_) {}
+      console.log(`\n[whatsapp] Or open http://localhost:${PORT}/qr in a browser.\n`);
     }
-  }, 3000);
-});
 
-// A crash anywhere inside whatsapp-web.js's internals (e.g. a rejected
-// promise during its own session cleanup) must not take the whole HTTP API
-// down with it — /status and /qr need to stay reachable so the outage is
-// visible and recoverable instead of silent.
-process.on("unhandledRejection", (reason) => {
-  console.error("[whatsapp] Unhandled rejection (server staying up):", reason);
-  state.status = "auth_failure";
-  state.lastError = String(reason);
-});
-process.on("uncaughtException", (err) => {
-  console.error("[whatsapp] Uncaught exception (server staying up):", err);
-  state.status = "auth_failure";
-  state.lastError = String(err);
-});
+    if (connection === "close") {
+      const statusCode =
+        lastDisconnect?.error?.output?.statusCode || 0;
+      const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+
+      console.warn(
+        `[whatsapp] Connection closed (code ${statusCode}).`,
+        shouldReconnect ? "Reconnecting..." : "Logged out — scan QR again."
+      );
+
+      if (statusCode === DisconnectReason.loggedOut) {
+        // Session is permanently invalid — wipe auth and restart fresh
+        state.status = "disconnected";
+        state.lastError = "Logged out on phone";
+        try {
+          await fs.promises.rm(AUTH_DIR, { recursive: true, force: true });
+        } catch (_) {}
+      }
+
+      if (shouldReconnect && !isRecovering) {
+        isRecovering = true;
+        state.status = "starting";
+        setTimeout(async () => {
+          try {
+            await startSocket();
+          } catch (e) {
+            state.status = "auth_failure";
+            state.lastError = String(e);
+            console.error("[whatsapp] Reconnection failed:", e);
+          } finally {
+            isRecovering = false;
+          }
+        }, 3000);
+      } else if (!shouldReconnect) {
+        // Logged out — restart to show a fresh QR
+        isRecovering = true;
+        setTimeout(async () => {
+          try {
+            await startSocket();
+          } catch (e) {
+            state.status = "auth_failure";
+            state.lastError = String(e);
+          } finally {
+            isRecovering = false;
+          }
+        }, 3000);
+      }
+    }
+
+    if (connection === "open") {
+      state.status = "ready";
+      state.qrString = null;
+      state.readyAt = new Date().toISOString();
+      state.lastError = null;
+      // Extract the phone number from the session credentials
+      state.me = sock.user?.id?.split(":")[0] || sock.user?.id?.split("@")[0] || null;
+      console.log(`[whatsapp] Ready. Sending as +${state.me}`);
+    }
+  });
+
+  // ── Persist credentials on every update ──
+  sock.ev.on("creds.update", saveCreds);
+
+  // Silence message-related events — we only send, not receive
+  sock.ev.on("messages.upsert", () => {});
+}
 
 // ─────────────────────────── Helpers ───────────────────────────
 
@@ -202,17 +183,13 @@ function normalizePhone(raw) {
 }
 
 /**
- * Resolve a phone number to a WhatsApp chat id, verifying the number actually
- * has a WhatsApp account. Returns null when the number is not on WhatsApp.
+ * Build a WhatsApp JID from a phone number.
+ * Baileys uses number@s.whatsapp.net (not @c.us).
  */
-async function resolveChatId(phone) {
+function toJid(phone) {
   const digits = normalizePhone(phone);
   if (!digits) return null;
-  
-  // By-pass getNumberId() because recent WhatsApp Web updates cause it to return 
-  // an internal @lid instead of @c.us, which causes sendMessage to silently fail 
-  // without throwing any error.
-  return `${digits}@c.us`;
+  return `${digits}@s.whatsapp.net`;
 }
 
 function requireApiKey(req, res, next) {
@@ -233,6 +210,15 @@ function requireReady(req, res, next) {
   }
   return next();
 }
+
+// A crash anywhere inside Baileys's internals must not take the whole HTTP API
+// down with it — /status and /qr need to stay reachable.
+process.on("unhandledRejection", (reason) => {
+  console.error("[whatsapp] Unhandled rejection (server staying up):", reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("[whatsapp] Uncaught exception (server staying up):", err);
+});
 
 // ─────────────────────────── HTTP API ───────────────────────────
 const app = express();
@@ -310,19 +296,22 @@ app.post("/send-media", requireApiKey, requireReady, async (req, res) => {
     return res.status(400).json({ success: false, error: "phone is required" });
   }
 
-  let messageMedia;
+  let mediaBuffer;
+  let mimetype = "image/png";
   try {
     if (media && media.base64) {
-      messageMedia = new MessageMedia(
-        media.mimetype || "image/png",
-        media.base64,
-        media.filename || "pass.png"
-      );
+      mediaBuffer = Buffer.from(media.base64, "base64");
+      mimetype = media.mimetype || "image/png";
     } else if (filePath) {
       if (!fs.existsSync(filePath)) {
         return res.status(400).json({ success: false, error: `File not found: ${filePath}` });
       }
-      messageMedia = MessageMedia.fromFilePath(filePath);
+      mediaBuffer = fs.readFileSync(filePath);
+      // Guess mimetype from extension
+      const ext = path.extname(filePath).toLowerCase();
+      if (ext === ".pdf") mimetype = "application/pdf";
+      else if (ext === ".jpg" || ext === ".jpeg") mimetype = "image/jpeg";
+      else if (ext === ".png") mimetype = "image/png";
     } else {
       return res.status(400).json({ success: false, error: "media.base64 or file_path is required" });
     }
@@ -331,29 +320,43 @@ app.post("/send-media", requireApiKey, requireReady, async (req, res) => {
   }
 
   try {
-    const chatId = await resolveChatId(phone);
-    if (!chatId) {
-      return res.status(404).json({
-        success: false,
-        error: `${phone} is not registered on WhatsApp`,
-        code: "not_on_whatsapp",
-      });
+    const jid = toJid(phone);
+    if (!jid) {
+      return res.status(400).json({ success: false, error: "Invalid phone number" });
     }
 
-    const sent = await client.sendMessage(chatId, messageMedia, {
-      caption: caption || undefined,
-    });
-    // whatsapp-web.js can resolve sendMessage() to undefined — e.g. when the
-    // page's internal store hasn't fully hydrated yet right after "ready" —
-    // even though the message was actually delivered. Don't crash on that;
-    // just report we couldn't confirm the id.
-    const messageId = sent && sent.id ? sent.id._serialized : null;
-    if (messageId) {
-      console.log(`[whatsapp] Sent media to ${chatId} (${messageId})`);
+    // Decide message content based on mimetype
+    let messageContent;
+    if (mimetype.startsWith("image/")) {
+      messageContent = {
+        image: mediaBuffer,
+        caption: caption || undefined,
+        mimetype,
+      };
+    } else if (mimetype === "application/pdf") {
+      messageContent = {
+        document: mediaBuffer,
+        caption: caption || undefined,
+        mimetype,
+        fileName: (media && media.filename) || "document.pdf",
+      };
     } else {
-      console.warn(`[whatsapp] Sent media to ${chatId}, but whatsapp-web.js returned no message id (likely still delivered).`);
+      messageContent = {
+        document: mediaBuffer,
+        caption: caption || undefined,
+        mimetype,
+        fileName: (media && media.filename) || "file",
+      };
     }
-    return res.json({ success: true, message_id: messageId || "sent_unconfirmed", chat_id: chatId });
+
+    const sent = await sock.sendMessage(jid, messageContent);
+    const messageId = sent?.key?.id || null;
+    if (messageId) {
+      console.log(`[whatsapp] Sent media to ${jid} (${messageId})`);
+    } else {
+      console.warn(`[whatsapp] Sent media to ${jid}, no message id returned (likely still delivered).`);
+    }
+    return res.json({ success: true, message_id: messageId || "sent_unconfirmed", chat_id: jid });
   } catch (e) {
     console.error("[whatsapp] send-media failed:", e);
     return res.status(500).json({ success: false, error: e.message });
@@ -367,50 +370,25 @@ app.post("/send-text", requireApiKey, requireReady, async (req, res) => {
     return res.status(400).json({ success: false, error: "phone and message are required" });
   }
   try {
-    const chatId = await resolveChatId(phone);
-    if (!chatId) {
-      return res.status(404).json({
-        success: false,
-        error: `${phone} is not registered on WhatsApp`,
-        code: "not_on_whatsapp",
-      });
+    const jid = toJid(phone);
+    if (!jid) {
+      return res.status(400).json({ success: false, error: "Invalid phone number" });
     }
-    const sent = await client.sendMessage(chatId, message);
-    const messageId = sent && sent.id ? sent.id._serialized : null;
+    const sent = await sock.sendMessage(jid, { text: message });
+    const messageId = sent?.key?.id || null;
     if (messageId) {
-      console.log(`[whatsapp] Sent text to ${chatId} (${messageId})`);
+      console.log(`[whatsapp] Sent text to ${jid} (${messageId})`);
     } else {
-      console.warn(`[whatsapp] Sent text to ${chatId}, but whatsapp-web.js returned no message id (likely still delivered).`);
+      console.warn(`[whatsapp] Sent text to ${jid}, no message id returned (likely still delivered).`);
     }
-    return res.json({ success: true, message_id: messageId || "sent_unconfirmed", chat_id: chatId });
+    return res.json({ success: true, message_id: messageId || "sent_unconfirmed", chat_id: jid });
   } catch (e) {
     console.error("[whatsapp] send-text failed:", e);
-    if (e.message && (e.message.includes("detached Frame") || e.message.includes("Execution context was destroyed"))) {
-      console.warn("[whatsapp] Detached frame detected. Triggering full session recovery...");
-      state.status = "disconnected";
-      state.lastError = e.message;
-      if (!isRecovering) {
-        isRecovering = true;
-        setTimeout(async () => {
-          try {
-            try { await client.destroy(); } catch (_) {}
-            state.status = "starting";
-            await client.initialize();
-          } catch (recErr) {
-            state.status = "auth_failure";
-            state.lastError = String(recErr);
-            console.error("[whatsapp] Auto-recovery failed:", recErr);
-          } finally {
-            isRecovering = false;
-          }
-        }, 2000);
-      }
-    }
     return res.status(500).json({ success: false, error: e.message });
   }
 });
 
-/** POST /restart — Force a full session restart (destroy + re-initialize) */
+/** POST /restart — Force a full session restart */
 app.post("/restart", requireApiKey, async (req, res) => {
   if (isRecovering) {
     return res.status(409).json({ success: false, error: "Recovery already in progress." });
@@ -420,8 +398,10 @@ app.post("/restart", requireApiKey, async (req, res) => {
   state.status = "starting";
   state.lastError = null;
   try {
-    try { await client.destroy(); } catch (_) {}
-    await client.initialize();
+    if (sock) {
+      try { sock.end(undefined); } catch (_) {}
+    }
+    await startSocket();
     res.json({ success: true, message: "Client restarted. Waiting for ready state." });
   } catch (e) {
     state.status = "auth_failure";
@@ -442,19 +422,19 @@ app.listen(PORT, () => {
   console.log(`[whatsapp] Open http://localhost:${PORT}/qr to link a device.`);
 });
 
-console.log("[whatsapp] Starting client (first run downloads Chromium, this can take a minute)...");
-client.initialize().catch((e) => {
+console.log("[whatsapp] Starting Baileys client (no browser needed!)...");
+startSocket().catch((e) => {
   state.status = "auth_failure";
   state.lastError = e.message;
   console.error("[whatsapp] Failed to initialize:", e);
 });
 
-// Shut the browser down cleanly so the session isn't corrupted.
+// Shut down cleanly so the session isn't corrupted.
 for (const sig of ["SIGINT", "SIGTERM"]) {
-  process.on(sig, async () => {
+  process.on(sig, () => {
     console.log(`\n[whatsapp] ${sig} received, closing session...`);
     try {
-      await client.destroy();
+      if (sock) sock.end(undefined);
     } catch {
       /* ignore */
     }
