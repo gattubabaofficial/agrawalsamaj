@@ -45,25 +45,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.push("/login");
       return;
     }
-
-    const fetchMe = async () => {
-      try {
-        const { getApiBaseUrl } = await import("@/utils/api");
-        const res = await fetch(`${getApiBaseUrl()}/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.custom_role) {
-            setPermissions(data.custom_role.permissions || []);
-            setCustomRoleName(data.custom_role.name || "");
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching me profile:", err);
-      }
-    };
-    fetchMe();
+    router.push("/admin/dashboard");
   }, [router]);
 
   const handleLogout = () => {

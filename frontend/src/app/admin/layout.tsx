@@ -36,11 +36,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [customRoleName, setCustomRoleName] = useState<string>("");
   const [loadingMe, setLoadingMe] = useState(true);
   const [userName, setUserName] = useState<string>("");
-  const [userEmail, setUserEmail] = useState<string>("");
-  const [isManagementOpen, setIsManagementOpen] = useState(
-    pathname.startsWith("/admin") &&
-    !["/admin/profile", "/admin/family", "/admin/my-events", "/admin/my-bookings", "/admin/my-donations", "/admin/chat"].includes(pathname)
-  );
 
   useEffect(() => {
     setIsClient(true);
@@ -65,7 +60,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           setPermissions(p);
           setCustomRoleName(data.custom_role?.name || "");
           setUserName(`${data.first_name} ${data.surname || ""}`);
-          setUserEmail(data.email || data.mobile || "");
           
           const r = (storedRole || "").toUpperCase();
           const isAllowedRole = ["ADMIN", "SUPER_ADMIN", "VOLUNTEER"].includes(r);
@@ -90,23 +84,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [router, pathname]);
 
   useEffect(() => {
-    const isGeneral = ["/admin/profile", "/admin/family", "/admin/my-events", "/admin/my-bookings", "/admin/my-donations", "/admin/chat"].includes(pathname);
-    if (isGeneral) {
-      setIsManagementOpen(false);
-    } else if (pathname.startsWith("/admin")) {
-      setIsManagementOpen(true);
-    }
-  }, [pathname]);
-
-  useEffect(() => {
     setIsMobileNavOpen(false);
   }, [pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userRole");
-    // Hard redirect (not router.push) so the admin layout and its
-    // mounted-role state can't survive the transition and bounce back.
     window.location.href = "/admin-login";
   };
 
@@ -118,16 +101,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (isSuperAdmin || isAdmin) return true;
     return permissions.includes(perm);
   };
-
-  const generalItems = [
-    { name: "My Profile", href: "/admin/profile", icon: User },
-    ...(isSuperAdmin || isAdmin ? [{ name: "My Performance", href: "/admin/performance", icon: Shield }] : []),
-    { name: "My Family", href: "/admin/family", icon: Users },
-    { name: "My Events", href: "/admin/my-events", icon: Calendar },
-    { name: "My Bookings", href: "/admin/my-bookings", icon: Home },
-    { name: "Donations", href: "/admin/my-donations", icon: Heart },
-    { name: "Chat", href: "/admin/chat", icon: MessageCircle },
-  ];
 
   const managementItems = [
     ...((isSuperAdmin || isAdmin || permissions.length > 0) ? [{ name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard }] : []),
@@ -162,11 +135,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     ] : [])
   ];
 
-  if (!isClient || loadingMe) return null; // Prevent hydration mismatch & unauthorized flashing
+  if (!isClient || loadingMe) return null;
 
   return (
     <div className="min-h-screen bg-zinc-50 flex flex-col md:flex-row">
-      {/* Mobile nav backdrop */}
       {isMobileNavOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-30 md:hidden"
@@ -174,16 +146,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         />
       )}
 
-      {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-40 w-72 -translate-x-full transition-transform duration-200 ${isMobileNavOpen ? "translate-x-0" : ""} md:translate-x-0 md:static md:w-64 bg-zinc-900 text-white flex-shrink-0 flex flex-col justify-between overflow-y-auto md:sticky md:top-0 md:h-screen border-r border-zinc-800 scrollbar-hide`}>
+      <aside className={`fixed inset-y-0 left-0 z-40 w-72 -translate-x-full transition-transform duration-200 ${isMobileNavOpen ? "translate-x-0" : ""} md:translate-x-0 md:static md:w-64 flex-shrink-0 flex flex-col justify-between overflow-y-auto md:sticky md:top-0 md:h-screen border-r border-zinc-800 bg-zinc-900 text-white scrollbar-hide`}>
         <div>
           <div className="h-16 flex items-center justify-between px-6 border-b border-zinc-800">
             <Link href="/" className="text-xl font-bold text-gradient-vivid">
-              Agrawal Samaj Mansrovar Jaipur
+              Agrawal Samaj Jaipur
             </Link>
             <button
               onClick={() => setIsMobileNavOpen(false)}
-              className="p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-white md:hidden"
+              className="p-1.5 rounded-lg md:hidden text-zinc-400 hover:bg-zinc-800 hover:text-white"
               aria-label="Close menu"
             >
               <X className="w-5 h-5" />
@@ -191,49 +162,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           
           <nav className="p-3 space-y-1">
-            {/* Management Dropdown Menu */}
-            <div>
-              <button
-                onClick={() => setIsManagementOpen(!isManagementOpen)}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <Shield className="w-5 h-5 text-amber-500" />
-                  <span>Management</span>
-                </div>
-                {isManagementOpen ? (
-                  <ChevronDown className="w-4 h-4 text-zinc-500" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 text-zinc-500" />
-                )}
-              </button>
-              
-              {/* Sub-menu Items */}
-              {isManagementOpen && (
-                <div className="mt-1 ml-4 pl-3 border-l border-zinc-800 space-y-0.5">
-                  {managementItems.map((item) => {
-                    const isActive = pathname.startsWith(item.href);
-                    return (
-                      <Link
-                        key={item.name}
-                        href={item.href}
-                        className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
-                          isActive
-                            ? "bg-amber-500/10 text-amber-500 font-semibold"
-                            : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
-                        }`}
-                      >
-                        <item.icon className={`w-4 h-4 ${isActive ? "text-amber-500" : "text-zinc-500"}`} />
-                        {item.name}
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* General Portal items listed directly */}
-            {generalItems.map((item) => {
+            {managementItems.map((item) => {
               const isActive = pathname.startsWith(item.href);
               return (
                 <Link
