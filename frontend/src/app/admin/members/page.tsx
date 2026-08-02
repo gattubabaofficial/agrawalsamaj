@@ -140,9 +140,12 @@ export default function AdminMembersPage() {
     setEditError("");
     try {
       const token = localStorage.getItem("token");
-      const payload = { ...editForm };
-      if (payload.lm_no === "") payload.lm_no = null;
-      else if (payload.lm_no !== undefined) payload.lm_no = payload.lm_no === null ? null : Number(payload.lm_no);
+      const payload: any = { ...editForm };
+      if (payload.lm_no === "" || payload.lm_no === null || payload.lm_no === undefined) {
+        payload.lm_no = null;
+      } else {
+        payload.lm_no = Number(payload.lm_no);
+      }
 
       await axios.put(
         `${getApiBaseUrl()}/membership/users/${editingMember.user_id}/admin-update`,
