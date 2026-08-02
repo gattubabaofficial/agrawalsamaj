@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import {
   Heart, MessageCircle, Eye, Clock, Share2, ArrowLeft,
-  Tag, Send, Trash2, ChevronDown, CheckCheck, Copy
+  Tag, Send, Trash2, ChevronDown, CheckCheck, Copy, Shield, PenSquare
 } from "lucide-react";
 import { getApiBaseUrl } from "@/utils/api";
 
@@ -36,6 +36,7 @@ interface Blog {
   title: string;
   slug: string;
   content: string;
+  status?: string;
   cover_image_url: string | null;
   tags: string[];
   author: Author | null;
@@ -87,6 +88,7 @@ export default function BlogReaderPage() {
   const [copied, setCopied] = useState(false);
   const [showAllComments, setShowAllComments] = useState(false);
   const [guestId, setGuestId] = useState<string>("");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
@@ -99,6 +101,11 @@ export default function BlogReaderPage() {
         localStorage.setItem("guest_id", gid);
       }
       setGuestId(gid);
+
+      const role = (localStorage.getItem("userRole") || "").toUpperCase();
+      if (["ADMIN", "SUPER_ADMIN"].includes(role)) {
+        setIsAdmin(true);
+      }
     }
   }, []);
 
@@ -199,6 +206,24 @@ export default function BlogReaderPage() {
     setComments(await r.json());
   };
 
+  const handleAdminDelete = async () => {
+    if (!token || !blog) return;
+    if (!window.confirm("Are you sure you want to delete this blog post? This action cannot be undone.")) return;
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/blog/${blog.blog_id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        router.push("/admin/blog");
+      } else {
+        alert("Failed to delete blog post.");
+      }
+    } catch {
+      alert("Error connecting to server.");
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-16 animate-pulse space-y-6">
@@ -219,10 +244,40 @@ export default function BlogReaderPage() {
     <div className="min-h-screen bg-white">
       {/* Back */}
       <div className="max-w-3xl mx-auto px-4 pt-8">
-        <Link href="/blog" className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-amber-600 transition-colors mb-8">
+        <Link href="/blog" className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-amber-600 transition-colors mb-6">
           <ArrowLeft className="w-4 h-4" /> Back to Blog
         </Link>
       </div>
+
+      {/* Admin Quick Control Banner */}
+      {isAdmin && blog && (
+        <div className="max-w-3xl mx-auto px-4 mb-6">
+          <div className="p-3.5 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-amber-500/10 border border-amber-300 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-2 text-xs font-bold text-amber-950">
+              <Shield className="w-4 h-4 text-amber-600" />
+              <span>Admin Post Management:</span>
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider ${blog.status === "published" ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : "bg-amber-100 text-amber-800 border border-amber-200"}`}>
+                {blog.status || "published"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/admin/blog/${blog.blog_id}/edit`}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+              >
+                <PenSquare className="w-3.5 h-3.5" /> Edit Blog
+              </Link>
+              <button
+                type="button"
+                onClick={handleAdminDelete}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Delete Blog
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Cover Image */}
       {blog.cover_image_url && (

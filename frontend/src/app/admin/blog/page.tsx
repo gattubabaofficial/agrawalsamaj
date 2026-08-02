@@ -201,6 +201,10 @@ export default function AdminBlogManager() {
                   </span>
                 </div>
                 <div className="flex items-center gap-3 mt-1 text-xs text-zinc-400 flex-wrap">
+                  <span className="font-medium text-zinc-600">
+                    ✍️ {blog.author ? `${blog.author.first_name} ${blog.author.surname}` : ((blog as any).guest_name ? `Guest: ${(blog as any).guest_name}` : "Admin")}
+                  </span>
+                  <span>•</span>
                   <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{timeAgo(blog.created_at)}</span>
                   <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{blog.views}</span>
                   <span className="flex items-center gap-1"><Heart className="w-3 h-3" />{blog.like_count}</span>
@@ -211,12 +215,12 @@ export default function AdminBlogManager() {
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              {/* Actions - Always Visible for Admins */}
+              <div className="flex items-center gap-1.5 flex-shrink-0">
                 <Link
                   href={`/blog/${blog.slug}`}
                   target="_blank"
-                  className="p-2 rounded-lg text-zinc-400 hover:text-amber-500 hover:bg-amber-50 transition-colors"
+                  className="p-2 rounded-xl text-zinc-500 hover:text-amber-600 hover:bg-amber-50 border border-zinc-200 transition-colors"
                   title="View Post"
                 >
                   <Eye className="w-4 h-4" />
@@ -224,24 +228,24 @@ export default function AdminBlogManager() {
                 <button
                   onClick={() => handleToggleStatus(blog)}
                   disabled={actionLoading}
-                  className={`p-2 rounded-lg transition-colors ${blog.status === "published" ? "text-zinc-400 hover:text-orange-500 hover:bg-orange-50" : "text-zinc-400 hover:text-emerald-500 hover:bg-emerald-50"}`}
-                  title={blog.status === "published" ? "Unpublish" : "Publish"}
+                  className={`p-2 rounded-xl border border-zinc-200 transition-colors ${blog.status === "published" ? "text-amber-600 hover:text-orange-600 hover:bg-orange-50" : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"}`}
+                  title={blog.status === "published" ? "Unpublish to Draft" : "Publish to Live"}
                 >
                   {blog.status === "published" ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
                 <Link
                   href={`/admin/blog/${blog.blog_id}/edit`}
-                  className="p-2 rounded-lg text-zinc-400 hover:text-indigo-500 hover:bg-indigo-50 transition-colors"
-                  title="Edit"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 font-bold text-xs transition-colors"
+                  title="Edit Blog Post"
                 >
-                  <PenSquare className="w-4 h-4" />
+                  <PenSquare className="w-3.5 h-3.5" /> Edit
                 </Link>
                 <button
                   onClick={() => setDeleteId(blog.blog_id)}
-                  className="p-2 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
-                  title="Delete"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 font-bold text-xs transition-colors cursor-pointer"
+                  title="Delete Blog Post"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" /> Delete
                 </button>
               </div>
             </motion.div>

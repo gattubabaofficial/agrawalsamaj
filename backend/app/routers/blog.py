@@ -250,11 +250,12 @@ async def list_all_blogs_admin(
     current_user: User = Depends(get_current_user),
 ):
     """Admin/Member: list blogs for management. Admin sees all, Member sees their own."""
-    if current_user.role not in [UserRole.ADMIN, UserRole.MEMBER]:
+    from app.dependencies import is_admin_level
+    if not is_admin_level(current_user) and current_user.role != UserRole.MEMBER:
         raise HTTPException(status_code=403, detail="Not authorized")
 
     query = select(Blog).options(selectinload(Blog.author)).order_by(desc(Blog.created_at))
-    if current_user.role == UserRole.MEMBER:
+    if not is_admin_level(current_user):
         query = query.where(Blog.author_id == current_user.user_id)
         
     result = await db.execute(query)
@@ -283,7 +284,13 @@ async def get_blog(
     """Get a single blog by slug (public). Increments view counter."""
     result = await db.execute(select(Blog).options(selectinload(Blog.author)).where(Blog.slug == slug))
     blog = result.scalar_one_or_none()
-    if not blog or blog.status != BlogStatus.PUBLISHED:
+    if not blog:
+        raise HTTPException(status_code=404, detail="Blog not found")
+
+    # Allow admins to view drafts when reviewing
+    from app.dependencies import is_admin_level
+    is_admin = is_admin_level(current_user) if current_user else False
+    if blog.status != BlogStatus.PUBLISHED and not is_admin:
         raise HTTPException(status_code=404, detail="Blog not found")
 
     # Increment views
@@ -294,7 +301,6 @@ async def get_blog(
     user_id = current_user.user_id if current_user else None
     like_count, user_liked, comment_count = await get_blog_stats(db, blog.blog_id, user_id=user_id, guest_id=guest_id)
     return blog_dict(blog, like_count, user_liked, comment_count)
-
 
 
 # ─── Blog Writing & Admin CRUD ───────────────────────────────────────────────────
@@ -391,14 +397,15 @@ async def get_blog_by_id(
     current_user: User = Depends(get_current_user),
 ):
     """Admin/Member: get full blog by ID for editing."""
-    if current_user.role not in [UserRole.ADMIN, UserRole.MEMBER]:
+    from app.dependencies import is_admin_level
+    if not is_admin_level(current_user) and current_user.role != UserRole.MEMBER:
         raise HTTPException(status_code=403, detail="Not authorized")
     result = await db.execute(select(Blog).options(selectinload(Blog.author)).where(Blog.blog_id == blog_id))
     blog = result.scalar_one_or_none()
     if not blog:
         raise HTTPException(status_code=404, detail="Blog not found")
         
-    if current_user.role == UserRole.MEMBER and blog.author_id != current_user.user_id:
+    if not is_admin_level(current_user) and blog.author_id != current_user.user_id:
         raise HTTPException(status_code=403, detail="Not authorized to view this blog")
         
     like_count, _, comment_count = await get_blog_stats(db, blog.blog_id)
@@ -412,7 +419,8 @@ async def update_blog(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if current_user.role not in [UserRole.ADMIN, UserRole.MEMBER]:
+    from app.dependencies import is_admin_level
+    if not is_admin_level(current_user) and current_user.role != UserRole.MEMBER:
         raise HTTPException(status_code=403, detail="Not authorized")
 
     result = await db.execute(select(Blog).options(selectinload(Blog.author)).where(Blog.blog_id == blog_id))
@@ -420,7 +428,7 @@ async def update_blog(
     if not blog:
         raise HTTPException(status_code=404, detail="Blog not found")
 
-    if current_user.role == UserRole.MEMBER and blog.author_id != current_user.user_id:
+    if not is_admin_level(current_user) and blog.author_id != current_user.user_id:
         raise HTTPException(status_code=403, detail="Not authorized to edit this blog")
 
     if data.title is not None:
@@ -460,7 +468,8 @@ async def delete_blog(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if current_user.role not in [UserRole.ADMIN, UserRole.MEMBER]:
+    from app.dependencies import is_admin_level
+    if not is_admin_level(current_user) and current_user.role != UserRole.MEMBER:
         raise HTTPException(status_code=403, detail="Not authorized")
 
     result = await db.execute(select(Blog).where(Blog.blog_id == blog_id))
@@ -468,7 +477,7 @@ async def delete_blog(
     if not blog:
         raise HTTPException(status_code=404, detail="Blog not found")
         
-    if current_user.role == UserRole.MEMBER and blog.author_id != current_user.user_id:
+    if not is_admin_level(current_user) and blog.author_id != current_user.user_id:
         raise HTTPException(status_code=403, detail="Not authorized to delete this blog")
 
     await db.delete(blog)
@@ -597,8 +606,9 @@ async def delete_comment(
     if not comment:
         raise HTTPException(status_code=404, detail="Comment not found")
 
+    from app.dependencies import is_admin_level
     is_owner = comment.user_id == current_user.user_id
-    is_admin = current_user.role == UserRole.ADMIN
+    is_admin = is_admin_level(current_user)
     if not (is_owner or is_admin):
         raise HTTPException(status_code=403, detail="Not authorized")
 

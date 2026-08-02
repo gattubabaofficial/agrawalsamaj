@@ -392,16 +392,28 @@ async def create_booking(
     stay_days = (booking_data.end_date - booking_data.start_date).days
 
     for card in saava_cards:
-        # Check date overlap
-        card_start = card.start_date or card.saava_date
-        card_end = card.end_date or card.saava_date
-        if not card_start:
-            continue
-        if not card_end:
-            card_end = card_start
+        # Collect all date range rows for this card
+        ranges_to_check = []
+        if card.date_ranges and isinstance(card.date_ranges, list):
+            ranges_to_check = card.date_ranges
+        else:
+            s = card.start_date or card.saava_date
+            e = card.end_date or card.saava_date or s
+            if s:
+                ranges_to_check = [{"start_date": s.isoformat(), "end_date": e.isoformat() if e else s.isoformat()}]
 
-        # Overlap condition: booking.start_date < card_end and booking.end_date > card_start (or inclusive boundaries)
-        if booking_data.start_date <= card_end and booking_data.end_date >= card_start:
+        card_overlaps = False
+        for r in ranges_to_check:
+            try:
+                r_start = datetime.strptime(r["start_date"], "%Y-%m-%d").date()
+                r_end = datetime.strptime(r.get("end_date") or r["start_date"], "%Y-%m-%d").date()
+                if booking_data.start_date <= r_end and booking_data.end_date >= r_start:
+                    card_overlaps = True
+                    break
+            except Exception:
+                continue
+
+        if card_overlaps:
             if card.is_blocked:
                 raise HTTPException(
                     status_code=400,
@@ -1000,24 +1012,35 @@ async def get_saava_dates(db: AsyncSession = Depends(get_db)):
     
     out = []
     for c in cards:
-        s_date = c.start_date or c.saava_date
-        e_date = c.end_date or c.saava_date or s_date
-        
-        # Expand dates list
+        date_ranges = c.date_ranges if (c.date_ranges and isinstance(c.date_ranges, list)) else []
+        if not date_ranges:
+            s = c.start_date or c.saava_date
+            e = c.end_date or c.saava_date or s
+            if s:
+                date_ranges = [{"start_date": s.isoformat(), "end_date": e.isoformat() if e else s.isoformat()}]
+
+        # Expand all dates list across all date ranges
         date_list = []
-        if s_date and e_date:
-            curr = s_date
-            while curr <= e_date:
-                date_list.append(curr.isoformat())
-                curr += timedelta(days=1)
-        elif s_date:
-            date_list.append(s_date.isoformat())
+        for r in date_ranges:
+            try:
+                r_s = datetime.strptime(r["start_date"], "%Y-%m-%d").date()
+                r_e = datetime.strptime(r.get("end_date") or r["start_date"], "%Y-%m-%d").date()
+                curr = r_s
+                while curr <= r_e:
+                    date_list.append(curr.isoformat())
+                    curr += timedelta(days=1)
+            except Exception:
+                continue
+
+        first_start = date_ranges[0]["start_date"] if date_ranges else None
+        last_end = date_ranges[-1].get("end_date") or date_ranges[-1]["start_date"] if date_ranges else None
 
         out.append({
             "date_id": str(c.date_id),
             "title": c.title or "Wedding Saava Window",
-            "start_date": s_date.isoformat() if s_date else None,
-            "end_date": e_date.isoformat() if e_date else None,
+            "start_date": first_start,
+            "end_date": last_end,
+            "date_ranges": date_ranges,
             "rate_category": c.rate_category or "saava",
             "disable_social_discount": c.disable_social_discount,
             "disable_individual_rooms": c.disable_individual_rooms,
@@ -1049,32 +1072,48 @@ async def create_or_add_saava_dates(
             check_stmt = select(SaavaDate).where((SaavaDate.saava_date == d_val) | (SaavaDate.start_date == d_val))
             existing = (await db.execute(check_stmt)).scalars().first()
             if not existing:
-                db.add(SaavaDate(saava_date=d_val, start_date=d_val, end_date=d_val, title="Saava Day"))
+                db.add(SaavaDate(saava_date=d_val, start_date=d_val, end_date=d_val, title="Saava Day", date_ranges=[{"start_date": d_str, "end_date": d_str}]))
         await db.commit()
         return {"status": "success", "message": "Saava dates added."}
 
     # Handle rich Saava Card object payload
     title = payload.get("title") or "Wedding Saava Window"
-    start_str = payload.get("start_date")
-    end_str = payload.get("end_date") or start_str
-    
-    if not start_str:
-        raise HTTPException(status_code=400, detail="start_date is required")
+    raw_ranges = payload.get("date_ranges") or []
 
-    try:
-        s_val = datetime.strptime(start_str, "%Y-%m-%d").date()
-        e_val = datetime.strptime(end_str, "%Y-%m-%d").date() if end_str else s_val
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    # Fallback to single start_date/end_date if date_ranges omitted
+    if not raw_ranges and payload.get("start_date"):
+        raw_ranges = [{"start_date": payload["start_date"], "end_date": payload.get("end_date") or payload["start_date"]}]
 
-    if e_val < s_val:
-        raise HTTPException(status_code=400, detail="end_date must be on or after start_date")
+    if not raw_ranges:
+        raise HTTPException(status_code=400, detail="At least one date range row is required")
+
+    clean_ranges = []
+    for r in raw_ranges:
+        s_str = r.get("start_date")
+        e_str = r.get("end_date") or s_str
+        if not s_str:
+            continue
+        try:
+            s_val = datetime.strptime(s_str, "%Y-%m-%d").date()
+            e_val = datetime.strptime(e_str, "%Y-%m-%d").date() if e_str else s_val
+            if e_val < s_val:
+                e_val = s_val
+            clean_ranges.append({"start_date": s_val.isoformat(), "end_date": e_val.isoformat()})
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Invalid date format in range: {s_str}")
+
+    if not clean_ranges:
+        raise HTTPException(status_code=400, detail="Valid date range row is required")
+
+    first_s = datetime.strptime(clean_ranges[0]["start_date"], "%Y-%m-%d").date()
+    last_e = datetime.strptime(clean_ranges[-1]["end_date"], "%Y-%m-%d").date()
 
     new_card = SaavaDate(
         title=title,
-        start_date=s_val,
-        end_date=e_val,
-        saava_date=s_val,
+        start_date=first_s,
+        end_date=last_e,
+        saava_date=first_s,
+        date_ranges=clean_ranges,
         rate_category=payload.get("rate_category") or "saava",
         disable_social_discount=payload.get("disable_social_discount", True),
         disable_individual_rooms=payload.get("disable_individual_rooms", True),

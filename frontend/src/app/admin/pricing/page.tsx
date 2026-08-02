@@ -58,8 +58,7 @@ export default function PricingRulesPage() {
   const [saavaCards, setSaavaCards] = useState<any[]>([]);
   const [saavaForm, setSaavaForm] = useState({
     title: "",
-    start_date: "",
-    end_date: "",
+    date_ranges: [{ start_date: "", end_date: "" }],
     rate_category: "saava",
     disable_social_discount: true,
     disable_individual_rooms: true,
@@ -102,6 +101,7 @@ export default function PricingRulesPage() {
             title: "Wedding Saava Day",
             start_date: d,
             end_date: d,
+            date_ranges: [{ start_date: d, end_date: d }],
             rate_category: "saava",
             disable_social_discount: true,
             disable_individual_rooms: true,
@@ -118,14 +118,41 @@ export default function PricingRulesPage() {
     }
   };
 
+  const addDateRangeRow = () => {
+    setSaavaForm({
+      ...saavaForm,
+      date_ranges: [...saavaForm.date_ranges, { start_date: "", end_date: "" }]
+    });
+  };
+
+  const removeDateRangeRow = (index: number) => {
+    if (saavaForm.date_ranges.length <= 1) return;
+    const updated = saavaForm.date_ranges.filter((_, i) => i !== index);
+    setSaavaForm({ ...saavaForm, date_ranges: updated });
+  };
+
+  const handleDateRangeChange = (index: number, field: "start_date" | "end_date", value: string) => {
+    const updated = [...saavaForm.date_ranges];
+    updated[index][field] = value;
+    if (field === "start_date" && !updated[index].end_date) {
+      updated[index].end_date = value;
+    }
+    setSaavaForm({ ...saavaForm, date_ranges: updated });
+  };
+
   const handleAddSaavaCard = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!saavaForm.start_date) return;
+    const validRanges = saavaForm.date_ranges.filter(r => r.start_date);
+    if (validRanges.length === 0) {
+      setError("Please add at least one valid Date Range row.");
+      return;
+    }
     try {
       const payload = {
         title: saavaForm.title || "Wedding Saava Window",
-        start_date: saavaForm.start_date,
-        end_date: saavaForm.end_date || saavaForm.start_date,
+        date_ranges: validRanges.map(r => ({ start_date: r.start_date, end_date: r.end_date || r.start_date })),
+        start_date: validRanges[0].start_date,
+        end_date: validRanges[validRanges.length - 1].end_date || validRanges[0].start_date,
         rate_category: saavaForm.rate_category,
         disable_social_discount: saavaForm.disable_social_discount,
         disable_individual_rooms: saavaForm.disable_individual_rooms,
@@ -137,8 +164,7 @@ export default function PricingRulesPage() {
       await axios.post(`${getApiBaseUrl()}/bookings/saava-dates`, payload, auth());
       setSaavaForm({
         title: "",
-        start_date: "",
-        end_date: "",
+        date_ranges: [{ start_date: "", end_date: "" }],
         rate_category: "saava",
         disable_social_discount: true,
         disable_individual_rooms: true,
@@ -446,43 +472,21 @@ export default function PricingRulesPage() {
             <Plus className="w-4 h-4 text-amber-600" /> Create New Saava / Special Date Card
           </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* Card Title & Rates Selection */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-[11px] font-bold text-zinc-700">Card Title / Occasion *</label>
               <input
                 required
                 type="text"
-                placeholder="e.g. Dev Uthan Ekadashi Saava"
+                placeholder="e.g. Dev Uthan Ekadashi Saava Season"
                 value={saavaForm.title}
                 onChange={(e) => setSaavaForm({ ...saavaForm, title: e.target.value })}
                 className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-xs bg-white focus:outline-none focus:border-amber-500 font-semibold"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[11px] font-bold text-zinc-700">From Date *</label>
-              <input
-                required
-                type="date"
-                value={saavaForm.start_date}
-                onChange={(e) => setSaavaForm({ ...saavaForm, start_date: e.target.value })}
-                className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-xs bg-white focus:outline-none focus:border-amber-500 font-semibold"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-zinc-700">To Date *</label>
-              <input
-                required
-                type="date"
-                value={saavaForm.end_date}
-                onChange={(e) => setSaavaForm({ ...saavaForm, end_date: e.target.value })}
-                className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-xs bg-white focus:outline-none focus:border-amber-500 font-semibold"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-zinc-700">Rates To Apply (Puls Rates From Table) *</label>
+              <label className="text-[11px] font-bold text-zinc-700">Rates To Apply (Pulls Rates From Table) *</label>
               <select
                 value={saavaForm.rate_category}
                 onChange={(e) => setSaavaForm({ ...saavaForm, rate_category: e.target.value })}
@@ -494,17 +498,74 @@ export default function PricingRulesPage() {
                 <option value="free">🎁 Free / Welfare Usage Rate (Table)</option>
               </select>
             </div>
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-zinc-700">Min Stay Days Requirement (Optional)</label>
-              <input
-                type="number"
-                min="1"
-                placeholder="e.g. 2 (forces min 2 days stay)"
-                value={saavaForm.min_stay_days}
-                onChange={(e) => setSaavaForm({ ...saavaForm, min_stay_days: e.target.value })}
-                className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-xs bg-white focus:outline-none focus:border-amber-500 font-semibold"
-              />
+          </div>
+
+          {/* Multiple Date Range Rows Builder */}
+          <div className="space-y-2 pt-2 border-t border-amber-200/60">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-amber-950 uppercase tracking-wider">
+                🗓️ Date Range Rows for this Card (Multiple Dates Allowed):
+              </span>
+              <button
+                type="button"
+                onClick={addDateRangeRow}
+                className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] rounded-lg shadow-sm transition-all cursor-pointer flex items-center gap-1"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add Date Row
+              </button>
             </div>
+
+            <div className="space-y-2">
+              {saavaForm.date_ranges.map((row, idx) => (
+                <div key={idx} className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-amber-200 shadow-2xs">
+                  <span className="text-[11px] font-bold text-amber-900 w-12">Row {idx + 1}:</span>
+                  <div className="flex-1 grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-[10px] text-zinc-400 font-semibold block">From Date</span>
+                      <input
+                        required
+                        type="date"
+                        value={row.start_date}
+                        onChange={(e) => handleDateRangeChange(idx, "start_date", e.target.value)}
+                        className="w-full border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-zinc-400 font-semibold block">To Date</span>
+                      <input
+                        required
+                        type="date"
+                        value={row.end_date}
+                        onChange={(e) => handleDateRangeChange(idx, "end_date", e.target.value)}
+                        className="w-full border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
+                  {saavaForm.date_ranges.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeDateRangeRow(idx)}
+                      className="p-1.5 text-amber-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer self-end mb-0.5"
+                      title="Remove Date Row"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold text-zinc-700">Min Stay Days Requirement (Optional)</label>
+            <input
+              type="number"
+              min="1"
+              placeholder="e.g. 2 (forces min 2 days stay)"
+              value={saavaForm.min_stay_days}
+              onChange={(e) => setSaavaForm({ ...saavaForm, min_stay_days: e.target.value })}
+              className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-xs bg-white focus:outline-none focus:border-amber-500 font-semibold max-w-xs"
+            />
           </div>
 
           {/* Customizable Rules Toggles */}
@@ -587,9 +648,21 @@ export default function PricingRulesPage() {
                         💍 {card.rate_category === 'saava' ? 'Wedding Saava' : card.rate_category === 'social' ? 'Social Event' : 'Special Event'}
                       </span>
                       <h4 className="font-bold text-zinc-900 text-sm">{card.title}</h4>
-                      <p className="text-xs text-amber-900 font-bold font-mono mt-0.5">
-                        🗓️ {card.start_date} → {card.end_date}
-                      </p>
+                      
+                      {/* Date Ranges Rows List */}
+                      <div className="space-y-1 mt-1.5">
+                        {card.date_ranges && Array.isArray(card.date_ranges) && card.date_ranges.length > 0 ? (
+                          card.date_ranges.map((r: any, idx: number) => (
+                            <p key={idx} className="text-xs text-amber-900 font-bold font-mono flex items-center gap-1">
+                              <span>🗓️ Row {idx + 1}:</span> {r.start_date} → {r.end_date || r.start_date}
+                            </p>
+                          ))
+                        ) : (
+                          <p className="text-xs text-amber-900 font-bold font-mono">
+                            🗓️ {card.start_date} → {card.end_date}
+                          </p>
+                        )}
+                      </div>
                     </div>
                     <button
                       type="button"

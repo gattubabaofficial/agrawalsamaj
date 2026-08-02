@@ -73,6 +73,7 @@ async def on_startup():
         "ALTER TABLE saava_dates ADD COLUMN is_blocked BOOLEAN DEFAULT 0",
         "ALTER TABLE saava_dates ADD COLUMN min_stay_days INTEGER",
         "ALTER TABLE saava_dates ADD COLUMN custom_rule_notice VARCHAR(500)",
+        "ALTER TABLE saava_dates ADD COLUMN date_ranges JSON",
     ):
         try:
             async with engine.begin() as conn:

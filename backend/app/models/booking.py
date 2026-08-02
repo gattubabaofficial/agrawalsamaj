@@ -244,5 +244,6 @@ class SaavaDate(Base, TimestampMixin):
     is_blocked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     min_stay_days: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     custom_rule_notice: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    date_ranges: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
 
