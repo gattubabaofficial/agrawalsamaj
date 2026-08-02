@@ -942,6 +942,86 @@ async def update_user_role(
     return {"message": f"Role updated to {new_role.value}.", "user_id": str(user.user_id), "role": new_role.value}
 
 
+class AdminUpdateMemberRequest(BaseModel):
+    first_name: Optional[str] = None
+    surname: Optional[str] = None
+    father_name: Optional[str] = None
+    mobile: Optional[str] = None
+    email: Optional[str] = None
+    address: Optional[str] = None
+    family_relation: Optional[str] = None
+    samaj_id: Optional[str] = None
+    lm_no: Optional[int] = None
+    zone: Optional[str] = None
+    house_no: Optional[str] = None
+    member_status: Optional[str] = None
+    profession: Optional[str] = None
+    native_place: Optional[str] = None
+    bio: Optional[str] = None
+
+
+@router.put("/users/{user_id}/admin-update")
+async def admin_update_user(
+    user_id: str,
+    payload: AdminUpdateMemberRequest,
+    current_admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db_session)
+):
+    try:
+        user_uuid = uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid user id.")
+
+    result = await db.execute(select(User).where(User.user_id == user_uuid))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Member not found.")
+
+    if payload.first_name is not None:
+        user.first_name = payload.first_name.strip()
+    if payload.surname is not None:
+        user.surname = payload.surname.strip()
+    if payload.father_name is not None:
+        user.father_name = payload.father_name.strip() or None
+    if payload.mobile is not None:
+        mobile_val = payload.mobile.strip() or None
+        if mobile_val:
+            m_check = await db.execute(select(User).where(User.mobile == mobile_val, User.user_id != user_uuid))
+            if m_check.scalars().first() is not None:
+                raise HTTPException(status_code=400, detail="Mobile number already registered by another member.")
+        user.mobile = mobile_val
+    if payload.email is not None:
+        email_val = payload.email.strip().lower() or None
+        if email_val:
+            e_check = await db.execute(select(User).where(User.email == email_val, User.user_id != user_uuid))
+            if e_check.scalars().first() is not None:
+                raise HTTPException(status_code=400, detail="Email already registered by another member.")
+        user.email = email_val
+    if payload.address is not None:
+        user.address = payload.address.strip() or None
+    if payload.family_relation is not None:
+        user.family_relation = payload.family_relation.strip() or None
+    if payload.samaj_id is not None:
+        user.samaj_id = payload.samaj_id.strip() or None
+    if payload.lm_no is not None:
+        user.lm_no = payload.lm_no
+    if payload.zone is not None:
+        user.zone = payload.zone.strip() or None
+    if payload.house_no is not None:
+        user.house_no = payload.house_no.strip() or None
+    if payload.member_status is not None:
+        user.member_status = payload.member_status.strip() or "active"
+    if payload.profession is not None:
+        user.profession = payload.profession.strip() or None
+    if payload.native_place is not None:
+        user.native_place = payload.native_place.strip() or None
+    if payload.bio is not None:
+        user.bio = payload.bio.strip() or None
+
+    await db.commit()
+    return {"status": "success", "message": "Member updated successfully."}
+
+
 @router.get("/users")
 async def list_users(
     current_user: User = Depends(get_current_user),

@@ -381,6 +381,31 @@ async def create_booking(
     if not room or not room.is_available:
         raise HTTPException(status_code=400, detail="Room not available")
 
+    # Saava Date Validation
+    saava_check = await db.execute(
+        select(SaavaDate.saava_date)
+        .where(
+            SaavaDate.saava_date >= booking_data.start_date,
+            SaavaDate.saava_date <= booking_data.end_date
+        )
+    )
+    matching_saava = saava_check.scalars().all()
+    
+    if matching_saava:
+        notes_str = (booking_data.notes or "").lower()
+        if "purpose: social" in notes_str:
+            raise HTTPException(
+                status_code=400,
+                detail="Social/community discount bookings are not allowed on Saava dates."
+            )
+            
+        is_individual_room = room.type == "room" and (room.capacity or 0) < 10
+        if is_individual_room:
+            raise HTTPException(
+                status_code=400,
+                detail="Individual guest room bookings are not allowed on Saava dates."
+            )
+
     if not current_user and not (booking_data.guest_name and booking_data.guest_phone):
         raise HTTPException(status_code=400, detail="Guest name and WhatsApp number are required for non-logged in users")
 
@@ -849,3 +874,103 @@ async def delete_booking_rule(
         raise HTTPException(status_code=404, detail="Booking rule not found")
     await db.delete(rule)
     await db.commit()
+
+
+from app.models.booking import SaavaDate
+from fastapi import Body
+
+@router.get("/bhavan-occupancy")
+async def get_bhavan_occupancy(db: AsyncSession = Depends(get_db)):
+    # 1. Fetch all rooms
+    room_q = select(Room).where(Room.is_available == True)
+    rooms_result = await db.execute(room_q)
+    all_rooms = rooms_result.scalars().all()
+    total_rooms_count = len(all_rooms) if all_rooms else 1
+
+    # 2. Fetch all APPROVED or PENDING bookings
+    booking_q = select(Booking).where(
+        Booking.booking_status.in_([BookingStatus.PENDING, BookingStatus.APPROVED])
+    )
+    result = await db.execute(booking_q)
+    bookings = result.scalars().all()
+
+    # 3. Aggregate bookings by date
+    from collections import defaultdict
+    date_occupancy = defaultdict(set)
+    for b in bookings:
+        d = b.start_date
+        while d < b.end_date:
+            date_occupancy[d.isoformat()].add(str(b.room_id))
+            d += timedelta(days=1)
+
+    # 4. Map date -> status ("full" | "partial" | "none")
+    occupancy_status = {}
+    for d_str, occupied_rooms in date_occupancy.items():
+        occupied_count = len(occupied_rooms)
+        if occupied_count >= total_rooms_count:
+            occupancy_status[d_str] = "full"
+        elif occupied_count > 0:
+            occupancy_status[d_str] = "partial"
+        else:
+            occupancy_status[d_str] = "none"
+
+    return occupancy_status
+
+
+@router.get("/saava-dates")
+async def get_saava_dates(db: AsyncSession = Depends(get_db)):
+    stmt = select(SaavaDate.saava_date).order_by(SaavaDate.saava_date)
+    result = await db.execute(stmt)
+    dates = [d.isoformat() for d in result.scalars().all()]
+    return dates
+
+
+@router.post("/saava-dates")
+async def add_saava_dates(
+    dates: List[str] = Body(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not is_admin_level(current_user):
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    for d_str in dates:
+        try:
+            d_val = datetime.strptime(d_str, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Invalid date format: {d_str}")
+            
+        # Check if already exists
+        check_stmt = select(SaavaDate).where(SaavaDate.saava_date == d_val)
+        existing = (await db.execute(check_stmt)).scalars().first()
+        if not existing:
+            new_saava = SaavaDate(saava_date=d_val)
+            db.add(new_saava)
+            
+    await db.commit()
+    return {"status": "success", "message": "Saava dates added successfully."}
+
+
+@router.delete("/saava-dates/{date_str}")
+async def delete_saava_date(
+    date_str: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not is_admin_level(current_user):
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    try:
+        d_val = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format.")
+        
+    stmt = select(SaavaDate).where(SaavaDate.saava_date == d_val)
+    saava = (await db.execute(stmt)).scalars().first()
+    if not saava:
+        raise HTTPException(status_code=404, detail="Saava date not found.")
+        
+    await db.delete(saava)
+    await db.commit()
+    return {"status": "success", "message": "Saava date deleted successfully."}
+

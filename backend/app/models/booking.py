@@ -227,3 +227,11 @@ class SpecialEventRoomConfig(Base, TimestampMixin):
 
     event: Mapped[SpecialEvent] = relationship("SpecialEvent", back_populates="room_configs")
     room: Mapped[Room] = relationship("Room")
+
+
+class SaavaDate(Base, TimestampMixin):
+    __tablename__ = "saava_dates"
+
+    date_id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    saava_date: Mapped[date] = mapped_column(Date, unique=True, index=True, nullable=False)
+

@@ -206,7 +206,7 @@ export default function PortalIndex() {
       </div>
 
       {/* Grid of Equal-Height Cards Aligned Side-By-Side on the Same Line */}
-      <RevealGroup as="div" stagger={0.05} className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <RevealGroup key={activeCategory} as="div" stagger={0.05} className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredSites.map((site) => {
           const CardContent = (
             <div className="group flex flex-col justify-between p-6 rounded-2xl border border-rule bg-paper-2 hover:bg-paper hover:border-vermilion/40 hover:shadow-xl transition-all duration-300 h-full">

@@ -38,6 +38,7 @@ async def on_startup():
     import app.models.requests
     import app.models.role
     import app.models.blog
+    import app.models.booking
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         
