@@ -165,6 +165,16 @@ async def login(
 
     _clear_login_failures(normalized_val)
 
+    is_allowed = (
+        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER)
+        or user.custom_role_id is not None
+    )
+    if not is_allowed:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Only registered members with an assigned role are allowed to log in."
+        )
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -229,6 +239,26 @@ async def phone_send_otp(payload: PhoneOtpSendRequest, db: AsyncSession = Depend
     id_type, normalized_mobile = parse_identifier(payload.phone)
     if id_type != "mobile":
         raise HTTPException(status_code=400, detail="Invalid mobile number format.")
+
+    # Only allow registered members with a role to send OTP / login
+    user_query = await db.execute(select(User).where(User.mobile == normalized_mobile))
+    user = user_query.scalars().first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Only registered members with an assigned role are allowed to log in."
+        )
+
+    is_allowed = (
+        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER)
+        or user.custom_role_id is not None
+    )
+    if not is_allowed:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Only registered members with an assigned role are allowed to log in."
+        )
 
     # 1. Rate limiting
     now = datetime.now(timezone.utc)
@@ -314,22 +344,25 @@ async def phone_verify_otp(payload: PhoneOtpVerifyRequest, db: AsyncSession = De
     otp_req.verified = True
     await db.commit()
 
-    # 3. Handle User Session (Auto-register if not found)
+    # 3. Handle User Session
     user_query = await db.execute(select(User).where(User.mobile == normalized_mobile))
     user = user_query.scalars().first()
 
     if not user:
-        user = User(
-            first_name="User",
-            surname="",
-            mobile=normalized_mobile,
-            role=UserRole.GUEST,
-            is_active=True,
-            is_member=False
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Only registered members with an assigned role are allowed to log in."
         )
-        db.add(user)
-        await db.commit()
-        await db.refresh(user)
+
+    is_allowed = (
+        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER)
+        or user.custom_role_id is not None
+    )
+    if not is_allowed:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Only registered members with an assigned role are allowed to log in."
+        )
 
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user account.")
@@ -795,6 +828,16 @@ async def register_oauth(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user account.",
+        )
+
+    is_allowed = (
+        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER)
+        or user.custom_role_id is not None
+    )
+    if not is_allowed:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Only registered members with an assigned role are allowed to log in."
         )
 
     # 5. Generate access token
