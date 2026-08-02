@@ -307,9 +307,6 @@ async def register_event(
             raise HTTPException(status_code=401, detail="This event is for members only. Please log in.")
         if not _can_view_members_only(current_user):
             raise HTTPException(status_code=403, detail="This event is for registered Samaj members only.")
-    else:
-        if not current_user and not (reg_data.guest_name and reg_data.guest_phone):
-            raise HTTPException(status_code=400, detail="Guest name and phone are required for non-logged in users")
 
     user_id = current_user.user_id if current_user else None
 
@@ -382,6 +379,17 @@ async def register_event(
             "phone": guest_phone
         })
         
+    # Auto-fill booker details from the first attendee if missing
+    if not guest_name and len(attendee_details) > 0:
+        guest_name = attendee_details[0]["name"]
+    if not guest_phone and len(attendee_details) > 0:
+        guest_phone = attendee_details[0]["phone"]
+        
+    # Validate details for anonymous bookings
+    if event.visibility != EventVisibility.MEMBERS_ONLY:
+        if not current_user and not (guest_name and guest_phone):
+            raise HTTPException(status_code=400, detail="Guest name and phone number (or at least one registered member selection) are required for booking.")
+
     attendee_names_str = json.dumps(attendee_details)
 
     registration = EventRegistration(
