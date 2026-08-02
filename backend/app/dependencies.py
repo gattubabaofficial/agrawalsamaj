@@ -98,8 +98,9 @@ async def get_optional_current_user(
 
 async def get_current_admin(current_user=Depends(get_current_user)):
     """Enforce that the logged-in user is an admin (or super admin, which is a
-    superset of admin privileges)."""
-    if current_user.role not in ("admin", "super_admin"):
+    superset of admin privileges, or has an assigned custom role)."""
+    role_val = current_user.role.value if hasattr(current_user.role, 'value') else str(current_user.role)
+    if role_val.upper() not in ("ADMIN", "SUPER_ADMIN") and getattr(current_user, 'custom_role_id', None) is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions",
@@ -109,7 +110,8 @@ async def get_current_admin(current_user=Depends(get_current_user)):
 
 async def get_current_super_admin(current_user=Depends(get_current_user)):
     """Enforce that the logged-in user is a super admin."""
-    if current_user.role != "super_admin":
+    role_val = current_user.role.value if hasattr(current_user.role, 'value') else str(current_user.role)
+    if role_val.upper() != "SUPER_ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Super admin privileges required",
