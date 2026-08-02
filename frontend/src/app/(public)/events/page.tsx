@@ -86,11 +86,11 @@ export default function EventsPage() {
     <div className="relative py-20 px-4 sm:px-6 lg:px-8 min-h-screen overflow-hidden">
       <div className="absolute inset-0 animated-gradient-mesh opacity-20 -z-10" />
       <div className="max-w-6xl mx-auto space-y-12">
-        
+
         {/* Header */}
         <div className="text-center space-y-4 max-w-2xl mx-auto">
           <h1 className="text-3xl sm:text-5xl font-extrabold text-zinc-900 tracking-tight leading-tight">
-            Samaj <span className="text-amber-500">Events</span> &amp; Gatherings
+            Samaj <span className="text-amber-500">Events </span> &amp; Gatherings
           </h1>
           <p className="text-sm sm:text-base text-zinc-500 leading-relaxed">
             Join and participate in cultural, religious, sports, and educational functions organized by Agrawal Samaj Mansrovar Jaipur. Book passes online instantly.
@@ -115,11 +115,10 @@ export default function EventsPage() {
               <button
                 key={cat}
                 onClick={() => setCategory(cat)}
-                className={`px-4 py-2 rounded-xl text-2xs font-bold uppercase transition-all whitespace-nowrap cursor-pointer ${
-                  category === cat
+                className={`px-4 py-2 rounded-xl text-2xs font-bold uppercase transition-all whitespace-nowrap cursor-pointer ${category === cat
                     ? "bg-amber-500 text-white shadow-md shadow-amber-500/20"
                     : "bg-white border border-zinc-200 text-zinc-600 hover:border-amber-300 hover:text-amber-600"
-                }`}
+                  }`}
               >
                 {cat}
               </button>
