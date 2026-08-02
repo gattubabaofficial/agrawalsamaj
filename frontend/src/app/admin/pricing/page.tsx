@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
-import { Loader2, Plus, Trash2, IndianRupee, CalendarRange, Settings } from "lucide-react";
+import { Loader2, Plus, Trash2, IndianRupee, CalendarRange, Settings, X } from "lucide-react";
 
 interface Room { room_id: string; name: string; price_per_day: number; type: string; }
 interface PricingRule { rule_id: string; label: string | null; start_date: string; end_date: string; price_per_day: number; priority: number; is_active: boolean; }
@@ -54,6 +54,10 @@ export default function PricingRulesPage() {
     ],
   });
 
+  // Saava Dates State
+  const [saavaDates, setSaavaDates] = useState<string[]>([]);
+  const [newSaavaDate, setNewSaavaDate] = useState("");
+
   const auth = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } });
 
   useEffect(() => {
@@ -61,7 +65,37 @@ export default function PricingRulesPage() {
     if (stored) {
       try { setEditableRateLists(JSON.parse(stored)); } catch (e) { console.error(e); }
     }
+    fetchSaavaDates();
   }, []);
+
+  const fetchSaavaDates = async () => {
+    try {
+      const res = await axios.get(`${getApiBaseUrl()}/bookings/saava-dates`);
+      setSaavaDates(res.data);
+    } catch (e) {
+      console.error("Failed to load Saava dates", e);
+    }
+  };
+
+  const addSaavaDate = async () => {
+    if (!newSaavaDate) return;
+    try {
+      await axios.post(`${getApiBaseUrl()}/bookings/saava-dates`, [newSaavaDate], auth());
+      setNewSaavaDate("");
+      fetchSaavaDates();
+    } catch (e: any) {
+      setError(e.response?.data?.detail || "Failed to add Saava date");
+    }
+  };
+
+  const removeSaavaDate = async (dateStr: string) => {
+    try {
+      await axios.delete(`${getApiBaseUrl()}/bookings/saava-dates/${dateStr}`, auth());
+      fetchSaavaDates();
+    } catch (e: any) {
+      setError(e.response?.data?.detail || "Failed to remove Saava date");
+    }
+  };
 
   const handleRateCellChange = (category: string, index: number, field: string, value: string) => {
     const updated = { ...editableRateLists };
@@ -145,17 +179,19 @@ export default function PricingRulesPage() {
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-zinc-400" /></div>;
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-2 mb-1">
-        <Settings className="w-6 h-6 text-amber-600" /> Room Pricing & Booking Rules
-      </h1>
-      <p className="text-sm text-zinc-500 mb-5">Set date-range prices and minimum-stay requirements for each room.</p>
+    <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-2 mb-1">
+          <Settings className="w-6 h-6 text-amber-600" /> Room Pricing & Booking Rules
+        </h1>
+        <p className="text-sm text-zinc-500">Set date-range prices and minimum-stay requirements for each room.</p>
+      </div>
 
-      {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4">{error}<button className="ml-2 underline" onClick={() => setError("")}>dismiss</button></div>}
+      {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4">{error}<button className="ml-2 underline font-bold" onClick={() => setError("")}>dismiss</button></div>}
 
       <div className="mb-6">
         <label className="text-sm font-medium text-zinc-700 mr-2">Room:</label>
-        <select value={selected} onChange={(e) => setSelected(e.target.value)} className="border border-zinc-200 rounded-xl px-3 py-2 text-sm">
+        <select value={selected} onChange={(e) => setSelected(e.target.value)} className="border border-zinc-200 rounded-xl px-3 py-2 text-sm bg-white">
           {rooms.map(r => <option key={r.room_id} value={r.room_id}>{r.name} ({inr(r.price_per_day)}/day default)</option>)}
         </select>
       </div>
@@ -176,7 +212,7 @@ export default function PricingRulesPage() {
               <input required type="number" step="0.01" placeholder="Price/day (₹)" value={pForm.price_per_day} onChange={(e) => setPForm({ ...pForm, price_per_day: e.target.value })} className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm" />
               <input type="number" placeholder="Priority" value={pForm.priority} onChange={(e) => setPForm({ ...pForm, priority: e.target.value })} className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm" />
             </div>
-            <button className="w-full flex items-center justify-center gap-1 bg-amber-600 text-white rounded-lg py-2 text-sm"><Plus className="w-4 h-4" /> Add Pricing Rule</button>
+            <button className="w-full flex items-center justify-center gap-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors cursor-pointer"><Plus className="w-4 h-4" /> Add Pricing Rule</button>
           </form>
 
           <div className="space-y-2">
@@ -206,7 +242,7 @@ export default function PricingRulesPage() {
             </div>
             <input required type="number" min="1" placeholder="Minimum days" value={mForm.min_days} onChange={(e) => setMForm({ ...mForm, min_days: e.target.value })} className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm" />
             <label className="flex items-center gap-2 text-xs text-zinc-600"><input type="checkbox" checked={mForm.allRooms} onChange={(e) => setMForm({ ...mForm, allRooms: e.target.checked })} /> Apply to all rooms</label>
-            <button className="w-full flex items-center justify-center gap-1 bg-zinc-900 text-white rounded-lg py-2 text-sm"><Plus className="w-4 h-4" /> Add Min-stay Rule</button>
+            <button className="w-full flex items-center justify-center gap-1 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg py-2 text-sm font-semibold transition-colors cursor-pointer"><Plus className="w-4 h-4" /> Add Min-stay Rule</button>
           </form>
 
           <div className="space-y-2">
@@ -225,7 +261,7 @@ export default function PricingRulesPage() {
       </div>
 
       {/* Bhavan Category Rate List Editor (Saava / Social / Free) */}
-      <div className="mt-8 bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm space-y-6">
+      <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-100 pb-4">
           <div>
             <h2 className="font-bold text-zinc-900 text-lg flex items-center gap-2">
@@ -321,6 +357,57 @@ export default function PricingRulesPage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Saava Dates Manager */}
+      <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm space-y-6">
+        <div>
+          <h2 className="font-bold text-zinc-900 text-lg flex items-center gap-2">
+            <CalendarRange className="w-5 h-5 text-amber-600" /> Wedding Saava (सावा) Dates Manager
+          </h2>
+          <p className="text-xs text-zinc-500 mt-0.5">Designate specific dates as wedding Saava dates. On these dates: social discount bookings and individual guest room bookings are blocked automatically.</p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-end gap-3 max-w-md">
+          <div className="flex-1 space-y-1">
+            <label className="text-[11px] font-semibold text-zinc-500">Select Date</label>
+            <input
+              type="date"
+              value={newSaavaDate}
+              onChange={(e) => setNewSaavaDate(e.target.value)}
+              className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:border-amber-500 text-zinc-900 font-semibold"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={addSaavaDate}
+            className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm rounded-xl transition-all cursor-pointer h-[38px] flex items-center justify-center gap-1.5"
+          >
+            <Plus className="w-4 h-4" /> Add Saava Date
+          </button>
+        </div>
+
+        {saavaDates.length === 0 ? (
+          <p className="text-xs text-zinc-400 py-2">No Saava dates defined yet.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2.5">
+            {saavaDates.map((dStr) => (
+              <span
+                key={dStr}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-800 text-xs font-bold rounded-xl border border-amber-200"
+              >
+                <span>💍 {dStr}</span>
+                <button
+                  type="button"
+                  onClick={() => removeSaavaDate(dStr)}
+                  className="text-amber-500 hover:text-red-600 p-0.5 rounded-full hover:bg-amber-100 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

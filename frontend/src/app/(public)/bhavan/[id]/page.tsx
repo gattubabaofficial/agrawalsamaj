@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Calendar, Users, MapPin, ArrowLeft, CheckCircle, Clock, User, Phone, Ticket, X, Sparkles, PartyPopper, Ban, AlertTriangle } from "lucide-react";
+import { Calendar, Users, MapPin, ArrowLeft, CheckCircle, Clock, User, Phone, Ticket, X, Sparkles, PartyPopper, Ban, AlertTriangle, CalendarDays } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
@@ -55,6 +55,50 @@ export default function RoomBookingPage() {
   // Backend-authoritative special-event / availability info for the selected dates.
   const [quoteInfo, setQuoteInfo] = useState<any>(null);
 
+  // Calendar states
+  const [occupancy, setOccupancy] = useState<Record<string, string>>({});
+  const [saavaDates, setSaavaDates] = useState<string[]>([]);
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(currentYear - 1);
+    } else {
+      setCurrentMonth(currentMonth - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(currentYear + 1);
+    } else {
+      setCurrentMonth(currentMonth + 1);
+    }
+  };
+
+  const getDaysInMonth = (month: number, year: number) => {
+    const date = new Date(year, month, 1);
+    const days = [];
+    const firstDayIndex = date.getDay();
+    for (let i = 0; i < firstDayIndex; i++) {
+      days.push(null);
+    }
+    while (date.getMonth() === month) {
+      days.push(new Date(date));
+      date.setDate(date.getDate() + 1);
+    }
+    return days;
+  };
+
+  const days = getDaysInMonth(currentMonth, currentYear);
+  const MONTHS = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     setIsLoggedIn(!!token);
@@ -85,6 +129,16 @@ export default function RoomBookingPage() {
       }
     };
     if (roomId) fetchRoom();
+
+    // Fetch occupancy status
+    axios.get(`${getApiBaseUrl()}/bookings/bhavan-occupancy`)
+      .then(res => setOccupancy(res.data))
+      .catch(() => {});
+
+    // Fetch Saava dates
+    axios.get(`${getApiBaseUrl()}/bookings/saava-dates`)
+      .then(res => setSaavaDates(res.data))
+      .catch(() => {});
   }, [roomId]);
 
   useEffect(() => {
@@ -203,7 +257,6 @@ export default function RoomBookingPage() {
 
   const isBlockedOrFull = quoteInfo != null && quoteInfo.available === false;
   const isFull = isBlockedOrFull && quoteInfo.full === true;
-  const hasStayViolation = Array.isArray(quoteInfo?.stay_errors) && quoteInfo.stay_errors.length > 0;
 
   const voucherIsStale = appliedVoucher !== null && appliedVoucher.forAmount !== totalAmount;
   const payableAmount = appliedVoucher && !voucherIsStale ? appliedVoucher.finalAmount : totalAmount;
@@ -244,6 +297,32 @@ export default function RoomBookingPage() {
     if (quote.days <= 0) {
       setError("End date must be after start date.");
       return;
+    }
+
+    // Validate Saava Date restrictions client-side
+    const startObj = new Date(startDate);
+    const endObj = new Date(endDate);
+    let saavaOverlap = false;
+    let temp = new Date(startObj);
+    while (temp < endObj) {
+      const tempStr = `${temp.getFullYear()}-${String(temp.getMonth() + 1).padStart(2, '0')}-${String(temp.getDate()).padStart(2, '0')}`;
+      if (saavaDates.includes(tempStr)) {
+        saavaOverlap = true;
+        break;
+      }
+      temp.setDate(temp.getDate() + 1);
+    }
+
+    if (saavaOverlap) {
+      if (eventPurpose === "social") {
+        setError("Wedding Saava (सावा) dates do not support discounted Social bookings.");
+        return;
+      }
+      const isIndividualRoom = room.type === "room" && (room.capacity || 0) < 10;
+      if (isIndividualRoom) {
+        setError("Individual guest rooms are reserved and cannot be booked on Wedding Saava dates.");
+        return;
+      }
     }
 
     if (isBlockedOrFull) {
@@ -392,6 +471,69 @@ export default function RoomBookingPage() {
                     <li><strong className="text-zinc-900">Cancellation Refund:</strong> 90% refund if cancelled &gt;30 days prior, 75% for 15-30 days, 50% for 7-14 days, 0% refund for &lt;7 days.</li>
                   </ul>
                 </div>
+
+                {/* Visual Calendar */}
+                <div className="mt-8 pt-6 border-t border-zinc-100 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <CalendarDays className="w-5 h-5 text-amber-500" /> Bhavan Availability Calendar
+                      </h3>
+                      <p className="text-[11px] text-zinc-500">Check occupied dates and designated Wedding Saava dates.</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button type="button" onClick={handlePrevMonth} className="p-1 px-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold rounded-lg transition-colors cursor-pointer">Prev</button>
+                      <span className="text-xs font-bold text-zinc-950 w-24 text-center">{MONTHS[currentMonth]} {currentYear}</span>
+                      <button type="button" onClick={handleNextMonth} className="p-1 px-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold rounded-lg transition-colors cursor-pointer">Next</button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1.5 text-center text-[10px] font-bold text-zinc-400">
+                    <span>SU</span><span>MO</span><span>TU</span><span>WE</span><span>TH</span><span>FR</span><span>SA</span>
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1.5">
+                    {days.map((day, idx) => {
+                      if (!day) return <div key={`empty-${idx}`} className="aspect-square" />;
+
+                      const dStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+                      const status = occupancy[dStr] || "none";
+                      const isSaava = saavaDates.includes(dStr);
+
+                      let bgClass = "bg-emerald-50/60 text-emerald-800 border-emerald-200 hover:bg-emerald-100/80";
+                      let dotColor = "bg-emerald-500";
+
+                      if (status === "full") {
+                        bgClass = "bg-rose-50/60 text-rose-800 border-rose-200 hover:bg-rose-100/80";
+                        dotColor = "bg-rose-500";
+                      } else if (status === "partial") {
+                        bgClass = "bg-amber-50/60 text-amber-800 border-amber-200 hover:bg-amber-100/80";
+                        dotColor = "bg-amber-500";
+                      }
+
+                      return (
+                        <div
+                          key={dStr}
+                          className={`aspect-square rounded-xl border flex flex-col items-center justify-between p-1 cursor-pointer transition-colors relative ${bgClass}`}
+                          title={`Date: ${dStr} | Status: ${status === "full" ? "Fully Booked" : status === "partial" ? "Partially Booked" : "Available"}${isSaava ? " | Saava Day" : ""}`}
+                        >
+                          <span className="text-xs font-bold">{day.getDate()}</span>
+                          <div className="flex items-center gap-1">
+                            <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+                            {isSaava && <span className="text-[10px] leading-none" title="Saava Day">💍</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex items-center justify-center gap-4 flex-wrap text-[10px] font-semibold text-zinc-600 bg-zinc-50 p-3 rounded-2xl border border-zinc-100">
+                    <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Available</div>
+                    <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500" /> Partially Booked</div>
+                    <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-500" /> Fully Booked</div>
+                    <div className="flex items-center gap-1.5"><span>💍</span> Wedding Saava Day</div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -404,7 +546,7 @@ export default function RoomBookingPage() {
                 
                 <form onSubmit={handleBook} className="space-y-5">
                   {error && (
-                    <div className="p-3 bg-rose-50 text-rose-600 text-sm rounded-xl border border-rose-100">
+                    <div className="p-3 bg-rose-50 text-rose-600 text-xs font-semibold rounded-xl border border-rose-100">
                       {error}
                     </div>
                   )}
@@ -415,7 +557,7 @@ export default function RoomBookingPage() {
                     <select
                       value={eventPurpose}
                       onChange={e => setEventPurpose(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-white border border-zinc-200 rounded-xl text-xs font-semibold text-zinc-800 focus:outline-none focus:border-amber-500"
+                      className="w-full px-3 py-2.5 bg-white border border-zinc-200 rounded-xl text-xs font-semibold text-zinc-800 focus:outline-none focus:border-amber-500 cursor-pointer"
                     >
                       <option value="saava">💍 Wedding Saava Days (सावा दिवस - विवाह)</option>
                       <option value="other_days">🗓️ Other Days (अन्य सामान्य दिवस - विवाह/निजी कार्य)</option>
@@ -448,212 +590,121 @@ export default function RoomBookingPage() {
                       <div className="space-y-1">
                         <label className="text-xs font-semibold text-zinc-700">Full Name *</label>
                         <input
-                          type="text"
                           required
-                          placeholder="Your Name"
+                          type="text"
                           value={guestName}
                           onChange={e => setGuestName(e.target.value)}
-                          className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-amber-500"
+                          placeholder="Your Name"
+                          className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:border-amber-500"
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-semibold text-zinc-700">WhatsApp Mobile *</label>
+                        <label className="text-xs font-semibold text-zinc-700">WhatsApp / Phone Number *</label>
                         <input
-                          type="tel"
                           required
-                          placeholder="10-digit mobile number"
+                          type="tel"
                           value={guestPhone}
                           onChange={e => setGuestPhone(e.target.value)}
-                          className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-amber-500"
+                          placeholder="10-digit mobile"
+                          className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:border-amber-500"
                         />
                       </div>
                     </div>
                   )}
 
-                  {/* Step 4: Booking Dates */}
-                  <div className="space-y-3 pt-2 border-t border-zinc-100">
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold text-zinc-700">Start Date *</label>
-                      <CustomDatePicker
-                        value={startDate}
-                        onChange={setStartDate}
-                        min={new Date().toISOString().split("T")[0]}
-                        required
-                        placeholder="Select Start Date (e.g. 21 Jul 2026)"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold text-zinc-700">End Date *</label>
-                      <CustomDatePicker
-                        value={endDate}
-                        onChange={setEndDate}
-                        min={startDate || new Date().toISOString().split("T")[0]}
-                        required
-                        placeholder="Select End Date (e.g. 25 Jul 2026)"
-                      />
+                  {/* Step 4: Choose Stay Dates */}
+                  <div className="space-y-3 pt-1 border-t border-zinc-100">
+                    <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block">2. Select Stay Window *</label>
+                    <div className="space-y-2">
+                      <div className="space-y-1">
+                        <span className="text-[11px] text-zinc-500 font-semibold">Check-in Date</span>
+                        <CustomDatePicker
+                          value={startDate}
+                          onChange={setStartDate}
+                          min={new Date().toISOString().split("T")[0]}
+                          placeholder="Select Check-in Date"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-[11px] text-zinc-500 font-semibold">Check-out Date</span>
+                        <CustomDatePicker
+                          value={endDate}
+                          onChange={setEndDate}
+                          min={startDate || new Date().toISOString().split("T")[0]}
+                          placeholder="Select Check-out Date"
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  {/* Special-event / availability status for the selected dates (backend-authoritative) */}
-                  {quoteInfo && quoteInfo.event_name && !isBlockedOrFull && (
-                    <div className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl space-y-1.5">
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold uppercase tracking-wide">
-                        <PartyPopper className="w-3 h-3" /> Special Event Price
-                      </span>
-                      <p className="text-xs font-bold text-amber-900">{quoteInfo.event_name}</p>
-                      <p className="text-[11px] text-zinc-600">
-                        Normal Price: ₹{quoteInfo.default_price_per_day}/day · Event nights are priced differently — see breakdown below.
-                      </p>
-                    </div>
-                  )}
+                  {/* Pricing Quote Summary */}
+                  {startDate && endDate && quote.days > 0 && (
+                    <div className="bg-zinc-50/80 border border-zinc-100 rounded-2xl p-4 space-y-2.5 text-xs text-zinc-600 font-medium">
+                      <div className="flex justify-between items-center text-zinc-950 font-bold border-b border-zinc-200/60 pb-1.5">
+                        <span>Stay Quote Breakdown</span>
+                        <span className="px-2 py-0.5 rounded bg-zinc-200/80 text-[10px] text-zinc-700">{quote.days} Day(s)</span>
+                      </div>
 
-                  {isBlockedOrFull && (
-                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2">
-                      <Ban className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-xs font-bold text-rose-800">
-                          {isFull ? "FULL — Not Available for These Dates" : "Not Available During This Event"}
-                        </p>
-                        {!isFull && quoteInfo.blocked_reason && (
-                          <p className="text-[11px] text-rose-600 mt-0.5">{quoteInfo.blocked_reason}</p>
-                        )}
+                      {eventPurpose !== "free" && (
+                        <div className="flex justify-between items-center">
+                          <span>Base rent ({eventPurpose === 'social' ? 'Social rate' : eventPurpose === 'saava' ? 'Saava rate' : 'Standard rate'})</span>
+                          <span className="font-mono text-zinc-800 font-bold">₹{quote.baseFixedRent.toLocaleString()}</span>
+                        </div>
+                      )}
+
+                      {isAgrawalMember && quote.memberDiscount > 0 && (
+                        <div className="flex justify-between items-center text-emerald-600">
+                          <span>Agrawal Member Discount (25%)</span>
+                          <span className="font-mono font-bold">-₹{quote.memberDiscount.toLocaleString()}</span>
+                        </div>
+                      )}
+
+                      {quote.cleaningCharge > 0 && (
+                        <div className="flex justify-between items-center">
+                          <span>Mandatory Cleaning Charge</span>
+                          <span className="font-mono text-zinc-800 font-bold">₹{quote.cleaningCharge.toLocaleString()}</span>
+                        </div>
+                      )}
+
+                      <div className="pt-2 border-t border-zinc-200/85 flex justify-between items-center text-sm font-extrabold text-zinc-950">
+                        <span>Total Payable Rent</span>
+                        <span className="font-mono text-amber-600">₹{totalAmount.toLocaleString()}</span>
                       </div>
                     </div>
                   )}
 
-                  {!isBlockedOrFull && hasStayViolation && (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2">
-                      <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                      <ul className="text-[11px] text-amber-800 space-y-1">
-                        {quoteInfo.stay_errors.map((msg: string, i: number) => <li key={i}>{msg}</li>)}
-                      </ul>
-                    </div>
-                  )}
-
+                  {/* Notes / Special Instructions */}
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-zinc-700">Event Function Notes</label>
-                    <textarea 
-                      value={notes} 
-                      onChange={e => setNotes(e.target.value)} 
-                      rows={2} 
-                      placeholder="e.g. Wedding function, Committee meeting" 
-                      className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-amber-500" 
+                    <label className="text-xs font-semibold text-zinc-700">Special Instructions / Family Details (Optional)</label>
+                    <textarea
+                      rows={2}
+                      value={notes}
+                      onChange={e => setNotes(e.target.value)}
+                      placeholder="e.g. Booking for daughter's wedding. Need extra helper keys."
+                      className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:border-amber-500 bg-white"
                     />
                   </div>
 
-                  {totalAmount > 0 && (
-                    <div className="space-y-2 pt-3 border-t border-zinc-100">
-                      <label className="text-xs font-semibold text-zinc-700">Have a Voucher Code?</label>
-                      {appliedVoucher && !voucherIsStale ? (
-                        <div className="flex items-center justify-between p-3 rounded-xl border border-emerald-200 bg-emerald-50">
-                          <span className="text-xs font-semibold text-emerald-800 flex items-center gap-2">
-                            <Ticket className="w-4 h-4" /> {appliedVoucher.code} applied — ₹{appliedVoucher.discountAmount} off
-                          </span>
-                          <button type="button" onClick={handleRemoveVoucher} className="text-emerald-700 hover:text-emerald-900">
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            placeholder="Enter voucher code"
-                            value={voucherCode}
-                            onChange={(e) => { setVoucherCode(e.target.value.toUpperCase()); setVoucherError(""); }}
-                            className="flex-1 px-3 py-2 border border-zinc-200 rounded-xl text-sm font-mono focus:outline-none focus:border-amber-500"
-                          />
-                          <button
-                            type="button"
-                            onClick={handleApplyVoucher}
-                            disabled={voucherChecking || !voucherCode.trim()}
-                            className="px-3 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl disabled:opacity-50 transition-colors"
-                          >
-                            {voucherChecking ? "..." : "Apply"}
-                          </button>
-                        </div>
-                      )}
-                      {voucherIsStale && (
-                        <p className="text-xs text-amber-600">Dates changed — please re-apply your voucher.</p>
-                      )}
-                      {voucherError && <p className="text-xs text-rose-600">{voucherError}</p>}
-                    </div>
-                  )}
+                  {/* Terms Checkbox */}
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      required
+                      type="checkbox"
+                      checked={agreedToTerms}
+                      onChange={e => setAgreedToTerms(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 text-amber-600 focus:ring-amber-500 rounded cursor-pointer"
+                    />
+                    <span className="text-[10px] text-zinc-500 leading-normal">
+                      I agree to the Agrasen Bhawan Mansarovar Terms, Rules and strict Vegetarian guidelines.
+                    </span>
+                  </label>
 
-                  {/* Official User Side Calculation Summary */}
-                  <AnimatePresence>
-                    {quote.days > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -8, height: 0 }}
-                        animate={{ opacity: 1, y: 0, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.25 }}
-                        className="space-y-2 p-3.5 bg-zinc-50 rounded-xl border border-zinc-200 text-xs overflow-hidden"
-                      >
-                        <div className="flex justify-between text-zinc-600 font-medium">
-                          <span>Duration</span>
-                          <span>{quote.days} Day(s)</span>
-                        </div>
-                        <div className="flex justify-between text-zinc-600 font-medium">
-                          <span>Facility Rent</span>
-                          <span>₹{quote.netRent}</span>
-                        </div>
-                        {quote.cleaningCharge > 0 && (
-                          <div className="flex justify-between text-zinc-600 font-medium">
-                            <span>Mandatory Cleaning Charge</span>
-                            <span>+₹{quote.cleaningCharge}</span>
-                          </div>
-                        )}
-                        <p className="text-[10px] text-zinc-400 italic pt-1">
-                          * Electricity @ ₹15/kWh based on meter reading settled at venue.
-                        </p>
-                        <div className="flex justify-between items-baseline font-bold text-zinc-900 pt-2 border-t border-zinc-200 text-sm">
-                          <span>Total Payable</span>
-                          <AnimatePresence mode="popLayout">
-                            <motion.span
-                              key={payableAmount}
-                              initial={{ opacity: 0, y: -6 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: 6 }}
-                              transition={{ duration: 0.2 }}
-                              className="text-amber-600 font-extrabold text-base"
-                            >
-                              ₹{payableAmount}
-                            </motion.span>
-                          </AnimatePresence>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  <div className="space-y-3 pt-3 border-t border-zinc-100">
-                    <div className="p-3.5 bg-amber-50/90 border border-amber-200 rounded-xl space-y-1 text-xs">
-                      <span className="font-bold text-amber-900 flex items-center gap-1.5">
-                        📩 Booking Request to Admin
-                      </span>
-                      <p className="text-zinc-600 leading-relaxed">
-                        Submitting this form sends your booking request directly to the Agrawal Samaj Mansrovar Jaipur Admin Team. An admin will contact you on your phone number to discuss details and finalize the reservation.
-                      </p>
-                    </div>
-
-                    <label className="flex items-start gap-2.5 cursor-pointer pt-1">
-                      <input
-                        type="checkbox"
-                        checked={agreedToTerms}
-                        onChange={e => setAgreedToTerms(e.target.checked)}
-                        className="mt-0.5 text-amber-500 focus:ring-amber-500 rounded"
-                      />
-                      <span className="text-[11px] text-zinc-600 leading-tight">
-                        I agree to Agrasen Bhawan Mansarovar rules (Pure Vegetarian, No Alcohol/Smoking, Music cutoff at 10PM, Check-in 12PM / Check-out 11AM).
-                      </span>
-                    </label>
-                  </div>
-
-                  <button disabled={isSubmitting || quote.days <= 0 || !agreedToTerms || isBlockedOrFull} type="submit" className="w-full py-3.5 mt-4 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-600 hover:via-orange-600 hover:to-rose-700 text-white font-bold text-sm rounded-xl transition-all disabled:opacity-50 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 active:scale-[0.98] disabled:active:scale-100">
-                    {isSubmitting
-                      ? "Sending Request to Admin..."
-                      : isBlockedOrFull
-                        ? (isFull ? "FULL" : "Not Available During This Event")
-                        : "Submit Booking Request to Admin"}
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || !startDate || !endDate}
+                    className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm rounded-xl shadow-md transition-all disabled:opacity-50 cursor-pointer"
+                  >
+                    {isSubmitting ? "Submitting Request..." : "Request Booking Confirmation"}
                   </button>
                 </form>
               </div>

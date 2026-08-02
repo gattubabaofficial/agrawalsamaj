@@ -259,27 +259,6 @@ export default function BlogPage() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-12">
-        {/* Tag Filter */}
-        {allTags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-10">
-            <button
-              onClick={() => handleTag("")}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all ${activeTag === "" ? "bg-gradient-to-r from-amber-500 to-rose-500 border-transparent text-white shadow-md shadow-amber-500/30" : "bg-white border-zinc-200 text-zinc-600 hover:border-amber-300 hover:text-amber-600"}`}
-            >
-              All Posts
-            </button>
-            {allTags.map((tag) => (
-              <button
-                key={tag}
-                onClick={() => handleTag(tag)}
-                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium border transition-all ${activeTag === tag ? "bg-gradient-to-r from-amber-500 to-rose-500 border-transparent text-white shadow-md shadow-amber-500/30" : "bg-white border-zinc-200 text-zinc-600 hover:border-amber-300 hover:text-amber-600"}`}
-              >
-                <Tag className="w-3 h-3" />
-                {tag}
-              </button>
-            ))}
-          </div>
-        )}
 
         {/* Grid */}
         {loading ? (
@@ -333,16 +312,6 @@ export default function BlogPage() {
                 </Link>
 
                 <div className="p-5 flex flex-col flex-1">
-                  {/* Tags */}
-                  {blog.tags && blog.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-3">
-                      {blog.tags.slice(0, 3).map((tag) => (
-                        <span key={tag} className="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-600 text-xs font-medium border border-amber-100">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
 
                   {/* Title */}
                   <Link href={`/blog/${blog.slug}`}>

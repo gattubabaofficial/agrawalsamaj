@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Mail, Phone, MapPin, ShieldAlert, Award, FileUser, MessageSquare, HandHeart, Undo2 } from "lucide-react";
+import { Search, Mail, Phone, MapPin, ShieldAlert, Award, FileUser, MessageSquare, HandHeart, Undo2, Edit, X } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
 import { formatParentage } from "@/utils/member";
@@ -37,8 +37,6 @@ interface Member {
   is_member: boolean;
 }
 
-// Members flagged Shifted / Expired / etc. in the imported list are kept here, not
-// deleted — surfaced with a status badge instead.
 const MEMBER_STATUS_BADGE: Record<string, { label: string; className: string }> = {
   shifted: { label: "Shifted", className: "bg-amber-50 text-amber-700 border-amber-100" },
   expired: { label: "Expired", className: "bg-rose-50 text-rose-700 border-rose-100" },
@@ -58,6 +56,23 @@ export default function AdminMembersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+
+  // Edit Member Modal State
+  const [editingMember, setEditingMember] = useState<Member | null>(null);
+  const [editForm, setEditForm] = useState<Partial<Member>>({});
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState("");
+
+  // Send Message Modal State
+  const [messageMember, setMessageMember] = useState<Member | null>(null);
+  const [messageText, setMessageText] = useState("");
+  const [messageReason, setMessageReason] = useState("General Inquiry");
+  const [senderName, setSenderName] = useState("Administrator");
+  const [senderMobile, setSenderMobile] = useState("");
+  const [senderEmail, setSenderEmail] = useState("");
+  const [sendingMsg, setSendingMsg] = useState(false);
+  const [msgSuccess, setMsgSuccess] = useState("");
+  const [msgError, setMsgError] = useState("");
 
   useEffect(() => {
     fetchMembers();
@@ -93,6 +108,94 @@ export default function AdminMembersPage() {
       alert("Failed to update role. Please try again.");
     } finally {
       setUpdatingUserId(null);
+    }
+  };
+
+  const handleOpenEditModal = (m: Member) => {
+    setEditingMember(m);
+    setEditForm({
+      first_name: m.first_name || "",
+      surname: m.surname || "",
+      father_name: m.father_name || "",
+      mobile: m.mobile || "",
+      email: m.email || "",
+      address: m.address || "",
+      family_relation: m.family_relation || "",
+      samaj_id: m.samaj_id || "",
+      lm_no: m.lm_no || undefined,
+      zone: m.zone || "",
+      house_no: m.house_no || "",
+      member_status: m.member_status || "active",
+      profession: m.profession || "",
+      native_place: m.native_place || "",
+      bio: m.bio || "",
+    });
+    setEditError("");
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMember) return;
+    setEditSubmitting(true);
+    setEditError("");
+    try {
+      const token = localStorage.getItem("token");
+      const payload = { ...editForm };
+      if (payload.lm_no === "") payload.lm_no = null;
+      else if (payload.lm_no !== undefined) payload.lm_no = payload.lm_no === null ? null : Number(payload.lm_no);
+
+      await axios.put(
+        `${getApiBaseUrl()}/membership/users/${editingMember.user_id}/admin-update`,
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setEditingMember(null);
+      fetchMembers();
+    } catch (err: any) {
+      setEditError(err.response?.data?.detail || "Failed to update member.");
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  const handleOpenMessageModal = (m: Member) => {
+    setMessageMember(m);
+    setMessageText("");
+    setMessageReason("General Inquiry");
+    setMsgSuccess("");
+    setMsgError("");
+    
+    // Attempt to pre-fill admin details
+    setSenderName("Administrator");
+    setSenderMobile("");
+    setSenderEmail("");
+  };
+
+  const handleMessageSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!messageMember) return;
+    if (!senderName.trim() || !senderMobile.trim() || !messageText.trim()) {
+      setMsgError("Name, Mobile, and Message are required.");
+      return;
+    }
+    setSendingMsg(true);
+    setMsgError("");
+    setMsgSuccess("");
+    try {
+      const payload = {
+        recipient_user_id: messageMember.user_id,
+        sender_name: senderName.trim(),
+        sender_mobile: senderMobile.trim(),
+        sender_email: senderEmail.trim() || null,
+        reason: messageReason,
+        message: messageText.trim(),
+      };
+      const res = await axios.post(`${getApiBaseUrl()}/membership/contact-member`, payload);
+      setMsgSuccess(res.data.message || "Message request delivered successfully.");
+    } catch (err: any) {
+      setMsgError(err.response?.data?.detail || "Failed to send message request.");
+    } finally {
+      setSendingMsg(false);
     }
   };
 
@@ -244,10 +347,16 @@ export default function AdminMembersPage() {
                   <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => router.push(`/admin/chat?userId=${m.user_id}`)}
+                        onClick={() => handleOpenMessageModal(m)}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
                       >
                         <MessageSquare className="w-3.5 h-3.5" /> Message
+                      </button>
+                      <button
+                        onClick={() => handleOpenEditModal(m)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
+                      >
+                        <Edit className="w-3.5 h-3.5" /> Edit
                       </button>
                       {m.role === 'volunteer' ? (
                         <button
@@ -280,6 +389,241 @@ export default function AdminMembersPage() {
           </div>
         )}
       </div>
+
+      {/* MODAL 1: Edit Member Details Form */}
+      {editingMember && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-zinc-200 flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-zinc-100 flex items-center justify-between sticky top-0 bg-white z-10">
+              <div>
+                <h3 className="font-bold text-lg text-zinc-900">Edit Member Details</h3>
+                <p className="text-xs text-zinc-500">Edit core, contact, zone and household attributes.</p>
+              </div>
+              <button onClick={() => setEditingMember(null)} className="p-1 rounded-lg hover:bg-zinc-100">
+                <X className="w-5 h-5 text-zinc-500" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleEditSubmit} className="p-6 space-y-6">
+              {editError && (
+                <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-sm font-semibold rounded-xl flex items-center gap-2">
+                  <ShieldAlert className="w-5 h-5 shrink-0" />
+                  <span>{editError}</span>
+                </div>
+              )}
+
+              {/* Core Information */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Core Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-700">First Name *</label>
+                    <input required type="text" value={editForm.first_name || ""} onChange={e => setEditForm({...editForm, first_name: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-700">Surname *</label>
+                    <input required type="text" value={editForm.surname || ""} onChange={e => setEditForm({...editForm, surname: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-700">Father's / Husband's Name</label>
+                    <input type="text" value={editForm.father_name || ""} onChange={e => setEditForm({...editForm, father_name: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-700">Samaj ID</label>
+                    <input type="text" value={editForm.samaj_id || ""} onChange={e => setEditForm({...editForm, samaj_id: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-700">Life Member No (LM No)</label>
+                    <input type="number" value={editForm.lm_no === undefined ? "" : editForm.lm_no ?? ""} onChange={e => setEditForm({...editForm, lm_no: e.target.value ? Number(e.target.value) : null})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-700">Relation to Head</label>
+                    <select
+                      value={editForm.family_relation || ""}
+                      onChange={e => setEditForm({...editForm, family_relation: e.target.value})}
+                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white"
+                    >
+                      <option value="">Select Relation...</option>
+                      <option value="Self">Self / स्वयं (Head)</option>
+                      <option value="Spouse">Spouse / पति-पत्नी</option>
+                      <option value="Son">Son / पुत्र</option>
+                      <option value="Daughter">Daughter / पुत्री</option>
+                      <option value="Daughter-in-law">Daughter-in-law / पुत्रवधू</option>
+                      <option value="Grandson">Grandson / पौत्र</option>
+                      <option value="Granddaughter">Granddaughter / पौत्री</option>
+                      <option value="Father">Father / पिता</option>
+                      <option value="Mother">Mother / माता</option>
+                      <option value="Brother">Brother / भाई</option>
+                      <option value="Sister">Sister / बहन</option>
+                      <option value="Other">Other / अन्य</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Details */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Contact Details</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-700">Mobile Phone</label>
+                    <input type="tel" value={editForm.mobile || ""} onChange={e => setEditForm({...editForm, mobile: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-700">Email Address</label>
+                    <input type="email" value={editForm.email || ""} onChange={e => setEditForm({...editForm, email: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                  </div>
+                  <div className="col-span-2 space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-700">Residential Address</label>
+                    <input type="text" value={editForm.address || ""} onChange={e => setEditForm({...editForm, address: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Geographic & Status */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Colony Zone & Status</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-700">Colony Zone</label>
+                    <input type="text" value={editForm.zone || ""} onChange={e => setEditForm({...editForm, zone: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-700">House Number</label>
+                    <input type="text" value={editForm.house_no || ""} onChange={e => setEditForm({...editForm, house_no: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-700">Member Status</label>
+                    <select
+                      value={editForm.member_status || "active"}
+                      onChange={e => setEditForm({...editForm, member_status: e.target.value})}
+                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white"
+                    >
+                      <option value="active">Active / सक्रिय</option>
+                      <option value="shifted">Shifted / स्थान्तरित</option>
+                      <option value="expired">Expired / दिवंगत</option>
+                      <option value="sold_out">Sold Out / मकान बिका</option>
+                      <option value="shifted_sold_out">Shifted & Sold Out</option>
+                      <option value="double_name">Double Name / दोहरा नाम</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Extra Professional details */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Background Profile Details</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-700">Profession / Occupation</label>
+                    <input type="text" value={editForm.profession || ""} onChange={e => setEditForm({...editForm, profession: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-700">Native Place / Origin</label>
+                    <input type="text" value={editForm.native_place || ""} onChange={e => setEditForm({...editForm, native_place: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                  </div>
+                  <div className="col-span-2 space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-700">Bio Note</label>
+                    <textarea value={editForm.bio || ""} onChange={e => setEditForm({...editForm, bio: e.target.value})} rows={2} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t flex justify-end gap-3 sticky bottom-0 bg-white z-10 py-3">
+                <button type="button" onClick={() => setEditingMember(null)} className="px-5 py-2 border border-zinc-200 rounded-xl text-sm font-semibold hover:bg-zinc-50 cursor-pointer">
+                  Cancel
+                </button>
+                <button type="submit" disabled={editSubmitting} className="px-5 py-2 bg-amber-500 text-white rounded-xl text-sm font-semibold hover:bg-amber-600 disabled:opacity-50 cursor-pointer">
+                  {editSubmitting ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: Send Message Request (replacing chat redirect) */}
+      {messageMember && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-zinc-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-amber-500" />
+                <h3 className="font-bold text-lg">Message {messageMember.first_name}</h3>
+              </div>
+              <button onClick={() => setMessageMember(null)} className="p-1 rounded-lg hover:bg-zinc-100">
+                <X className="w-5 h-5 text-zinc-500" />
+              </button>
+            </div>
+
+            {msgSuccess ? (
+              <div className="p-6 text-center space-y-4">
+                <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg mx-auto">✓</div>
+                <h4 className="text-xl font-bold text-zinc-950">Message Sent!</h4>
+                <p className="text-sm text-zinc-500 leading-relaxed px-4">{msgSuccess}</p>
+                <button onClick={() => setMessageMember(null)} className="px-6 py-2 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 text-sm cursor-pointer mt-4">
+                  Close Window
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleMessageSubmit} className="p-6 space-y-4">
+                <p className="text-xs text-zinc-500 leading-relaxed bg-amber-50/50 p-3 rounded-lg border border-amber-100">
+                  ✉️ This will send a WhatsApp/SMS alert directly to <strong>{messageMember.first_name} {messageMember.surname}</strong> with your contact information.
+                </p>
+
+                {msgError && (
+                  <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-sm font-semibold rounded-xl">
+                    {msgError}
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-700">Sender Name *</label>
+                  <input required type="text" value={senderName} onChange={e => setSenderName(e.target.value)} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-700">Sender Mobile (WhatsApp Number) *</label>
+                  <input required type="tel" value={senderMobile} onChange={e => setSenderMobile(e.target.value)} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" placeholder="e.g. 9876543210" />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-700">Sender Email (Optional)</label>
+                  <input type="email" value={senderEmail} onChange={e => setSenderEmail(e.target.value)} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-700">Reason for Inquiry</label>
+                  <select
+                    value={messageReason}
+                    onChange={e => setMessageReason(e.target.value)}
+                    className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white"
+                  >
+                    <option value="General Inquiry">General Inquiry</option>
+                    <option value="Matrimonial Query">Matrimonial Query</option>
+                    <option value="Business Inquiry">Business Inquiry</option>
+                    <option value="Verification Assistance">Verification Assistance</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-700">Your Message *</label>
+                  <textarea required rows={3} value={messageText} onChange={e => setMessageText(e.target.value)} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" placeholder="Type your message details here..." />
+                </div>
+
+                <div className="pt-4 border-t flex justify-end gap-3 py-1">
+                  <button type="button" onClick={() => setMessageMember(null)} className="px-5 py-2 border border-zinc-200 rounded-xl text-sm font-semibold hover:bg-zinc-50 cursor-pointer">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={sendingMsg} className="px-5 py-2 bg-amber-500 text-white rounded-xl text-sm font-semibold hover:bg-amber-600 disabled:opacity-50 cursor-pointer">
+                    {sendingMsg ? "Sending..." : "Send Message"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

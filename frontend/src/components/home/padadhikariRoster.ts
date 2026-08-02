@@ -41,20 +41,20 @@ export const LEADERS: Padadhikari[] = [
     description: "अग्रवाल समाज समिति के सफल नेतृत्वकर्ता एवं समाज उत्थान के लिए समर्पित।",
   },
   {
-    slug: "pramod-kumar-gupta",
-    name: "प्रमोद कुमार गुप्ता",
-    latin: "Pramod Kumar Gupta",
-    designation: "कोषाध्यक्ष",
-    designationEn: "Treasurer",
-    description: "मूल निवासी भरतपुर। वर्तमान 10/506 कावेरी पथ मानसरोवर जयपुर। जन्म तिथि 04.10.1958। सेवा निवृत जिला श्रम कल्याण अधिकारी। वर्तमान में मीडियेटर राजस्थान उच्च न्यायालय जयपुर।",
-  },
-  {
     slug: "lakhmi-chand-singhal",
     name: "लखमी चन्द सिंघल",
     latin: "Lakhmi Chand Singhal",
     designation: "महामंत्री",
     designationEn: "General Secretary",
     description: "वरिष्ठ समाजसेवी एवं समाज के मार्गदर्शन मण्डल के सदस्य।",
+  },
+  {
+    slug: "pramod-kumar-gupta",
+    name: "प्रमोद कुमार गुप्ता",
+    latin: "Pramod Kumar Gupta",
+    designation: "कोषाध्यक्ष",
+    designationEn: "Treasurer",
+    description: "मूल निवासी भरतपुर। वर्तमान 10/506 कावेरी पथ मानसरोवर जयपुर। जन्म तिथि 04.10.1958। सेवा निवृत जिला श्रम कल्याण अधिकारी। वर्तमान में मीडियेटर राजस्थान उच्च न्यायालय जयपुर।",
   },
 ];
 

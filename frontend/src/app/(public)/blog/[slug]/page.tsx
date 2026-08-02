@@ -236,17 +236,6 @@ export default function BlogReaderPage() {
       )}
 
       <article className="max-w-3xl mx-auto px-4 pb-16">
-        {/* Tags */}
-        {blog.tags?.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-5">
-            {blog.tags.map(tag => (
-              <Link key={tag} href={`/blog?tag=${tag}`} className="flex items-center gap-1 px-3 py-1 rounded-full bg-amber-50 border border-amber-100 text-amber-600 text-xs font-medium hover:bg-amber-100 transition-colors">
-                <Tag className="w-3 h-3" /> {tag}
-              </Link>
-            ))}
-          </div>
-        )}
-
         {/* Title */}
         <h1 className="text-3xl md:text-4xl font-bold text-zinc-900 leading-tight mb-6">{blog.title}</h1>
 

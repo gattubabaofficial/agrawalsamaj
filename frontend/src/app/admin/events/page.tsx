@@ -284,7 +284,7 @@ export default function AdminEventsPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-zinc-700">Venue</label>
-              <input type="text" value={formData.venue} onChange={e => setFormData({...formData, venue: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm" placeholder="e.g. Agrawal Bhavan, Main Hall" />
+              <input type="text" value={formData.venue} onChange={e => setFormData({...formData, venue: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm" placeholder="e.g. Agrasen Bhawan, Main Hall" />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

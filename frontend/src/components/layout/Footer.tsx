@@ -124,7 +124,7 @@ export default function Footer() {
               <li className="flex gap-2.5">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-vermilion" />
                 <span className="leading-relaxed">
-                  Agrawal Bhavan Marg, Sector 5, Vidyadhar Nagar, Jaipur
+                  Agrasen Bhawan, Ward 27, Sector 5, Mansarovar, Jaipur - 302020
                 </span>
               </li>
               <li className="flex items-center gap-2.5">

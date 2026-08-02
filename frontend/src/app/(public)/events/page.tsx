@@ -14,7 +14,7 @@ const mockEvents = [
     event_id: "06eb74adc8744fca9fd6b812ecf84596",
     title: "Maharaja Agrasen Jayanti Mahotsav 2026",
     description: "Annual grand celebration of Maharaja Agrasen Jayanti with cultural programs, awards, and food.",
-    venue: "Agrawal Bhavan Main Hall",
+    venue: "Agrasen Bhawan Main Hall",
     category: "cultural",
     start_datetime: "2026-10-15T10:00:00Z",
     pass_price: 150,

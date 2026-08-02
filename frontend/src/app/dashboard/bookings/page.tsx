@@ -230,8 +230,8 @@ export default function UserBookingsPage() {
                   <div>
                     <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">Location</p>
                     <div className="flex items-center gap-2 text-zinc-900 font-medium">
-                      <MapPin className="w-4 h-4 text-zinc-400" />
-                      Agrawal Bhavan
+                       <MapPin className="w-4 h-4 text-zinc-400" />
+                       Agrasen Bhawan
                     </div>
                   </div>
                 </div>

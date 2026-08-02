@@ -91,7 +91,7 @@ export default function AboutPage() {
             <div className="p-6 rounded-2xl border border-zinc-200/50 bg-white space-y-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">🏢</div>
               <h3 className="font-bold text-zinc-900">Bhavan Facilities</h3>
-              <p className="text-xs text-zinc-500 leading-relaxed">Seamless booking of Agrawal Bhavan halls and rooms for weddings, festivals, and social gatherings.</p>
+              <p className="text-xs text-zinc-500 leading-relaxed">Seamless booking of Agrasen Bhawan halls and rooms for weddings, festivals, and social gatherings.</p>
             </div>
           </div>
         </div>
