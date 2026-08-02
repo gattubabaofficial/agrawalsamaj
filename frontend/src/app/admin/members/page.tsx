@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Mail, Phone, MapPin, ShieldAlert, Award, FileUser, MessageSquare, HandHeart, Undo2, Edit, X } from "lucide-react";
+import { Search, Mail, Phone, MapPin, ShieldAlert, Award, FileUser, MessageSquare, HandHeart, Undo2, Edit, X, Trash2 } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
 import { formatParentage } from "@/utils/member";
@@ -202,6 +202,19 @@ export default function AdminMembersPage() {
     }
   };
 
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm("Are you sure you want to permanently delete this member? All their booking records, event registrations, and details will be deleted permanently.")) return;
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`${getApiBaseUrl()}/membership/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchMembers();
+    } catch (error: any) {
+      alert(error.response?.data?.detail || "Failed to delete member.");
+    }
+  };
+
   const filteredMembers = members.filter(m => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;
@@ -360,6 +373,12 @@ export default function AdminMembersPage() {
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
                       >
                         <Edit className="w-3.5 h-3.5" /> Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteUser(m.user_id)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Delete
                       </button>
                       {m.role === 'volunteer' ? (
                         <button
