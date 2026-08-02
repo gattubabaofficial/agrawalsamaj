@@ -1,0 +1,12 @@
+make the four buttonsin hero section bhavan booking, directory, register as member, events
+make mahamantri at second position and koshaadhayaksh at 3rd
+use the actual data instead of dummy data in house hold roles and all and they can edit by the admin
+Matrimonial Links Aligned In One Place. in this when i click on the buttons the content will not visible so kindly fix instead
+instead of agrawal bhavan write agrasen bhawan remove sector 5
+google plus locationn write cordinates
+adress write ward 27 sector 5 mansrovar jaipur rajisthan 302020
+location oposite at neerja modi school behind saint marthoma church
+in admin when i click on send message it gose to group chat instead of that remove chat function and make the send message same as in website
+in blog there is tags in website don't show the tags make them search through the search bar instead
+in bhavan i want that the rate will apply as per the list given and in sava i just want to add some dates the price will remain same on that dates and i can customize things for that dates like there is no social dates book on that days and no individual romms are given and many more things and check if someone book the bhanav it will show occupied on that day for that particular unit and if possible then mark the dates with diffrent color which show its fully booked partially booked or no booking like that 
+make this changes carefully without any error and make thatm correctly
