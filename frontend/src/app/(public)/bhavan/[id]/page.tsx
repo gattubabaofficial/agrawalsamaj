@@ -58,6 +58,7 @@ export default function RoomBookingPage() {
   // Calendar states
   const [occupancy, setOccupancy] = useState<Record<string, string>>({});
   const [saavaDates, setSaavaDates] = useState<string[]>([]);
+  const [saavaCards, setSaavaCards] = useState<any[]>([]);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
 
@@ -135,9 +136,24 @@ export default function RoomBookingPage() {
       .then(res => setOccupancy(res.data))
       .catch(() => {});
 
-    // Fetch Saava dates
+    // Fetch Saava dates & cards
     axios.get(`${getApiBaseUrl()}/bookings/saava-dates`)
-      .then(res => setSaavaDates(res.data))
+      .then(res => {
+        if (Array.isArray(res.data)) {
+          if (res.data.length > 0 && typeof res.data[0] === "string") {
+            setSaavaDates(res.data);
+          } else {
+            setSaavaCards(res.data);
+            const allDates: string[] = [];
+            res.data.forEach((card: any) => {
+              if (card.dates && Array.isArray(card.dates)) {
+                allDates.push(...card.dates);
+              }
+            });
+            setSaavaDates(allDates);
+          }
+        }
+      })
       .catch(() => {});
   }, [roomId]);
 
@@ -299,29 +315,31 @@ export default function RoomBookingPage() {
       return;
     }
 
-    // Validate Saava Date restrictions client-side
-    const startObj = new Date(startDate);
-    const endObj = new Date(endDate);
-    let saavaOverlap = false;
-    let temp = new Date(startObj);
-    while (temp < endObj) {
-      const tempStr = `${temp.getFullYear()}-${String(temp.getMonth() + 1).padStart(2, '0')}-${String(temp.getDate()).padStart(2, '0')}`;
-      if (saavaDates.includes(tempStr)) {
-        saavaOverlap = true;
-        break;
-      }
-      temp.setDate(temp.getDate() + 1);
-    }
+    // Validate Saava Date & Custom Card restrictions client-side
+    const isIndividualRoom = room.type === "room" && (room.capacity || 0) < 10;
+    
+    for (const card of saavaCards) {
+      const cStart = card.start_date || (card.dates && card.dates[0]);
+      const cEnd = card.end_date || (card.dates && card.dates[card.dates.length - 1]);
+      if (!cStart) continue;
 
-    if (saavaOverlap) {
-      if (eventPurpose === "social") {
-        setError("Wedding Saava (सावा) dates do not support discounted Social bookings.");
-        return;
-      }
-      const isIndividualRoom = room.type === "room" && (room.capacity || 0) < 10;
-      if (isIndividualRoom) {
-        setError("Individual guest rooms are reserved and cannot be booked on Wedding Saava dates.");
-        return;
+      if (startDate <= (cEnd || cStart) && endDate >= cStart) {
+        if (card.is_blocked) {
+          setError(`Bhavan bookings are blocked during '${card.title || 'Saava Window'}'.`);
+          return;
+        }
+        if (card.disable_social_discount && eventPurpose === "social") {
+          setError(card.custom_rule_notice || `Social Function discounted rates are not allowed during '${card.title || 'Saava Window'}'.`);
+          return;
+        }
+        if (card.disable_individual_rooms && isIndividualRoom) {
+          setError(card.custom_rule_notice || `Individual guest rooms cannot be booked during '${card.title || 'Saava Window'}'. Full hall units must be booked for weddings.`);
+          return;
+        }
+        if (card.min_stay_days && quote.days < card.min_stay_days) {
+          setError(`'${card.title || 'Saava Window'}' requires a minimum stay of ${card.min_stay_days} day(s).`);
+          return;
+        }
       }
     }
 

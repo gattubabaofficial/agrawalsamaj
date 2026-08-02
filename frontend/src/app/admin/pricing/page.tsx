@@ -54,9 +54,20 @@ export default function PricingRulesPage() {
     ],
   });
 
-  // Saava Dates State
-  const [saavaDates, setSaavaDates] = useState<string[]>([]);
-  const [newSaavaDate, setNewSaavaDate] = useState("");
+  // Saava Cards State
+  const [saavaCards, setSaavaCards] = useState<any[]>([]);
+  const [saavaForm, setSaavaForm] = useState({
+    title: "",
+    start_date: "",
+    end_date: "",
+    rate_category: "saava",
+    disable_social_discount: true,
+    disable_individual_rooms: true,
+    disable_member_discount: false,
+    is_blocked: false,
+    min_stay_days: "",
+    custom_rule_notice: "",
+  });
 
   const auth = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } });
 
@@ -65,35 +76,89 @@ export default function PricingRulesPage() {
     if (stored) {
       try { setEditableRateLists(JSON.parse(stored)); } catch (e) { console.error(e); }
     }
-    fetchSaavaDates();
+    fetchCategoryRates();
+    fetchSaavaCards();
   }, []);
 
-  const fetchSaavaDates = async () => {
+  const fetchCategoryRates = async () => {
+    try {
+      const res = await axios.get(`${getApiBaseUrl()}/bookings/category-rates`);
+      if (res.data) {
+        setEditableRateLists(res.data);
+        localStorage.setItem("bhavan_custom_rates", JSON.stringify(res.data));
+      }
+    } catch (e) {
+      console.error("Failed to fetch category rates", e);
+    }
+  };
+
+  const fetchSaavaCards = async () => {
     try {
       const res = await axios.get(`${getApiBaseUrl()}/bookings/saava-dates`);
-      setSaavaDates(res.data);
+      if (Array.isArray(res.data)) {
+        if (res.data.length > 0 && typeof res.data[0] === "string") {
+          setSaavaCards(res.data.map((d: string) => ({
+            date_id: d,
+            title: "Wedding Saava Day",
+            start_date: d,
+            end_date: d,
+            rate_category: "saava",
+            disable_social_discount: true,
+            disable_individual_rooms: true,
+            disable_member_discount: false,
+            is_blocked: false,
+            dates: [d]
+          })));
+        } else {
+          setSaavaCards(res.data);
+        }
+      }
     } catch (e) {
-      console.error("Failed to load Saava dates", e);
+      console.error("Failed to load Saava cards", e);
     }
   };
 
-  const addSaavaDate = async () => {
-    if (!newSaavaDate) return;
+  const handleAddSaavaCard = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!saavaForm.start_date) return;
     try {
-      await axios.post(`${getApiBaseUrl()}/bookings/saava-dates`, [newSaavaDate], auth());
-      setNewSaavaDate("");
-      fetchSaavaDates();
+      const payload = {
+        title: saavaForm.title || "Wedding Saava Window",
+        start_date: saavaForm.start_date,
+        end_date: saavaForm.end_date || saavaForm.start_date,
+        rate_category: saavaForm.rate_category,
+        disable_social_discount: saavaForm.disable_social_discount,
+        disable_individual_rooms: saavaForm.disable_individual_rooms,
+        disable_member_discount: saavaForm.disable_member_discount,
+        is_blocked: saavaForm.is_blocked,
+        min_stay_days: saavaForm.min_stay_days ? parseInt(saavaForm.min_stay_days) : null,
+        custom_rule_notice: saavaForm.custom_rule_notice || null,
+      };
+      await axios.post(`${getApiBaseUrl()}/bookings/saava-dates`, payload, auth());
+      setSaavaForm({
+        title: "",
+        start_date: "",
+        end_date: "",
+        rate_category: "saava",
+        disable_social_discount: true,
+        disable_individual_rooms: true,
+        disable_member_discount: false,
+        is_blocked: false,
+        min_stay_days: "",
+        custom_rule_notice: "",
+      });
+      fetchSaavaCards();
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Failed to add Saava date");
+      setError(e.response?.data?.detail || "Failed to add Saava Card");
     }
   };
 
-  const removeSaavaDate = async (dateStr: string) => {
+  const removeSaavaCard = async (idOrDate: string) => {
     try {
-      await axios.delete(`${getApiBaseUrl()}/bookings/saava-dates/${dateStr}`, auth());
-      fetchSaavaDates();
+      await axios.delete(`${getApiBaseUrl()}/bookings/saava-dates/${idOrDate}`, auth());
+      fetchSaavaCards();
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Failed to remove Saava date");
+      setError(e.response?.data?.detail || "Failed to remove Saava Card");
     }
   };
 
@@ -103,8 +168,13 @@ export default function PricingRulesPage() {
     setEditableRateLists({ ...updated });
   };
 
-  const saveCategoryRates = () => {
+  const saveCategoryRates = async () => {
     localStorage.setItem("bhavan_custom_rates", JSON.stringify(editableRateLists));
+    try {
+      await axios.post(`${getApiBaseUrl()}/bookings/category-rates`, editableRateLists, auth());
+    } catch (e) {
+      console.error("Failed saving category rates to backend", e);
+    }
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 4000);
   };
@@ -265,9 +335,9 @@ export default function PricingRulesPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-100 pb-4">
           <div>
             <h2 className="font-bold text-zinc-900 text-lg flex items-center gap-2">
-              <Settings className="w-5 h-5 text-amber-600" /> Bhavan Category Rate List Manager (दर तालिका)
+              <Settings className="w-5 h-5 text-amber-600" /> Master Rate List Table (दर तालिका)
             </h2>
-            <p className="text-xs text-zinc-500 mt-0.5">Customize rate lists for Wedding Saava Days, Other Social Functions, and Free/Charitable Usage.</p>
+            <p className="text-xs text-zinc-500 mt-0.5">Customize master rate lists for Wedding Saava Days, Other Social Functions, and Free/Charitable Usage.</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -287,14 +357,14 @@ export default function PricingRulesPage() {
               onClick={saveCategoryRates}
               className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
             >
-              Save Rate List
+              Save Rate List Table
             </button>
           </div>
         </div>
 
         {saveSuccess && (
           <div className="p-3 bg-emerald-50 text-emerald-800 text-xs font-bold rounded-xl border border-emerald-200">
-            ✓ Bhavan rate list updated successfully! Public Bhavan page (/bhavan) is now updated.
+            ✓ Bhavan rate list table updated successfully! Rates synced across public pages and backend.
           </div>
         )}
 
@@ -359,55 +429,197 @@ export default function PricingRulesPage() {
         </div>
       </div>
 
-      {/* Saava Dates Manager */}
+      {/* Saava & Special Event Cards Manager */}
       <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm space-y-6">
         <div>
           <h2 className="font-bold text-zinc-900 text-lg flex items-center gap-2">
-            <CalendarRange className="w-5 h-5 text-amber-600" /> Wedding Saava (सावा) Dates Manager
+            <CalendarRange className="w-5 h-5 text-amber-600" /> Wedding Saava & Special Days Cards Manager (सावा कार्ड्स)
           </h2>
-          <p className="text-xs text-zinc-500 mt-0.5">Designate specific dates as wedding Saava dates. On these dates: social discount bookings and individual guest room bookings are blocked automatically.</p>
+          <p className="text-xs text-zinc-500 mt-0.5">
+            Create individual date-range cards for Saava & special event windows. Each card links to a Rate List from the table and enforces customizable booking rules.
+          </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-end gap-3 max-w-md">
-          <div className="flex-1 space-y-1">
-            <label className="text-[11px] font-semibold text-zinc-500">Select Date</label>
+        {/* Add Saava Card Form */}
+        <form onSubmit={handleAddSaavaCard} className="p-5 bg-amber-50/50 rounded-2xl border border-amber-200/80 space-y-4">
+          <h3 className="font-bold text-xs uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
+            <Plus className="w-4 h-4 text-amber-600" /> Create New Saava / Special Date Card
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-zinc-700">Card Title / Occasion *</label>
+              <input
+                required
+                type="text"
+                placeholder="e.g. Dev Uthan Ekadashi Saava"
+                value={saavaForm.title}
+                onChange={(e) => setSaavaForm({ ...saavaForm, title: e.target.value })}
+                className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-xs bg-white focus:outline-none focus:border-amber-500 font-semibold"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-zinc-700">From Date *</label>
+              <input
+                required
+                type="date"
+                value={saavaForm.start_date}
+                onChange={(e) => setSaavaForm({ ...saavaForm, start_date: e.target.value })}
+                className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-xs bg-white focus:outline-none focus:border-amber-500 font-semibold"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-zinc-700">To Date *</label>
+              <input
+                required
+                type="date"
+                value={saavaForm.end_date}
+                onChange={(e) => setSaavaForm({ ...saavaForm, end_date: e.target.value })}
+                className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-xs bg-white focus:outline-none focus:border-amber-500 font-semibold"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-zinc-700">Rates To Apply (Puls Rates From Table) *</label>
+              <select
+                value={saavaForm.rate_category}
+                onChange={(e) => setSaavaForm({ ...saavaForm, rate_category: e.target.value })}
+                className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-xs bg-white focus:outline-none focus:border-amber-500 font-semibold"
+              >
+                <option value="saava">💍 Wedding Saava Days Rate (Table)</option>
+                <option value="other_days">🗓️ Other Days Rate (Table)</option>
+                <option value="social">👥 Social Functions Rate (Table)</option>
+                <option value="free">🎁 Free / Welfare Usage Rate (Table)</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-zinc-700">Min Stay Days Requirement (Optional)</label>
+              <input
+                type="number"
+                min="1"
+                placeholder="e.g. 2 (forces min 2 days stay)"
+                value={saavaForm.min_stay_days}
+                onChange={(e) => setSaavaForm({ ...saavaForm, min_stay_days: e.target.value })}
+                className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-xs bg-white focus:outline-none focus:border-amber-500 font-semibold"
+              />
+            </div>
+          </div>
+
+          {/* Customizable Rules Toggles */}
+          <div className="space-y-2 pt-2 border-t border-amber-200/60">
+            <span className="text-[11px] font-bold text-amber-900 block uppercase tracking-wider">Customizable Card Rules & Restrictions:</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <label className="flex items-center gap-2 p-2 bg-white rounded-xl border border-amber-200 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={saavaForm.disable_social_discount}
+                  onChange={(e) => setSaavaForm({ ...saavaForm, disable_social_discount: e.target.checked })}
+                  className="w-4 h-4 text-amber-600 rounded"
+                />
+                <span className="font-semibold text-zinc-800">🚫 Disable Social Function Rates</span>
+              </label>
+              <label className="flex items-center gap-2 p-2 bg-white rounded-xl border border-amber-200 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={saavaForm.disable_individual_rooms}
+                  onChange={(e) => setSaavaForm({ ...saavaForm, disable_individual_rooms: e.target.checked })}
+                  className="w-4 h-4 text-amber-600 rounded"
+                />
+                <span className="font-semibold text-zinc-800">🚫 Block Individual Room Bookings</span>
+              </label>
+              <label className="flex items-center gap-2 p-2 bg-white rounded-xl border border-amber-200 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={saavaForm.disable_member_discount}
+                  onChange={(e) => setSaavaForm({ ...saavaForm, disable_member_discount: e.target.checked })}
+                  className="w-4 h-4 text-amber-600 rounded"
+                />
+                <span className="font-semibold text-zinc-800">🚫 Disable Agrawal Member Discount</span>
+              </label>
+              <label className="flex items-center gap-2 p-2 bg-white rounded-xl border border-rose-200 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={saavaForm.is_blocked}
+                  onChange={(e) => setSaavaForm({ ...saavaForm, is_blocked: e.target.checked })}
+                  className="w-4 h-4 text-rose-600 rounded"
+                />
+                <span className="font-semibold text-rose-800">🔒 Block All Bhavan Bookings (Maintenance)</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold text-zinc-700">Custom Notice Message for Users (Optional)</label>
             <input
-              type="date"
-              value={newSaavaDate}
-              onChange={(e) => setNewSaavaDate(e.target.value)}
-              className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:border-amber-500 text-zinc-900 font-semibold"
+              type="text"
+              placeholder="e.g. Only full family wedding bookings allowed during Dev Uthan Ekadashi."
+              value={saavaForm.custom_rule_notice}
+              onChange={(e) => setSaavaForm({ ...saavaForm, custom_rule_notice: e.target.value })}
+              className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-xs bg-white focus:outline-none focus:border-amber-500"
             />
           </div>
-          <button
-            type="button"
-            onClick={addSaavaDate}
-            className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm rounded-xl transition-all cursor-pointer h-[38px] flex items-center justify-center gap-1.5"
-          >
-            <Plus className="w-4 h-4" /> Add Saava Date
-          </button>
-        </div>
 
-        {saavaDates.length === 0 ? (
-          <p className="text-xs text-zinc-400 py-2">No Saava dates defined yet.</p>
-        ) : (
-          <div className="flex flex-wrap gap-2.5">
-            {saavaDates.map((dStr) => (
-              <span
-                key={dStr}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-800 text-xs font-bold rounded-xl border border-amber-200"
-              >
-                <span>💍 {dStr}</span>
-                <button
-                  type="button"
-                  onClick={() => removeSaavaDate(dStr)}
-                  className="text-amber-500 hover:text-red-600 p-0.5 rounded-full hover:bg-amber-100 transition-colors"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
+          <button
+            type="submit"
+            className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            <Plus className="w-4 h-4" /> Save Saava Date Card
+          </button>
+        </form>
+
+        {/* Display Active Saava Cards */}
+        <div className="space-y-3">
+          <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider">Active Saava & Special Date Cards ({saavaCards.length})</h3>
+
+          {saavaCards.length === 0 ? (
+            <p className="text-xs text-zinc-400 py-3 text-center border border-dashed border-zinc-200 rounded-2xl">
+              No Saava date cards added yet. Use the form above to add your first Saava card.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {saavaCards.map((card) => (
+                <div key={card.date_id} className="p-4 bg-gradient-to-br from-amber-50/60 to-orange-50/40 rounded-2xl border border-amber-200/90 shadow-sm space-y-3 relative">
+                  <div className="flex items-start justify-between gap-2 border-b border-amber-200/60 pb-2.5">
+                    <div>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500 text-white text-[10px] font-extrabold rounded-md uppercase tracking-wider mb-1">
+                        💍 {card.rate_category === 'saava' ? 'Wedding Saava' : card.rate_category === 'social' ? 'Social Event' : 'Special Event'}
+                      </span>
+                      <h4 className="font-bold text-zinc-900 text-sm">{card.title}</h4>
+                      <p className="text-xs text-amber-900 font-bold font-mono mt-0.5">
+                        🗓️ {card.start_date} → {card.end_date}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeSaavaCard(card.date_id)}
+                      className="p-1.5 text-amber-500 hover:text-rose-600 bg-white rounded-xl border border-amber-200 hover:border-rose-300 transition-colors cursor-pointer"
+                      title="Delete Saava Card"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Active Rules */}
+                  <div className="flex flex-wrap gap-1.5 text-[10px]">
+                    {card.is_blocked && <span className="px-2 py-0.5 bg-rose-100 text-rose-800 font-bold rounded-lg border border-rose-200">🔒 Fully Blocked</span>}
+                    {card.disable_social_discount && <span className="px-2 py-0.5 bg-amber-100 text-amber-800 font-bold rounded-lg border border-amber-200">🚫 No Social Rates</span>}
+                    {card.disable_individual_rooms && <span className="px-2 py-0.5 bg-amber-100 text-amber-800 font-bold rounded-lg border border-amber-200">🚫 No Guest Rooms</span>}
+                    {card.disable_member_discount && <span className="px-2 py-0.5 bg-purple-100 text-purple-800 font-bold rounded-lg border border-purple-200">🚫 No Member Discount</span>}
+                    {card.min_stay_days && <span className="px-2 py-0.5 bg-blue-100 text-blue-800 font-bold rounded-lg border border-blue-200">⏱️ Min {card.min_stay_days} Days Stay</span>}
+                  </div>
+
+                  {card.custom_rule_notice && (
+                    <p className="text-[11px] text-zinc-600 italic bg-white/80 p-2 rounded-xl border border-amber-100">
+                      &quot;{card.custom_rule_notice}&quot;
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

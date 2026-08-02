@@ -96,6 +96,7 @@ export default function BhavanPage() {
   const [facilities, setFacilities] = useState(mockFacilities);
   const [rateCategory, setRateCategory] = useState<"saava" | "other_days" | "social" | "free">("saava");
   const [customRateLists, setCustomRateLists] = useState<Record<string, any[]>>({});
+  const [saavaCards, setSaavaCards] = useState<any[]>([]);
 
   useEffect(() => {
     // Load custom rates if edited by admin
@@ -108,6 +109,29 @@ export default function BhavanPage() {
       }
     }
 
+    const loadCategoryRates = async () => {
+      try {
+        const res = await axios.get(`${getApiBaseUrl()}/bookings/category-rates`);
+        if (res.data) {
+          setCustomRateLists(res.data);
+          localStorage.setItem("bhavan_custom_rates", JSON.stringify(res.data));
+        }
+      } catch (err) {
+        console.log("Using fallback category rates");
+      }
+    };
+
+    const loadSaavaCards = async () => {
+      try {
+        const res = await axios.get(`${getApiBaseUrl()}/bookings/saava-dates`);
+        if (Array.isArray(res.data)) {
+          setSaavaCards(res.data);
+        }
+      } catch (err) {
+        console.log("Could not fetch Saava cards");
+      }
+    };
+
     const fetchFacilities = async () => {
       try {
         const response = await axios.get(`${getApiBaseUrl()}/bookings/rooms`);
@@ -118,6 +142,9 @@ export default function BhavanPage() {
         console.log("Could not fetch facilities from server, using fallback data.");
       }
     };
+
+    loadCategoryRates();
+    loadSaavaCards();
     fetchFacilities();
   }, []);
 
@@ -169,6 +196,40 @@ export default function BhavanPage() {
             </div>
           </div>
         </div>
+
+        {/* Active Saava Date Windows Cards */}
+        {saavaCards.length > 0 && (
+          <div className="glass-panel rounded-[2rem] p-6 sm:p-8 shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+              <h3 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
+                <span>💍</span> Designated Wedding Saava & Special Event Dates (सावा तिथियां)
+              </h3>
+              <span className="text-xs font-semibold px-3 py-1 bg-amber-50 text-amber-800 rounded-full border border-amber-200">
+                Official Saava Schedule
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {saavaCards.map((card, idx) => (
+                <div key={idx} className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-900">{card.title || "Wedding Saava Window"}</span>
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 bg-amber-500 text-white rounded-md uppercase">
+                      💍 Saava
+                    </span>
+                  </div>
+                  <p className="text-xs font-mono font-bold text-zinc-800">
+                    🗓️ {card.start_date} → {card.end_date}
+                  </p>
+                  <div className="flex flex-wrap gap-1 text-[10px] text-zinc-600 font-medium pt-1">
+                    {card.disable_social_discount && <span className="px-2 py-0.5 bg-amber-100/80 rounded border border-amber-200 text-amber-900">No Social Rates</span>}
+                    {card.disable_individual_rooms && <span className="px-2 py-0.5 bg-amber-100/80 rounded border border-amber-200 text-amber-900">Full Halls Only</span>}
+                    {card.min_stay_days && <span className="px-2 py-0.5 bg-blue-100/80 rounded border border-blue-200 text-blue-900">Min {card.min_stay_days} Days</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Rate List Table with Category Filter Tabs */}
         <div className="glass-panel rounded-[2rem] p-6 sm:p-8 shadow-xl space-y-6">

@@ -233,5 +233,16 @@ class SaavaDate(Base, TimestampMixin):
     __tablename__ = "saava_dates"
 
     date_id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    saava_date: Mapped[date] = mapped_column(Date, unique=True, index=True, nullable=False)
+    saava_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    title: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    start_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    end_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    rate_category: Mapped[str] = mapped_column(String(50), default="saava", nullable=False)
+    disable_social_discount: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    disable_individual_rooms: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    disable_member_discount: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_blocked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    min_stay_days: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    custom_rule_notice: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+
 

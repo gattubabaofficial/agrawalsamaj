@@ -381,30 +381,47 @@ async def create_booking(
     if not room or not room.is_available:
         raise HTTPException(status_code=400, detail="Room not available")
 
-    # Saava Date Validation
-    saava_check = await db.execute(
-        select(SaavaDate.saava_date)
-        .where(
-            SaavaDate.saava_date >= booking_data.start_date,
-            SaavaDate.saava_date <= booking_data.end_date
-        )
-    )
-    matching_saava = saava_check.scalars().all()
+    # Saava Date / Event Card Validation
+    all_saava_stmt = select(SaavaDate)
+    all_saava_res = await db.execute(all_saava_stmt)
+    saava_cards = all_saava_res.scalars().all()
     
-    if matching_saava:
-        notes_str = (booking_data.notes or "").lower()
-        if "purpose: social" in notes_str:
-            raise HTTPException(
-                status_code=400,
-                detail="Social/community discount bookings are not allowed on Saava dates."
-            )
-            
-        is_individual_room = room.type == "room" and (room.capacity or 0) < 10
-        if is_individual_room:
-            raise HTTPException(
-                status_code=400,
-                detail="Individual guest room bookings are not allowed on Saava dates."
-            )
+    notes_str = (booking_data.notes or "").lower()
+    is_social = "purpose: social" in notes_str
+    is_individual_room = room.type == "room" and (room.capacity or 0) < 10
+    stay_days = (booking_data.end_date - booking_data.start_date).days
+
+    for card in saava_cards:
+        # Check date overlap
+        card_start = card.start_date or card.saava_date
+        card_end = card.end_date or card.saava_date
+        if not card_start:
+            continue
+        if not card_end:
+            card_end = card_start
+
+        # Overlap condition: booking.start_date < card_end and booking.end_date > card_start (or inclusive boundaries)
+        if booking_data.start_date <= card_end and booking_data.end_date >= card_start:
+            if card.is_blocked:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Bhavan bookings are blocked during '{card.title or 'Saava Window'}'."
+                )
+            if card.disable_social_discount and is_social:
+                raise HTTPException(
+                    status_code=400,
+                    detail=card.custom_rule_notice or f"Social Function discounted rates are not allowed during '{card.title or 'Saava Window'}'."
+                )
+            if card.disable_individual_rooms and is_individual_room:
+                raise HTTPException(
+                    status_code=400,
+                    detail=card.custom_rule_notice or f"Individual guest rooms cannot be booked during '{card.title or 'Saava Window'}'. Hall units must be booked for weddings."
+                )
+            if card.min_stay_days and stay_days < card.min_stay_days:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"'{card.title or 'Saava Window'}' requires a minimum stay of {card.min_stay_days} day(s)."
+                )
 
     if not current_user and not (booking_data.guest_name and booking_data.guest_phone):
         raise HTTPException(status_code=400, detail="Guest name and WhatsApp number are required for non-logged in users")
@@ -917,60 +934,195 @@ async def get_bhavan_occupancy(db: AsyncSession = Depends(get_db)):
     return occupancy_status
 
 
+import json
+
+CATEGORY_RATES_FILE = Path("static") / "bhavan_category_rates.json"
+
+DEFAULT_CATEGORY_RATES = {
+    "saava": [
+        { "unit": "First Unit (Ground Floor Hall + 5 Rooms)", "day1": "₹15,000/-", "day2": "₹25,000/-", "day3": "₹33,000/-", "cleaning": "₹1,000 / day" },
+        { "unit": "Second Unit (First Floor 11 Rooms + 3 Dormitories)", "day1": "₹14,000/-", "day2": "₹21,000/-", "day3": "₹27,000/-", "cleaning": "₹1,000 / day" },
+        { "unit": "Third Unit (Basement Hall)", "day1": "₹4,000/-", "day2": "₹8,000/-", "day3": "₹12,000/-", "cleaning": "₹1,000 / day" },
+        { "unit": "Individual AC Room (Patient Family Stay)", "day1": "₹600 / day", "day2": "-", "day3": "-", "cleaning": "Included" },
+        { "unit": "Individual Non-AC Room", "day1": "₹400 / day", "day2": "-", "day3": "-", "cleaning": "Included" },
+    ],
+    "other_days": [
+        { "unit": "First Unit (Ground Floor Hall + 5 Rooms)", "day1": "₹12,000/-", "day2": "₹20,000/-", "day3": "₹28,000/-", "cleaning": "₹1,000 / day" },
+        { "unit": "Second Unit (First Floor 11 Rooms + 3 Dormitories)", "day1": "₹11,000/-", "day2": "₹18,000/-", "day3": "₹24,000/-", "cleaning": "₹1,000 / day" },
+        { "unit": "Third Unit (Basement Hall)", "day1": "₹3,500/-", "day2": "₹7,000/-", "day3": "₹10,000/-", "cleaning": "₹1,000 / day" },
+        { "unit": "Individual AC Room (Patient Family Stay)", "day1": "₹550 / day", "day2": "-", "day3": "-", "cleaning": "Included" },
+        { "unit": "Individual Non-AC Room", "day1": "₹350 / day", "day2": "-", "day3": "-", "cleaning": "Included" },
+    ],
+    "social": [
+        { "unit": "First Unit (Ground Floor Hall + 5 Rooms)", "day1": "₹8,000/-", "day2": "₹14,000/-", "day3": "₹20,000/-", "cleaning": "₹800 / day" },
+        { "unit": "Second Unit (First Floor 11 Rooms + 3 Dormitories)", "day1": "₹7,000/-", "day2": "₹12,000/-", "day3": "₹16,000/-", "cleaning": "₹800 / day" },
+        { "unit": "Third Unit (Basement Hall)", "day1": "₹2,500/-", "day2": "₹4,500/-", "day3": "₹6,500/-", "cleaning": "₹500 / day" },
+        { "unit": "Individual AC Room (Patient Family Stay)", "day1": "₹450 / day", "day2": "-", "day3": "-", "cleaning": "Included" },
+        { "unit": "Individual Non-AC Room", "day1": "₹300 / day", "day2": "-", "day3": "-", "cleaning": "Included" },
+    ],
+    "free": [
+        { "unit": "First Unit (Ground Floor Hall + 5 Rooms)", "day1": "FREE (₹0)", "day2": "FREE (₹0)", "day3": "FREE (₹0)", "cleaning": "Included" },
+        { "unit": "Second Unit (First Floor 11 Rooms + 3 Dormitories)", "day1": "FREE (₹0)", "day2": "FREE (₹0)", "day3": "FREE (₹0)", "cleaning": "Included" },
+        { "unit": "Third Unit (Basement Hall)", "day1": "FREE (₹0)", "day2": "FREE (₹0)", "day3": "FREE (₹0)", "cleaning": "Included" },
+        { "unit": "Individual AC Room (Patient Family Stay)", "day1": "FREE (₹0)", "day2": "-", "day3": "-", "cleaning": "Included" },
+        { "unit": "Individual Non-AC Room", "day1": "FREE (₹0)", "day2": "-", "day3": "-", "cleaning": "Included" },
+    ],
+}
+
+
+@router.get("/category-rates")
+async def get_category_rates():
+    if CATEGORY_RATES_FILE.exists():
+        try:
+            return json.loads(CATEGORY_RATES_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return DEFAULT_CATEGORY_RATES
+
+
+@router.post("/category-rates")
+async def save_category_rates(
+    rates: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    if not is_admin_level(current_user):
+        raise HTTPException(status_code=403, detail="Not authorized")
+    CATEGORY_RATES_FILE.parent.mkdir(parents=True, exist_ok=True)
+    CATEGORY_RATES_FILE.write_text(json.dumps(rates, indent=2, ensure_ascii=False), encoding="utf-8")
+    return {"status": "success", "message": "Category rates saved successfully"}
+
+
 @router.get("/saava-dates")
 async def get_saava_dates(db: AsyncSession = Depends(get_db)):
-    stmt = select(SaavaDate.saava_date).order_by(SaavaDate.saava_date)
+    stmt = select(SaavaDate).order_by(SaavaDate.created_at.desc())
     result = await db.execute(stmt)
-    dates = [d.isoformat() for d in result.scalars().all()]
-    return dates
+    cards = result.scalars().all()
+    
+    out = []
+    for c in cards:
+        s_date = c.start_date or c.saava_date
+        e_date = c.end_date or c.saava_date or s_date
+        
+        # Expand dates list
+        date_list = []
+        if s_date and e_date:
+            curr = s_date
+            while curr <= e_date:
+                date_list.append(curr.isoformat())
+                curr += timedelta(days=1)
+        elif s_date:
+            date_list.append(s_date.isoformat())
+
+        out.append({
+            "date_id": str(c.date_id),
+            "title": c.title or "Wedding Saava Window",
+            "start_date": s_date.isoformat() if s_date else None,
+            "end_date": e_date.isoformat() if e_date else None,
+            "rate_category": c.rate_category or "saava",
+            "disable_social_discount": c.disable_social_discount,
+            "disable_individual_rooms": c.disable_individual_rooms,
+            "disable_member_discount": c.disable_member_discount,
+            "is_blocked": c.is_blocked,
+            "min_stay_days": c.min_stay_days,
+            "custom_rule_notice": c.custom_rule_notice,
+            "dates": date_list,
+        })
+    return out
 
 
 @router.post("/saava-dates")
-async def add_saava_dates(
-    dates: List[str] = Body(...),
+async def create_or_add_saava_dates(
+    payload: dict = Body(...),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     if not is_admin_level(current_user):
         raise HTTPException(status_code=403, detail="Not authorized")
         
-    for d_str in dates:
-        try:
-            d_val = datetime.strptime(d_str, "%Y-%m-%d").date()
-        except ValueError:
-            raise HTTPException(status_code=400, detail=f"Invalid date format: {d_str}")
-            
-        # Check if already exists
-        check_stmt = select(SaavaDate).where(SaavaDate.saava_date == d_val)
-        existing = (await db.execute(check_stmt)).scalars().first()
-        if not existing:
-            new_saava = SaavaDate(saava_date=d_val)
-            db.add(new_saava)
-            
-    await db.commit()
-    return {"status": "success", "message": "Saava dates added successfully."}
+    # Handle legacy array of dates
+    if isinstance(payload, list):
+        for d_str in payload:
+            try:
+                d_val = datetime.strptime(d_str, "%Y-%m-%d").date()
+            except ValueError:
+                continue
+            check_stmt = select(SaavaDate).where((SaavaDate.saava_date == d_val) | (SaavaDate.start_date == d_val))
+            existing = (await db.execute(check_stmt)).scalars().first()
+            if not existing:
+                db.add(SaavaDate(saava_date=d_val, start_date=d_val, end_date=d_val, title="Saava Day"))
+        await db.commit()
+        return {"status": "success", "message": "Saava dates added."}
 
+    # Handle rich Saava Card object payload
+    title = payload.get("title") or "Wedding Saava Window"
+    start_str = payload.get("start_date")
+    end_str = payload.get("end_date") or start_str
+    
+    if not start_str:
+        raise HTTPException(status_code=400, detail="start_date is required")
 
-@router.delete("/saava-dates/{date_str}")
-async def delete_saava_date(
-    date_str: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    if not is_admin_level(current_user):
-        raise HTTPException(status_code=403, detail="Not authorized")
-        
     try:
-        d_val = datetime.strptime(date_str, "%Y-%m-%d").date()
+        s_val = datetime.strptime(start_str, "%Y-%m-%d").date()
+        e_val = datetime.strptime(end_str, "%Y-%m-%d").date() if end_str else s_val
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid date format.")
-        
-    stmt = select(SaavaDate).where(SaavaDate.saava_date == d_val)
-    saava = (await db.execute(stmt)).scalars().first()
-    if not saava:
-        raise HTTPException(status_code=404, detail="Saava date not found.")
-        
-    await db.delete(saava)
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+
+    if e_val < s_val:
+        raise HTTPException(status_code=400, detail="end_date must be on or after start_date")
+
+    new_card = SaavaDate(
+        title=title,
+        start_date=s_val,
+        end_date=e_val,
+        saava_date=s_val,
+        rate_category=payload.get("rate_category") or "saava",
+        disable_social_discount=payload.get("disable_social_discount", True),
+        disable_individual_rooms=payload.get("disable_individual_rooms", True),
+        disable_member_discount=payload.get("disable_member_discount", False),
+        is_blocked=payload.get("is_blocked", False),
+        min_stay_days=payload.get("min_stay_days") if payload.get("min_stay_days") else None,
+        custom_rule_notice=payload.get("custom_rule_notice") or None,
+    )
+    db.add(new_card)
     await db.commit()
-    return {"status": "success", "message": "Saava date deleted successfully."}
+    await db.refresh(new_card)
+
+    return {"status": "success", "message": "Saava Card added successfully.", "date_id": str(new_card.date_id)}
+
+
+@router.delete("/saava-dates/{id_or_date}")
+async def delete_saava_date(
+    id_or_date: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not is_admin_level(current_user):
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    # First try UUID match
+    try:
+        uuid_val = uuid.UUID(id_or_date)
+        stmt = select(SaavaDate).where(SaavaDate.date_id == uuid_val)
+        card = (await db.execute(stmt)).scalars().first()
+        if card:
+            await db.delete(card)
+            await db.commit()
+            return {"status": "success", "message": "Saava card deleted successfully."}
+    except ValueError:
+        pass
+
+    # Fallback to date match
+    try:
+        d_val = datetime.strptime(id_or_date, "%Y-%m-%d").date()
+        stmt = select(SaavaDate).where((SaavaDate.saava_date == d_val) | (SaavaDate.start_date == d_val))
+        card = (await db.execute(stmt)).scalars().first()
+        if card:
+            await db.delete(card)
+            await db.commit()
+            return {"status": "success", "message": "Saava date deleted successfully."}
+    except ValueError:
+        pass
+
+    raise HTTPException(status_code=404, detail="Saava date/card not found.")
+
 

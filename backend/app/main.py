@@ -63,6 +63,16 @@ async def on_startup():
         "ALTER TABLE event_passes ADD COLUMN guest_name VARCHAR(200)",
         "ALTER TABLE event_passes ADD COLUMN user_id VARCHAR(36)",
         "ALTER TABLE event_passes ADD COLUMN guest_phone VARCHAR(20)",
+        "ALTER TABLE saava_dates ADD COLUMN title VARCHAR(200)",
+        "ALTER TABLE saava_dates ADD COLUMN start_date DATE",
+        "ALTER TABLE saava_dates ADD COLUMN end_date DATE",
+        "ALTER TABLE saava_dates ADD COLUMN rate_category VARCHAR(50) DEFAULT 'saava'",
+        "ALTER TABLE saava_dates ADD COLUMN disable_social_discount BOOLEAN DEFAULT 1",
+        "ALTER TABLE saava_dates ADD COLUMN disable_individual_rooms BOOLEAN DEFAULT 1",
+        "ALTER TABLE saava_dates ADD COLUMN disable_member_discount BOOLEAN DEFAULT 0",
+        "ALTER TABLE saava_dates ADD COLUMN is_blocked BOOLEAN DEFAULT 0",
+        "ALTER TABLE saava_dates ADD COLUMN min_stay_days INTEGER",
+        "ALTER TABLE saava_dates ADD COLUMN custom_rule_notice VARCHAR(500)",
     ):
         try:
             async with engine.begin() as conn:
