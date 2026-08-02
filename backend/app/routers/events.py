@@ -308,8 +308,8 @@ async def register_event(
         if not _can_view_members_only(current_user):
             raise HTTPException(status_code=403, detail="This event is for registered Samaj members only.")
     else:
-        if not current_user and not (reg_data.guest_name and reg_data.guest_phone and reg_data.guest_email):
-            raise HTTPException(status_code=400, detail="Guest name, phone, and email are required for non-logged in users")
+        if not current_user and not (reg_data.guest_name and reg_data.guest_phone):
+            raise HTTPException(status_code=400, detail="Guest name and phone are required for non-logged in users")
 
     user_id = current_user.user_id if current_user else None
 
@@ -348,13 +348,41 @@ async def register_event(
     guest_email = reg_data.guest_email or (current_user.email if current_user else None)
 
     import json
-    attendee_names_str = None
+    attendee_details = []
     if reg_data.attendees:
-        names = [att.get("name") for att in reg_data.attendees if att.get("name")]
-        if names:
-            attendee_names_str = json.dumps(names)
-    if not attendee_names_str and guest_name:
-        attendee_names_str = json.dumps([guest_name])
+        for att in reg_data.attendees:
+            name = att.get("name")
+            user_id_str = att.get("user_id")
+            
+            resolved_phone = None
+            resolved_user_id = None
+            
+            if user_id_str:
+                try:
+                    resolved_user_id = uuid.UUID(user_id_str)
+                    # Lookup member to get unmasked phone number
+                    u_stmt = select(User).where(User.user_id == resolved_user_id)
+                    u_res = await db.execute(u_stmt)
+                    member_user = u_res.scalars().first()
+                    if member_user:
+                        resolved_phone = member_user.mobile or member_user.contact_mobile
+                except Exception:
+                    pass
+            
+            attendee_details.append({
+                "name": name,
+                "user_id": str(resolved_user_id) if resolved_user_id else None,
+                "phone": resolved_phone
+            })
+            
+    if not attendee_details and guest_name:
+        attendee_details.append({
+            "name": guest_name,
+            "user_id": str(user_id) if user_id else None,
+            "phone": guest_phone
+        })
+        
+    attendee_names_str = json.dumps(attendee_details)
 
     registration = EventRegistration(
         user_id=user_id,

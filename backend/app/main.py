@@ -61,6 +61,8 @@ async def on_startup():
         "ALTER TABLE blogs ADD COLUMN guest_phone VARCHAR(20)",
         "ALTER TABLE event_registrations ADD COLUMN attendee_names VARCHAR(1000)",
         "ALTER TABLE event_passes ADD COLUMN guest_name VARCHAR(200)",
+        "ALTER TABLE event_passes ADD COLUMN user_id VARCHAR(36)",
+        "ALTER TABLE event_passes ADD COLUMN guest_phone VARCHAR(20)",
     ):
         try:
             async with engine.begin() as conn:

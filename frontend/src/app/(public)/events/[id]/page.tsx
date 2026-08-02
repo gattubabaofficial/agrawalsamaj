@@ -241,8 +241,18 @@ export default function EventDetailsPage() {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
       const attendeesList = attendeeType === "member" 
-        ? selectedAttendees.map(att => ({ name: att.name, phone: att.phone, email: att.email }))
-        : attendeeNames.map((name, idx) => ({ name, phone: idx === 0 ? guestPhone : "", email: idx === 0 ? guestEmail : "" }));
+        ? selectedAttendees.map(att => ({
+            name: att.name,
+            user_id: att.id.startsWith("m-") || att.id.startsWith("c-") ? null : att.id,
+            phone: att.phone.includes("X") ? null : att.phone,
+            email: att.email
+          }))
+        : attendeeNames.map((name, idx) => ({
+            name,
+            user_id: null,
+            phone: idx === 0 ? guestPhone : "",
+            email: idx === 0 ? guestEmail : ""
+          }));
 
       const payload: any = {
         pass_count: passCount,
@@ -421,7 +431,6 @@ export default function EventDetailsPage() {
                               <div key={att.id} className="p-2 bg-white rounded-lg border border-amber-200/80 flex items-center justify-between text-xs shadow-sm">
                                 <div>
                                   <span className="font-bold text-zinc-900">Ticket #{idx + 1}: {att.name}</span>
-                                  {att.phone && <span className="text-[11px] text-zinc-500 ml-2">📱 {att.phone}</span>}
                                   {att.samaj_id && <span className="text-[10px] font-mono text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded ml-1.5">{att.samaj_id}</span>}
                                 </div>
                                 <button

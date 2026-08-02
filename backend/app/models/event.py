@@ -302,6 +302,8 @@ class EventPass(Base, TimestampMixin):
     delivery_status: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     scanned_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     guest_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
+    guest_phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
 
     # Relationships
     registration: Mapped[EventRegistration] = relationship("EventRegistration", back_populates="passes")
