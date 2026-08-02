@@ -312,8 +312,19 @@ export default function EventDetailsPage() {
         ) : isBookingMode ? (
           /* BOOK PASS ONLY VIEW (ONLY BOOKING CARD) */
           <div className="max-w-lg mx-auto">
-            <div className="bg-white rounded-3xl border border-zinc-200 shadow-xl p-6 sm:p-8">
-              <div className="flex items-center justify-between border-b border-zinc-100 pb-4 mb-6">
+            <div className="bg-white rounded-3xl border border-zinc-200 shadow-xl overflow-hidden">
+              {event.banner_url && (
+                <div className="w-full h-40 bg-zinc-100 relative">
+                  <img
+                    src={event.banner_url.startsWith('http') || event.banner_url.startsWith('https') ? event.banner_url : `${getApiBaseUrl().replace('/api/v1', '')}${event.banner_url}`}
+                    alt={event.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/35" />
+                </div>
+              )}
+              <div className="p-6 sm:p-8">
+                <div className="flex items-center justify-between border-b border-zinc-100 pb-4 mb-6">
                 <div>
                   <h3 className="text-xl font-bold text-zinc-900 flex items-center gap-2">
                     <Ticket className="w-5 h-5 text-amber-500" /> Book Passes
@@ -616,30 +627,42 @@ export default function EventDetailsPage() {
                 </button>
               </form>
             </div>
+            </div>
           </div>
         ) : (
           /* EVENT DETAILS ONLY VIEW (NO BOOKING CARD AT ALL) */
           <div className="max-w-3xl mx-auto space-y-8">
-            <div className="bg-white rounded-3xl border border-zinc-200 shadow-sm p-6 sm:p-8">
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className="px-3 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded-full uppercase border border-amber-200">
-                  {event.category}
-                </span>
-                {event.visibility === "members_only" && (
-                  <span className="px-3 py-1 bg-rose-50 text-rose-700 text-xs font-bold rounded-full uppercase border border-rose-200 flex items-center gap-1">
-                    <ShieldAlert className="w-3.5 h-3.5" /> Members Only
+            <div className="bg-white rounded-3xl border border-zinc-200 shadow-sm overflow-hidden">
+              {event.banner_url && (
+                <div className="w-full h-64 md:h-80 bg-zinc-100 relative">
+                  <img
+                    src={event.banner_url.startsWith('http') || event.banner_url.startsWith('https') ? event.banner_url : `${getApiBaseUrl().replace('/api/v1', '')}${event.banner_url}`}
+                    alt={event.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                </div>
+              )}
+              <div className="p-6 sm:p-8 space-y-6">
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded-full uppercase border border-amber-200">
+                    {event.category}
                   </span>
-                )}
-              </div>
-              <h1 className="text-3xl sm:text-4xl font-bold text-zinc-900 mb-4">{event.title}</h1>
-              <p className="text-zinc-600 leading-relaxed mb-8 whitespace-pre-wrap">
-                {event.description?.split(/(\*[^*]+\*)/g).map((part: string, i: number) => {
-                  if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
-                    return <strong key={i} className="font-bold text-zinc-900">{part.slice(1, -1)}</strong>;
-                  }
-                  return <span key={i}>{part}</span>;
-                })}
-              </p>
+                  {event.visibility === "members_only" && (
+                    <span className="px-3 py-1 bg-rose-50 text-rose-700 text-xs font-bold rounded-full uppercase border border-rose-200 flex items-center gap-1">
+                      <ShieldAlert className="w-3.5 h-3.5" /> Members Only
+                    </span>
+                  )}
+                </div>
+                <h1 className="text-3xl sm:text-4xl font-bold text-zinc-900">{event.title}</h1>
+                <p className="text-zinc-600 leading-relaxed whitespace-pre-wrap">
+                  {event.description?.split(/(\*[^*]+\*)/g).map((part: string, i: number) => {
+                    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+                      return <strong key={i} className="font-bold text-zinc-900">{part.slice(1, -1)}</strong>;
+                    }
+                    return <span key={i}>{part}</span>;
+                  })}
+                </p>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 bg-zinc-50 rounded-2xl border border-zinc-100">
                 <div className="flex items-start gap-3">
@@ -687,6 +710,7 @@ export default function EventDetailsPage() {
                   </div>
                 </div>
               )}
+            </div>
             </div>
           </div>
         )}

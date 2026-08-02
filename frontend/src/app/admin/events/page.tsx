@@ -15,6 +15,7 @@ interface EventData {
   event_id?: string;
   title: string;
   description: string;
+  banner_url: string;
   venue: string;
   category: string;
   start_datetime: string;
@@ -42,10 +43,12 @@ export default function AdminEventsPage() {
   const [eventBookings, setEventBookings] = useState<any[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [formData, setFormData] = useState<EventData>({
     title: "",
     description: "",
+    banner_url: "",
     venue: "",
     category: "other",
     start_datetime: "",
@@ -75,7 +78,7 @@ export default function AdminEventsPage() {
 
   const handleOpenCreate = () => {
     setFormData({
-      title: "", description: "", venue: "", category: "other",
+      title: "", description: "", banner_url: "", venue: "", category: "other",
       start_datetime: "", end_datetime: "", pass_price: 0, total_passes: "",
       visibility: "open_to_all", pricing_type: "free", timeline: []
     });
@@ -162,6 +165,7 @@ export default function AdminEventsPage() {
     setFormData({
       title: evt.title,
       description: evt.description || "",
+      banner_url: evt.banner_url || "",
       venue: evt.venue || "",
       category: evt.category,
       start_datetime: new Date(evt.start_datetime).toISOString().slice(0, 16),
@@ -186,6 +190,34 @@ export default function AdminEventsPage() {
       fetchEvents();
     } catch (error) {
       alert("Failed to delete event");
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const data = new FormData();
+      data.append("file", file);
+      const res = await fetch(`${getApiBaseUrl()}/blog/upload`, {
+        method: "POST",
+        body: data,
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
+      });
+      const resData = await res.json();
+      if (resData.file_url) {
+        setFormData(prev => ({ ...prev, banner_url: resData.file_url }));
+      } else {
+        alert("Image upload failed.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error uploading image.");
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -239,10 +271,10 @@ export default function AdminEventsPage() {
         </div>
         {activeView === "events" && (
           <div className="flex items-center gap-3">
-            <button onClick={handleOpenRegistrations} className="px-4 py-2 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-semibold rounded-xl shadow-sm transition-colors flex items-center gap-2">
+            <button onClick={handleOpenRegistrations} className="px-4 py-2 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-semibold rounded-xl shadow-sm transition-colors flex items-center gap-2 cursor-pointer">
               <List className="w-4 h-4" /> All Registrations
             </button>
-            <button onClick={handleOpenCreate} className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors flex items-center gap-2">
+            <button onClick={handleOpenCreate} className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors flex items-center gap-2 cursor-pointer">
               <CalendarPlus className="w-4 h-4" /> Create Event
             </button>
           </div>
@@ -253,7 +285,7 @@ export default function AdminEventsPage() {
         <div className="bg-white border border-zinc-200 rounded-2xl p-6 sm:p-8 shadow-sm">
           <div className="flex items-center justify-between border-b border-zinc-100 pb-4 mb-6">
             <h2 className="text-xl font-bold text-zinc-900">{editingId ? "Edit Event" : "Create New Event"}</h2>
-            <button onClick={() => setActiveView("events")} className="p-2 text-zinc-400 hover:text-zinc-600 rounded-full hover:bg-zinc-50">
+            <button onClick={() => setActiveView("events")} className="p-2 text-zinc-400 hover:text-zinc-600 rounded-full hover:bg-zinc-50 cursor-pointer">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -262,11 +294,11 @@ export default function AdminEventsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-zinc-700">Event Title *</label>
-                <input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm" placeholder="e.g. Diwali Milan Samaroh" />
+                <input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm bg-white" placeholder="e.g. Maharaja Agrasen Jayanti" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-zinc-700">Category</label>
-                <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm">
+                <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm bg-white cursor-pointer">
                   <option value="cultural">Cultural</option>
                   <option value="religious">Religious</option>
                   <option value="sports">Sports</option>
@@ -279,96 +311,129 @@ export default function AdminEventsPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-zinc-700">Description</label>
-              <textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} rows={3} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm" placeholder="Short description of the event" />
+              <textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} rows={3} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm bg-white" placeholder="Short description of the event" />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-zinc-700">Event Banner Image</label>
+              <div className="flex items-center gap-4">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  id="event-image-upload"
+                />
+                <label
+                  htmlFor="event-image-upload"
+                  className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-semibold rounded-xl border border-zinc-200 cursor-pointer"
+                >
+                  {uploadingImage ? "Uploading..." : "Upload Image"}
+                </label>
+                {formData.banner_url && (
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, banner_url: "" }))}
+                    className="text-red-500 hover:text-red-600 text-xs font-semibold cursor-pointer"
+                  >
+                    Remove Image
+                  </button>
+                )}
+              </div>
+              {formData.banner_url && (
+                <div className="relative mt-2 max-w-xs rounded-xl overflow-hidden border border-zinc-200 aspect-[16/9]">
+                  <img
+                    src={formData.banner_url.startsWith('http') || formData.banner_url.startsWith('https') ? formData.banner_url : `${getApiBaseUrl().replace('/api/v1', '')}${formData.banner_url}`}
+                    alt="Event banner preview"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-zinc-700">Venue</label>
-              <input type="text" value={formData.venue} onChange={e => setFormData({...formData, venue: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm" placeholder="e.g. Agrasen Bhawan, Main Hall" />
+              <input type="text" value={formData.venue} onChange={e => setFormData({...formData, venue: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm bg-white" placeholder="e.g. Agrasen Bhawan, Main Hall" />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-zinc-700">Start Date & Time *</label>
-                <input required type="datetime-local" value={formData.start_datetime} onChange={e => setFormData({...formData, start_datetime: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm" />
+                <input required type="datetime-local" value={formData.start_datetime} onChange={e => setFormData({...formData, start_datetime: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm bg-white" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-zinc-700">End Date & Time *</label>
-                <input required type="datetime-local" value={formData.end_datetime} onChange={e => setFormData({...formData, end_datetime: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm" />
+                <input required type="datetime-local" value={formData.end_datetime} onChange={e => setFormData({...formData, end_datetime: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm bg-white" />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-zinc-100">
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-zinc-700">Pricing Type</label>
-                <select value={formData.pricing_type} onChange={e => {
-                  const val = e.target.value;
-                  setFormData({...formData, pricing_type: val, pass_price: val === 'free' ? 0 : formData.pass_price});
-                }} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm">
-                  <option value="free">Free Event</option>
-                  <option value="paid">Paid Event</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-zinc-700">Pass Price (₹)</label>
-                <input type="number" min="0" disabled={formData.pricing_type === "free"} value={formData.pass_price} onChange={e => setFormData({...formData, pass_price: Number(e.target.value)})} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm disabled:opacity-50" placeholder="0 for Free" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-zinc-700">Total Passes Available</label>
-                <input type="number" min="1" value={formData.total_passes} onChange={e => setFormData({...formData, total_passes: e.target.value === "" ? "" : Number(e.target.value)})} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm" placeholder="Leave empty for unlimited" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-zinc-700">Event Visibility</label>
-                <select value={formData.visibility} onChange={e => setFormData({...formData, visibility: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm">
-                  <option value="open_to_all">Open to All (Guests & Members)</option>
+                <label className="text-sm font-semibold text-zinc-700">Access Mode</label>
+                <select value={formData.visibility} onChange={e => setFormData({...formData, visibility: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm bg-white cursor-pointer">
+                  <option value="open_to_all">Open to All</option>
                   <option value="members_only">Members Only</option>
                 </select>
               </div>
-            </div>
-
-            {/* Timeline Builder */}
-            <div className="space-y-4 pt-4 border-t border-zinc-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-base font-bold text-zinc-900">Event Timeline & Schedule</h3>
-                  <p className="text-xs text-zinc-500 mt-1">Add schedule breakdown for the event.</p>
-                </div>
-                <button type="button" onClick={addTimelineItem} className="text-sm font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-1">
-                  <Plus className="w-4 h-4" /> Add Row
-                </button>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-zinc-700">Pricing Mode</label>
+                <select value={formData.pricing_type} onChange={e => setFormData({...formData, pricing_type: e.target.value, pass_price: e.target.value === 'free' ? 0 : formData.pass_price})} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm bg-white cursor-pointer">
+                  <option value="free">Free Passes</option>
+                  <option value="paid">Paid Event Passes</option>
+                </select>
               </div>
-
-              {formData.timeline.length === 0 ? (
-                <div className="p-4 rounded-xl bg-zinc-50 border border-dashed border-zinc-300 text-center text-sm text-zinc-500">
-                  No timeline items added. Click "Add Row" to build the schedule.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {formData.timeline.map((item, index) => (
-                    <div key={index} className="flex items-start gap-3">
-                      <div className="w-1/3">
-                        <input type="time" required value={item.time} onChange={(e) => updateTimelineItem(index, "time", e.target.value)} className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-sm" />
-                      </div>
-                      <div className="flex-1 flex items-center gap-2">
-                        <input type="text" required placeholder="e.g. Guest Arrival & Snacks" value={item.title} onChange={(e) => updateTimelineItem(index, "title", e.target.value)} className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-sm" />
-                        <button type="button" onClick={() => removeTimelineItem(index)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+              {formData.pricing_type === "paid" && (
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-zinc-700">Pass Price (₹) *</label>
+                  <input required type="number" min="0" value={formData.pass_price} onChange={e => setFormData({...formData, pass_price: Number(e.target.value)})} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm bg-white" />
                 </div>
               )}
             </div>
 
-            <div className="pt-6 border-t border-zinc-100 flex justify-end gap-3">
-              <button type="button" onClick={() => setActiveView("events")} className="px-5 py-2.5 text-sm font-semibold text-zinc-600 hover:bg-zinc-100 rounded-xl transition-colors">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-zinc-700">Total Available Passes (Capacity)</label>
+                <input type="number" placeholder="Unlimited if empty" value={formData.total_passes} onChange={e => setFormData({...formData, total_passes: e.target.value ? Number(e.target.value) : ""})} className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 text-sm bg-white" />
+              </div>
+            </div>
+
+            {/* Timeline Events */}
+            <div className="space-y-4 pt-6 border-t border-zinc-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-zinc-900 text-base">Event Schedule / Timeline</h3>
+                  <p className="text-xs text-zinc-500">Key timing items (e.g. 10:00 AM Pooja start, 01:00 PM lunch)</p>
+                </div>
+                <button type="button" onClick={addTimelineItem} className="px-3 py-1.5 border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-xs font-semibold rounded-xl flex items-center gap-1.5 cursor-pointer">
+                  <Plus className="w-3.5 h-3.5" /> Add Timeline Item
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {formData.timeline.map((item, index) => (
+                  <div key={index} className="flex gap-4 items-center bg-zinc-50 p-4 rounded-xl border border-zinc-100 relative">
+                    <div className="w-1/4">
+                      <input required type="text" placeholder="e.g. 10:00 AM" value={item.time} onChange={e => updateTimelineItem(index, "time", e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-xs bg-white focus:outline-none focus:border-amber-500" />
+                    </div>
+                    <div className="flex-1">
+                      <input required type="text" placeholder="e.g. Devotional Bhajans Start" value={item.title} onChange={e => updateTimelineItem(index, "title", e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-xs bg-white focus:outline-none focus:border-amber-500" />
+                    </div>
+                    <button type="button" onClick={() => removeTimelineItem(index)} className="p-1 text-red-500 hover:bg-red-50 rounded-lg cursor-pointer">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                {formData.timeline.length === 0 && (
+                  <p className="text-xs text-zinc-400 italic text-center py-2">No timeline schedule items added.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-zinc-100 flex justify-end gap-4">
+              <button type="button" onClick={() => setActiveView("events")} className="px-5 py-2.5 border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-semibold rounded-xl transition-colors cursor-pointer">
                 Cancel
               </button>
-              <button type="submit" className="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors">
+              <button type="submit" className="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors cursor-pointer">
                 {editingId ? "Update Event" : "Create Event"}
               </button>
             </div>
@@ -384,54 +449,69 @@ export default function AdminEventsPage() {
             </div>
           )}
           {events.map(evt => (
-            <div key={evt.event_id} className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden flex flex-col">
-              <div className="h-40 bg-zinc-100 relative">
-                <div className={`absolute inset-0 bg-gradient-to-br opacity-80 mix-blend-multiply ${evt.status === 'upcoming' ? 'from-amber-400 to-rose-400' : 'from-zinc-400 to-zinc-600'}`}></div>
-                <div className="absolute inset-0 p-4 flex flex-col justify-between">
-                  <div className="flex justify-between items-start">
-                    <span className="px-2.5 py-1 bg-white/20 backdrop-blur-sm text-white text-xs font-bold rounded-full uppercase">{evt.status}</span>
-                    <span className="px-2.5 py-1 bg-white/90 text-zinc-900 text-xs font-bold rounded-full">
-                      {evt.pass_price > 0 ? `₹${evt.pass_price} / Pass` : "FREE"}
-                    </span>
+            <div key={evt.event_id} className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div>
+                <div className="h-40 bg-zinc-100 relative overflow-hidden">
+                  {evt.banner_url ? (
+                    <img
+                      src={evt.banner_url.startsWith('http') || evt.banner_url.startsWith('https') ? evt.banner_url : `${getApiBaseUrl().replace('/api/v1', '')}${evt.banner_url}`}
+                      alt={evt.title}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className={`absolute inset-0 bg-gradient-to-br opacity-80 mix-blend-multiply ${evt.status === 'upcoming' ? 'from-amber-400 to-rose-400' : 'from-zinc-400 to-zinc-600'}`}></div>
+                  )}
+                  <div className="absolute inset-0 bg-black/45" />
+                  <div className="absolute inset-0 p-4 flex flex-col justify-between z-10">
+                    <div className="flex justify-between items-start">
+                      <span className="px-2.5 py-1 bg-white/20 backdrop-blur-sm text-white text-xs font-bold rounded-full uppercase">{evt.status}</span>
+                      <span className="px-2.5 py-1 bg-white/90 text-zinc-900 text-xs font-bold rounded-full">
+                        {evt.pass_price > 0 ? `₹${evt.pass_price} / Pass` : "FREE"}
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-bold text-white leading-tight">{evt.title}</h3>
                   </div>
-                  <h3 className="text-xl font-bold text-white leading-tight">{evt.title}</h3>
+                </div>
+                
+                <div className="p-5">
+                  <div className="space-y-3">
+                    {evt.visibility === "members_only" && (
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 text-rose-700 text-xs font-bold rounded-md border border-rose-100">
+                        <ShieldAlert className="w-3.5 h-3.5" /> Members Only
+                      </div>
+                    )}
+                    {evt.visibility === "open_to_all" && (
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-md border border-emerald-100">
+                        <Users className="w-3.5 h-3.5" /> Open to All
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 text-sm text-zinc-600">
+                      <CalendarPlus className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+                      <span className="truncate">{formatDateTime12Hour(evt.start_datetime)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-zinc-600">
+                      <MapPin className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+                      <span className="truncate">{evt.venue}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-zinc-600">
+                      <Users className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+                      <span>{evt.passes_sold} / {evt.total_passes || "∞"} Passes Sold</span>
+                    </div>
+                  </div>
                 </div>
               </div>
               
-              <div className="p-5 flex-1 flex flex-col">
-                <div className="space-y-3 mb-6">
-                  {evt.visibility === "members_only" && (
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 text-rose-700 text-xs font-bold rounded-md border border-rose-100">
-                      <ShieldAlert className="w-3.5 h-3.5" /> Members Only
-                    </div>
-                  )}
-                  {evt.visibility === "open_to_all" && (
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-md border border-emerald-100">
-                      <Users className="w-3.5 h-3.5" /> Open to All
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 text-sm text-zinc-600">
-                    <CalendarPlus className="w-4 h-4 text-zinc-400 flex-shrink-0" />
-                    <span className="truncate">{formatDateTime12Hour(evt.start_datetime)}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-zinc-600">
-                    <MapPin className="w-4 h-4 text-zinc-400 flex-shrink-0" />
-                    <span className="truncate">{evt.venue}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-zinc-600">
-                    <Users className="w-4 h-4 text-zinc-400 flex-shrink-0" />
-                    <span>{evt.passes_sold} / {evt.total_passes || "∞"} Passes Sold</span>
-                  </div>
-                </div>
-
-                <div className="mt-auto border-t border-zinc-100 pt-4 flex items-center justify-between">
-                  <button onClick={() => handleOpenEventBookings(evt.event_id)} className="text-sm font-semibold text-amber-600 hover:text-amber-700 transition-colors">
-                    View Bookings
+              <div className="p-5 pt-0 border-t border-zinc-100 mt-4 flex items-center justify-between gap-2 bg-zinc-50/50">
+                <button onClick={() => handleOpenEventBookings(evt.event_id)} className="px-3 py-2 border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-xs font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer">
+                  <Users className="w-3.5 h-3.5" /> Passes
+                </button>
+                <div className="flex items-center gap-1.5">
+                  <button onClick={() => handleOpenEdit(evt)} className="p-2 text-zinc-500 hover:text-amber-600 rounded-lg hover:bg-zinc-100 cursor-pointer">
+                    <Edit className="w-4 h-4" />
                   </button>
-                  <div className="flex gap-2">
-                    <button onClick={() => handleOpenEdit(evt)} className="p-1.5 text-zinc-400 hover:text-zinc-600 rounded bg-zinc-50 transition-colors"><Edit className="w-4 h-4" /></button>
-                    <button onClick={() => handleDelete(evt.event_id)} className="p-1.5 text-zinc-400 hover:text-red-600 rounded bg-zinc-50 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                  </div>
+                  <button onClick={() => handleDelete(evt.event_id)} className="p-2 text-zinc-500 hover:text-red-600 rounded-lg hover:bg-zinc-100 cursor-pointer">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -440,95 +520,52 @@ export default function AdminEventsPage() {
       )}
 
       {activeView === "registrations" && (
-        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-zinc-200 flex items-center justify-between bg-zinc-50/50">
+        <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center justify-between border-b border-zinc-100 pb-4 mb-6">
             <div>
-              <h2 className="text-lg font-bold text-zinc-900">Registrations Log</h2>
-              <p className="text-xs text-zinc-500">All member event bookings and payments</p>
+              <h2 className="text-xl font-bold text-zinc-900">All Event Registrations</h2>
+              <p className="text-xs text-zinc-500 mt-1">Pass bookings across all created events.</p>
             </div>
-            <button onClick={() => setActiveView("events")} className="px-3 py-1.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-1.5">
-              <ArrowLeft className="w-3.5 h-3.5" /> Back to Events
+            <button onClick={() => setActiveView("events")} className="px-4 py-2 border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-semibold rounded-xl flex items-center gap-1.5 cursor-pointer">
+              <ArrowLeft className="w-4 h-4" /> Back to Events
             </button>
           </div>
-          
+
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-zinc-50/50 text-zinc-500 text-xs uppercase tracking-wider">
                 <tr>
+                  <th className="px-6 py-4 font-semibold">Event Title</th>
                   <th className="px-6 py-4 font-semibold">User Details</th>
-                  <th className="px-6 py-4 font-semibold">Event</th>
                   <th className="px-6 py-4 font-semibold">Passes</th>
                   <th className="px-6 py-4 font-semibold">Payment Status</th>
-                  <th className="px-6 py-4 font-semibold">Date Registered</th>
-                  <th className="px-6 py-4 font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
                 {registrations.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-zinc-500">
-                      No registrations found.
+                    <td colSpan={4} className="px-6 py-12 text-center text-zinc-500">
+                      No event registrations found.
                     </td>
                   </tr>
                 ) : (
                   registrations.map((reg) => (
                     <tr key={reg.registration_id} className="hover:bg-zinc-50 transition-colors">
+                      <td className="px-6 py-4 font-semibold text-zinc-900">{reg.event_title}</td>
                       <td className="px-6 py-4">
-                        <div className="font-semibold text-zinc-900">{reg.user_name}</div>
-                        <div className="text-xs text-zinc-500">{reg.user_mobile}</div>
-                        <div className="text-xs text-zinc-500">{reg.user_email}</div>
+                        <div className="font-medium text-zinc-800">{reg.name}</div>
+                        <div className="text-xs text-zinc-500">{reg.phone}</div>
+                        <div className="text-xs text-zinc-400">{formatDateTime12Hour(reg.created_at)}</div>
                       </td>
+                      <td className="px-6 py-4 font-bold text-zinc-900">{reg.pass_count}</td>
                       <td className="px-6 py-4">
-                        <div className="font-semibold text-zinc-900">{reg.event_title}</div>
-                        <div className="text-xs text-zinc-500">{new Date(reg.event_start).toLocaleDateString()}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 text-xs font-bold border border-amber-100">
-                          <Ticket className="w-3.5 h-3.5" /> {reg.pass_count}
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold uppercase ${
+                          reg.payment_status === 'verified' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                          reg.payment_status === 'not_applicable' ? 'bg-zinc-100 text-zinc-700 border border-zinc-200' :
+                          'bg-amber-50 text-amber-700 border border-amber-200'
+                        }`}>
+                          {reg.payment_status.replace('_', ' ')}
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col items-start gap-1">
-                          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold uppercase ${
-                            reg.payment_status === 'verified' || reg.payment_status === 'completed' || reg.payment_status === 'paid' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                            reg.payment_status === 'not_applicable' ? 'bg-zinc-100 text-zinc-700 border border-zinc-200' :
-                            'bg-amber-50 text-amber-700 border border-amber-200'
-                          }`}>
-                            {reg.payment_status.replace('_', ' ')}
-                          </span>
-                          {reg.payment_mode && (
-                            <span className="text-[10px] font-semibold text-zinc-600 bg-zinc-100 px-2 py-0.5 rounded uppercase">
-                              {reg.payment_mode.replace('_', ' ')}
-                            </span>
-                          )}
-                          {reg.total_amount > 0 && <div className="text-xs text-zinc-500 mt-1">₹{reg.total_amount}</div>}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-xs text-zinc-500">
-                        {formatDateTime12Hour(reg.created_at)}
-                      </td>
-                      <td className="px-6 py-4">
-                        {reg.payment_status === 'pending' && reg.payment_mode === 'pay_at_venue' && (
-                          <button
-                            onClick={() => handleMarkPaid(reg.registration_id)}
-                            className="px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-xs font-bold transition-colors whitespace-nowrap"
-                          >
-                            Mark as Paid
-                          </button>
-                        )}
-                        {(['verified', 'completed', 'paid', 'not_applicable'].includes(reg.payment_status)) && (
-                          <div className="flex flex-col gap-1.5 items-start">
-                            <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1 whitespace-nowrap">
-                              <CheckCircle className="w-3.5 h-3.5" /> {reg.payment_status === 'not_applicable' ? 'Free Entry' : 'Approved'}
-                            </span>
-                            <button
-                              onClick={() => handleResendQR(reg.registration_id)}
-                              className="px-2.5 py-1 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-600 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-sm whitespace-nowrap"
-                            >
-                              <Send className="w-3 h-3" /> Resend QR
-                            </button>
-                          </div>
-                        )}
                       </td>
                     </tr>
                   ))
@@ -540,13 +577,13 @@ export default function AdminEventsPage() {
       )}
 
       {activeView === "event_bookings" && (
-        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-zinc-200 flex items-center justify-between bg-zinc-50/50">
+        <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center justify-between border-b border-zinc-100 pb-4 mb-6">
             <div>
-              <h2 className="text-lg font-bold text-zinc-900">Event Bookings</h2>
-              <p className="text-xs text-zinc-500">Manage registrations and venue payments for this event</p>
+              <h2 className="text-xl font-bold text-zinc-900">Event Pass Bookings</h2>
+              <p className="text-xs text-zinc-500 mt-1">Booked passes for the selected event.</p>
             </div>
-            <button onClick={() => setActiveView("events")} className="px-3 py-1.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-1.5">
+            <button onClick={() => setActiveView("events")} className="px-4 py-2 border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-semibold rounded-xl flex items-center gap-1.5 cursor-pointer">
               <ArrowLeft className="w-3.5 h-3.5" /> Back to Events
             </button>
           </div>
@@ -603,7 +640,7 @@ export default function AdminEventsPage() {
                         {bk.payment_status === 'pending' && bk.payment_mode === 'pay_at_venue' && (
                           <button
                             onClick={() => handleMarkPaid(bk.registration_id)}
-                            className="px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-xs font-bold transition-colors"
+                            className="px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-xs font-bold transition-colors cursor-pointer"
                           >
                             Mark as Paid
                           </button>
@@ -615,7 +652,7 @@ export default function AdminEventsPage() {
                             </span>
                             <button
                               onClick={() => handleResendQR(bk.registration_id)}
-                              className="px-2.5 py-1 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-600 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-sm"
+                              className="px-2.5 py-1 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-600 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
                             >
                               <Send className="w-3 h-3" /> Resend QR
                             </button>

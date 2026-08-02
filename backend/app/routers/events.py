@@ -63,6 +63,7 @@ def _can_view_members_only(user: Optional[User]) -> bool:
 class EventCreate(BaseModel):
     title: str = Field(..., max_length=300)
     description: Optional[str] = None
+    banner_url: Optional[str] = None
     venue: Optional[str] = None
     category: EventCategory = EventCategory.OTHER
     start_datetime: datetime
@@ -77,6 +78,7 @@ class EventCreate(BaseModel):
 class EventUpdate(BaseModel):
     title: Optional[str] = Field(None, max_length=300)
     description: Optional[str] = None
+    banner_url: Optional[str] = None
     venue: Optional[str] = None
     category: Optional[EventCategory] = None
     start_datetime: Optional[datetime] = None
@@ -92,6 +94,7 @@ class EventResponse(BaseModel):
     event_id: uuid.UUID
     title: str
     description: Optional[str]
+    banner_url: Optional[str] = None
     venue: Optional[str]
     category: EventCategory
     start_datetime: datetime
@@ -137,6 +140,7 @@ async def create_event(
         created_by=current_user.user_id,
         title=event_data.title,
         description=event_data.description,
+        banner_url=event_data.banner_url,
         venue=event_data.venue,
         category=event_data.category,
         start_datetime=event_data.start_datetime,
