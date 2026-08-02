@@ -208,8 +208,9 @@ export default function AdminEventsPage() {
         }
       });
       const resData = await res.json();
-      if (resData.file_url) {
-        setFormData(prev => ({ ...prev, banner_url: resData.file_url }));
+      const imageUrl = resData.url || resData.file_url;
+      if (imageUrl) {
+        setFormData(prev => ({ ...prev, banner_url: imageUrl }));
       } else {
         alert("Image upload failed.");
       }

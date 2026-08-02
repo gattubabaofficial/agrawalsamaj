@@ -119,27 +119,6 @@ async def serve_upload_file(category: str, filename: str):
         mimetype, _ = mimetypes.guess_type(str(local_path))
         return Response(content=local_path.read_bytes(), media_type=mimetype or "application/octet-stream")
         
-@app.get("/static/profile_photos/{filename}")
-async def serve_static_profile_photo(filename: str):
-    from app.models.blog import UploadedFile
-    from app.database import get_db_session
-    from sqlalchemy import select
-    
-    try:
-        async for db in get_db_session():
-            result = await db.execute(select(UploadedFile).where(UploadedFile.filename == filename))
-            db_file = result.scalars().first()
-            if db_file:
-                return Response(content=db_file.data, media_type=db_file.mimetype)
-    except Exception as e:
-        print(f"Error reading profile photo from DB: {e}")
-            
-    local_path = Path("static/profile_photos") / filename
-    if local_path.exists():
-        import mimetypes
-        mimetype, _ = mimetypes.guess_type(str(local_path))
-        return Response(content=local_path.read_bytes(), media_type=mimetype or "application/octet-stream")
-        
     from fastapi import HTTPException
     raise HTTPException(status_code=404, detail="File not found")
 

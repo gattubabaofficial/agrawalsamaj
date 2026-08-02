@@ -552,33 +552,14 @@ import os
 
 @router.post("/upload-photo")
 async def upload_family_photo(
-    file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db_session)
+    file: UploadFile = File(...)
 ):
+    os.makedirs("static/profile_photos", exist_ok=True)
     file_ext = os.path.splitext(file.filename)[1].lower()
     if file_ext not in [".jpg", ".jpeg", ".png", ".webp"]:
         raise HTTPException(status_code=400, detail="Only JPG, JPEG, PNG, or WEBP images are allowed.")
-    
-    contents = await file.read()
     filename = f"{uuid.uuid4()}{file_ext}"
-    
-    # 1. Save to database for serverless persistence
-    from app.models.blog import UploadedFile
-    db_file = UploadedFile(
-        filename=filename,
-        mimetype=file.content_type or "image/jpeg",
-        data=contents
-    )
-    db.add(db_file)
-    await db.commit()
-    
-    # 2. Try to save to static folder (will fail silently on read-only environments)
-    try:
-        os.makedirs("static/profile_photos", exist_ok=True)
-        filepath = os.path.join("static/profile_photos", filename)
-        with open(filepath, "wb") as buffer:
-            buffer.write(contents)
-    except Exception:
-        pass
-        
+    filepath = os.path.join("static/profile_photos", filename)
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
     return {"photo_url": f"/static/profile_photos/{filename}"}
