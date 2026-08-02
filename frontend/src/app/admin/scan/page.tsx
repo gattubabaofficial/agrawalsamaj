@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, CheckCircle2, AlertTriangle, XCircle, Loader2, Calendar, MapPin, Phone, User, Camera } from "lucide-react";
+import { Search, CheckCircle2, AlertTriangle, XCircle, Loader2, Calendar, MapPin, Phone, User, Camera, Mail } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
 
@@ -350,12 +350,21 @@ export default function AdminScanPage() {
                 </div>
               </div>
 
-              {/* Guest Details */}
+              {/* Attendee / Pass Name */}
               <div className="space-y-2">
-                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Guest Name</p>
+                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Pass Attendee Name</p>
                 <div className="flex gap-2">
                   <User className="w-4.5 h-4.5 text-zinc-400" />
                   <p className="text-xs font-bold text-zinc-800">{passData.guest_name}</p>
+                </div>
+              </div>
+
+              {/* Guest Details */}
+              <div className="space-y-2">
+                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Booked By (Primary Contact)</p>
+                <div className="flex gap-2">
+                  <User className="w-4.5 h-4.5 text-zinc-400" />
+                  <p className="text-xs font-medium text-zinc-700">{passData.primary_contact_name}</p>
                 </div>
               </div>
 
@@ -364,22 +373,50 @@ export default function AdminScanPage() {
                 <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">WhatsApp Phone</p>
                 <div className="flex gap-2">
                   <Phone className="w-4.5 h-4.5 text-zinc-400" />
-                  <p className="text-xs font-semibold text-zinc-855">{passData.guest_phone}</p>
+                  <p className="text-xs font-semibold text-zinc-800">{passData.guest_phone}</p>
                 </div>
               </div>
 
+              {/* Guest Email */}
+              <div className="space-y-2">
+                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Email Address</p>
+                <div className="flex gap-2">
+                  <Mail className="w-4.5 h-4.5 text-zinc-400" />
+                  <p className="text-xs font-medium text-zinc-700">{passData.guest_email}</p>
+                </div>
+              </div>
+
+              {/* Samaj ID */}
+              {passData.samaj_id && (
+                <div className="space-y-2">
+                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Samaj ID</p>
+                  <p className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-100 w-fit">
+                    {passData.samaj_id}
+                  </p>
+                </div>
+              )}
+
               {/* Payment Mode */}
               <div className="space-y-2">
-                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Payment Mode</p>
-                <p className="text-xs font-bold text-zinc-800 uppercase pl-6.5">
-                  {passData.payment_mode ? passData.payment_mode.replace("_", " ") : "N/A"}
-                </p>
+                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Payment Mode &amp; Status</p>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-xs font-bold text-zinc-800 uppercase">
+                    {passData.payment_mode ? passData.payment_mode.replace("_", " ") : "FREE"}
+                  </span>
+                  <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                    passData.payment_status === 'verified' || passData.payment_status === 'paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                    passData.payment_status === 'not_applicable' ? 'bg-zinc-100 text-zinc-700 border border-zinc-200' :
+                    'bg-amber-50 text-amber-700 border-amber-200'
+                  }`}>
+                    {passData.payment_status}
+                  </span>
+                </div>
               </div>
 
               {/* Pass ID */}
               <div className="space-y-2">
                 <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Pass Ticket ID</p>
-                <p className="text-xs font-mono text-zinc-600 select-all pl-6.5">
+                <p className="text-xs font-mono text-zinc-600 select-all">
                   {passData.pass_id}
                 </p>
               </div>

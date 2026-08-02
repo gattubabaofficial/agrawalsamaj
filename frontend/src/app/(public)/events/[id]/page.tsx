@@ -28,6 +28,7 @@ export default function EventDetailsPage() {
   const [guestPhone, setGuestPhone] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
   const [paymentMode, setPaymentMode] = useState<"pay_online" | "pay_at_venue">("pay_online");
+  const [attendeeNames, setAttendeeNames] = useState<string[]>([""]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successStatus, setSuccessStatus] = useState<"none" | "pending_venue" | "verified">("none");
@@ -143,6 +144,20 @@ export default function EventDetailsPage() {
   };
 
   useEffect(() => {
+    setAttendeeNames(prev => {
+      const updated = [...prev];
+      if (updated.length < passCount) {
+        while (updated.length < passCount) {
+          updated.push("");
+        }
+      } else if (updated.length > passCount) {
+        updated.splice(passCount);
+      }
+      return updated;
+    });
+  }, [passCount]);
+
+  useEffect(() => {
     // Check login status and auto-prefill registered member details
     const token = localStorage.getItem("token");
     if (token) {
@@ -225,12 +240,17 @@ export default function EventDetailsPage() {
       const token = localStorage.getItem("token");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
+      const attendeesList = attendeeType === "member" 
+        ? selectedAttendees.map(att => ({ name: att.name, phone: att.phone, email: att.email }))
+        : attendeeNames.map((name, idx) => ({ name, phone: idx === 0 ? guestPhone : "", email: idx === 0 ? guestEmail : "" }));
+
       const payload: any = {
         pass_count: passCount,
         guest_name: guestName || undefined,
         guest_phone: guestPhone || undefined,
         guest_email: guestEmail || undefined,
-        payment_mode: event.pricing_type === "paid" ? paymentMode : undefined
+        payment_mode: event.pricing_type === "paid" ? paymentMode : undefined,
+        attendees: attendeesList
       };
 
       if (event.pricing_type === "paid" && appliedVoucher && !voucherIsStale) {
@@ -487,18 +507,40 @@ export default function EventDetailsPage() {
                     </div>
                   ) : (
                     <div className="space-y-3 p-3.5 bg-zinc-50 border border-zinc-200 rounded-xl">
-                      <p className="text-xs text-zinc-600 font-medium">Enter your contact details (General User):</p>
+                      <p className="text-xs text-zinc-600 font-bold">Contact & Attendee Details:</p>
+                      
                       <div className="space-y-1">
-                        <label className="text-xs font-semibold text-zinc-700 block">Full Name *</label>
-                        <input required type="text" placeholder="Your Name" value={guestName} onChange={(e) => setGuestName(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white focus:outline-none focus:border-amber-500" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-semibold text-zinc-700 block">Mobile Number *</label>
+                        <label className="text-xs font-semibold text-zinc-700 block">Primary Contact Mobile *</label>
                         <input required type="tel" pattern="[0-9+]{10,13}" placeholder="Your Mobile Number" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white focus:outline-none focus:border-amber-500" />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-semibold text-zinc-700 block">Email Address *</label>
+                        <label className="text-xs font-semibold text-zinc-700 block">Primary Contact Email *</label>
                         <input required type="email" placeholder="Your Email Address" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white focus:outline-none focus:border-amber-500" />
+                      </div>
+
+                      <div className="pt-2 space-y-3 border-t border-zinc-200/60 mt-3">
+                        <p className="text-[11px] font-bold text-zinc-500 uppercase tracking-wide">Pass Attendee Names:</p>
+                        {attendeeNames.map((name, idx) => (
+                          <div key={idx} className="space-y-1">
+                            <label className="text-xs font-semibold text-zinc-700 block">Attendee {idx + 1} Full Name *</label>
+                            <input
+                              required
+                              type="text"
+                              placeholder={`Name of Attendee ${idx + 1}`}
+                              value={name}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setAttendeeNames(prev => {
+                                  const updated = [...prev];
+                                  updated[idx] = val;
+                                  return updated;
+                                });
+                                if (idx === 0) setGuestName(val);
+                              }}
+                              className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}

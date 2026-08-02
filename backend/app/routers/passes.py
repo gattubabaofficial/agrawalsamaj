@@ -42,10 +42,16 @@ async def get_pass_details(
     
     g_name = registration.guest_name
     g_phone = registration.guest_phone
-    if not g_name and registration.user:
-        g_name = f"{registration.user.first_name} {registration.user.surname}"
-    if not g_phone and registration.user:
-        g_phone = registration.user.mobile
+    g_email = registration.guest_email
+    samaj_id = None
+    if registration.user:
+        if not g_name:
+            g_name = f"{registration.user.first_name} {registration.user.surname}"
+        if not g_phone:
+            g_phone = registration.user.mobile
+        if not g_email:
+            g_email = registration.user.email
+        samaj_id = registration.user.samaj_id
         
     return {
         "pass_id": event_pass.pass_id,
@@ -54,8 +60,11 @@ async def get_pass_details(
         "event_title": event.title if event else "Unknown Event",
         "event_start_datetime": event.start_datetime if event else None,
         "event_venue": event.venue if event else "Unknown Venue",
-        "guest_name": g_name or "Guest",
+        "guest_name": event_pass.guest_name or g_name or "Guest",
         "guest_phone": g_phone or "N/A",
+        "guest_email": g_email or "N/A",
+        "primary_contact_name": g_name or "Guest",
+        "samaj_id": samaj_id,
         "payment_status": registration.payment_status if registration else "PENDING",
         "payment_mode": registration.payment_mode if registration else None,
         "status": event_pass.status,

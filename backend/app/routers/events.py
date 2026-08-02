@@ -347,11 +347,21 @@ async def register_event(
     guest_phone = reg_data.guest_phone or (current_user.mobile if current_user else None)
     guest_email = reg_data.guest_email or (current_user.email if current_user else None)
 
+    import json
+    attendee_names_str = None
+    if reg_data.attendees:
+        names = [att.get("name") for att in reg_data.attendees if att.get("name")]
+        if names:
+            attendee_names_str = json.dumps(names)
+    if not attendee_names_str and guest_name:
+        attendee_names_str = json.dumps([guest_name])
+
     registration = EventRegistration(
         user_id=user_id,
         guest_name=guest_name,
         guest_phone=guest_phone,
         guest_email=guest_email,
+        attendee_names=attendee_names_str,
         event_id=event.event_id,
         pass_count=reg_data.pass_count,
         total_amount=total_amount,

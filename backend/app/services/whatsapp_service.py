@@ -444,10 +444,23 @@ async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = Fal
             return
 
         # Generate new passes if none exist
+        import json
+        names_list = []
+        if registration.attendee_names:
+            try:
+                names_list = json.loads(registration.attendee_names)
+            except Exception:
+                pass
+
         passes_created = 0
         pass_records = []
         for i in range(registration.pass_count):
             new_pass_id = uuid.uuid4()
+
+            # Assign guest name for this specific ticket
+            ticket_guest_name = attendee_name
+            if i < len(names_list) and names_list[i]:
+                ticket_guest_name = names_list[i]
 
             # 1. Generate QR Code (fast local generation)
             qr_url, qr_file = generate_qr_code(new_pass_id)
@@ -460,10 +473,11 @@ async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = Fal
                 qr_image_url=qr_url,
                 status=PassStatus.UNUSED,
                 whatsapp_message_sid=None,
-                delivery_status="pending"
+                delivery_status="pending",
+                guest_name=ticket_guest_name
             )
             db.add(new_pass)
-            pass_records.append((new_pass, qr_url, qr_file))
+            pass_records.append((new_pass, qr_url, qr_file, ticket_guest_name))
             passes_created += 1
             
         # Mark registration QR as generated and commit immediately so passes exist in DB and are visible in UI right away
@@ -473,12 +487,12 @@ async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = Fal
 
         # Now send WhatsApp notifications if phone number is available
         if user_phone:
-            for idx, (event_pass, qr_url, qr_file) in enumerate(pass_records):
+            for idx, (event_pass, qr_url, qr_file, ticket_guest_name) in enumerate(pass_records):
                 pass_number = idx + 1
                 
                 caption = (
                     f"🎟️ *{event.title}*\n\n"
-                    f"Hello *{attendee_name}*,\n"
+                    f"Hello *{ticket_guest_name}*,\n"
                     f"Your entry pass {pass_number} of {registration.pass_count} is attached.\n\n"
                     f"📅 *Date:* {event_date_str}\n"
                     f"📍 *Venue:* {venue_str}\n\n"

@@ -225,6 +225,7 @@ class EventRegistration(Base, TimestampMixin):
     guest_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     guest_phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     guest_email: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    attendee_names: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
     
     event_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("events.event_id", ondelete="CASCADE"),
@@ -300,6 +301,7 @@ class EventPass(Base, TimestampMixin):
     whatsapp_message_sid: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     delivery_status: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     scanned_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    guest_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
 
     # Relationships
     registration: Mapped[EventRegistration] = relationship("EventRegistration", back_populates="passes")
