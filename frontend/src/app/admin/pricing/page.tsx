@@ -479,7 +479,7 @@ export default function PricingRulesPage() {
               <input
                 required
                 type="text"
-                placeholder="e.g. Dev Uthan Ekadashi Saava Season"
+                placeholder="e.g. Dev Uthan Ekadashi Saava"
                 value={saavaForm.title}
                 onChange={(e) => setSaavaForm({ ...saavaForm, title: e.target.value })}
                 className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-xs bg-white focus:outline-none focus:border-amber-500 font-semibold"
@@ -500,44 +500,44 @@ export default function PricingRulesPage() {
             </div>
           </div>
 
-          {/* Multiple Date Range Rows Builder */}
-          <div className="space-y-2 pt-2 border-t border-amber-200/60">
+          {/* Date Inputs Section with "+ Add Date" Option */}
+          <div className="bg-amber-100/40 p-3.5 rounded-xl border border-amber-200 space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-amber-950 uppercase tracking-wider">
-                🗓️ Date Range Rows for this Card (Multiple Dates Allowed):
-              </span>
+              <label className="text-[11px] font-extrabold text-amber-950 uppercase tracking-wider flex items-center gap-1.5">
+                🗓️ Dates Selection (Multiple Date Inputs for Single Card):
+              </label>
               <button
                 type="button"
                 onClick={addDateRangeRow}
-                className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] rounded-lg shadow-sm transition-all cursor-pointer flex items-center gap-1"
+                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
               >
-                <Plus className="w-3.5 h-3.5" /> Add Date Row
+                <Plus className="w-4 h-4" /> Add Date
               </button>
             </div>
 
             <div className="space-y-2">
               {saavaForm.date_ranges.map((row, idx) => (
-                <div key={idx} className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-amber-200 shadow-2xs">
-                  <span className="text-[11px] font-bold text-amber-900 w-12">Row {idx + 1}:</span>
-                  <div className="flex-1 grid grid-cols-2 gap-2">
-                    <div>
-                      <span className="text-[10px] text-zinc-400 font-semibold block">From Date</span>
+                <div key={idx} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-white p-2.5 rounded-xl border border-amber-200/90 shadow-2xs">
+                  <span className="text-[11px] font-bold text-amber-900 sm:w-16">Date #{idx + 1}:</span>
+                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">From Date *</span>
                       <input
                         required
                         type="date"
                         value={row.start_date}
                         onChange={(e) => handleDateRangeChange(idx, "start_date", e.target.value)}
-                        className="w-full border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-amber-500"
+                        className="w-full border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-amber-500 bg-white"
                       />
                     </div>
-                    <div>
-                      <span className="text-[10px] text-zinc-400 font-semibold block">To Date</span>
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">To Date *</span>
                       <input
                         required
                         type="date"
                         value={row.end_date}
                         onChange={(e) => handleDateRangeChange(idx, "end_date", e.target.value)}
-                        className="w-full border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-amber-500"
+                        className="w-full border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-amber-500 bg-white"
                       />
                     </div>
                   </div>
@@ -545,8 +545,8 @@ export default function PricingRulesPage() {
                     <button
                       type="button"
                       onClick={() => removeDateRangeRow(idx)}
-                      className="p-1.5 text-amber-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer self-end mb-0.5"
-                      title="Remove Date Row"
+                      className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer self-end sm:self-center"
+                      title="Remove Date Input"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
