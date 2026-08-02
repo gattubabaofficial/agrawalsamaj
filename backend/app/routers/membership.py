@@ -1067,3 +1067,33 @@ async def list_users(
         })
     return data
 
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_member(
+    user_id: str,
+    db: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+):
+    if not is_admin_level(current_user):
+        raise HTTPException(status_code=403, detail="Only admins can delete members")
+
+    try:
+        user_uuid = uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid user ID format.")
+
+    if current_user.user_id == user_uuid:
+        raise HTTPException(status_code=400, detail="You cannot delete your own admin account.")
+
+    stmt = select(User).where(User.user_id == user_uuid)
+    result = await db.execute(stmt)
+    user = result.scalars().first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    await db.delete(user)
+    await db.commit()
+    return None
+
+
