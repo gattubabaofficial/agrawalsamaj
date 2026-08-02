@@ -281,7 +281,7 @@ export default function AdminScanPage() {
                       </p>
                     </div>
                   </>
-                ) : passData.payment_status.toLowerCase() !== "paid" && passData.payment_status.toLowerCase() !== "verified" ? (
+                ) : (passData.payment_status.toLowerCase() !== "paid" && passData.payment_status.toLowerCase() !== "verified" && passData.payment_status.toLowerCase() !== "not_applicable") ? (
                   <>
                     <AlertTriangle className="w-12 h-12 text-amber-500 animate-pulse" />
                     <div>
