@@ -172,8 +172,11 @@ async def upload_file(
             detail="File too large. Max 20 MB.",
         )
 
-    with open(file_path, "wb") as f:
-        f.write(contents)
+    try:
+        with open(file_path, "wb") as f:
+            f.write(contents)
+    except Exception:
+        pass
 
     from app.models.blog import UploadedFile
     db_file = UploadedFile(

@@ -29,19 +29,37 @@ ASSIGNABLE_ROLES = {UserRole.GUEST, UserRole.MEMBER, UserRole.VOLUNTEER}
 
 
 @router.post("/upload-photo")
-async def upload_profile_photo(file: UploadFile = File(...)):
+async def upload_profile_photo(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db_session)
+):
     ALLOWED_EXT = {".jpg", ".jpeg", ".png", ".webp"}
     ext = Path(file.filename or "").suffix.lower()
     if ext not in ALLOWED_EXT:
         raise HTTPException(status_code=400, detail="Invalid file format. Allowed: JPG, PNG, WEBP.")
     
-    upload_dir = Path("uploads/profiles")
-    upload_dir.mkdir(parents=True, exist_ok=True)
-    
+    contents = await file.read()
     filename = f"{uuid.uuid4().hex}{ext}"
-    file_path = upload_dir / filename
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    
+    # 1. Save to database for serverless persistence
+    from app.models.blog import UploadedFile
+    db_file = UploadedFile(
+        filename=filename,
+        mimetype=file.content_type or "image/jpeg",
+        data=contents
+    )
+    db.add(db_file)
+    await db.commit()
+    
+    # 2. Try to write to local directory (will fail silently on read-only environments)
+    try:
+        upload_dir = Path("uploads/profiles")
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        file_path = upload_dir / filename
+        with open(file_path, "wb") as buffer:
+            buffer.write(contents)
+    except Exception:
+        pass
         
     return {"url": f"/uploads/profiles/{filename}"}
 
