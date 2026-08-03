@@ -55,23 +55,41 @@ any change that reintroduces a member-facing session would violate it.
 | D7 | How should dormitories work? | New room type + AC flag, admin-created |
 | D8 | What does cancelling a pass do? | Void the pass **and** record a refund |
 | D9 | What happens to `/register`? | Retire it; consolidate into the directory's apply modal |
+| D10 | How are multi-day stays priced once Day-2/Day-3 are removed? | Two fields per unit — first day + additional day — seeded so `additional = first` |
 
-### Standing assumption (flagged, not blocking)
+### D10 — The multi-day rate model
 
-**Removing Day-2 / Day-3 rates changes multi-day prices.** The existing Day-1 /
-Day-2 / Day-3 columns are *cumulative totals*, not per-day rates — First Unit is
-₹15,000 for one day, ₹25,000 for two, ₹33,000 for three. Because D2 makes this
-table drive real prices, #14 means multi-day stays become `day1 × nights`:
+The old Day-1 / Day-2 / Day-3 columns were *cumulative totals*, not per-day rates,
+and they tapered irregularly — the second extra day cost less than the first, by a
+different amount in each unit and category:
 
-| Stay | Before | After |
-|---|---|---|
-| 1 day | ₹15,000 | ₹15,000 |
-| 2 days | ₹25,000 | ₹30,000 |
-| 3 days | ₹33,000 | ₹45,000 |
+| Unit (Saava) | 1 day | 2 days | 3 days | Increments |
+|---|---|---|---|---|
+| First Unit | ₹15,000 | ₹25,000 | ₹33,000 | +10,000, +8,000 |
+| Second Unit | ₹14,000 | ₹21,000 | ₹27,000 | +7,000, +6,000 |
+| Third Unit | ₹4,000 | ₹8,000 | ₹12,000 | +4,000, +4,000 |
 
-This was raised and Phase 1 was approved with it stated. If the multi-day discount
-should be preserved, it needs a different mechanism (e.g. a per-card discount
-percentage) and this spec must be revised before Phase 5 begins.
+No formula reproduces those numbers, so the taper cannot be inferred — it has to be
+stored. Each unit therefore carries **two** rates instead of three:
+
+```
+total = first_day_rate + additional_day_rate × (nights − 1)
+```
+
+**Seeded with `additional_day_rate = first_day_rate`**, which prices linearly:
+₹15,000 → ₹30,000 for two days, ₹45,000 for three. This is the intended behaviour,
+not a regression against the old totals.
+
+Two consequences worth stating:
+
+- **Stays longer than three days become priceable.** The old table simply stopped
+  at three; a seven-day booking had no published rate at all.
+- **The taper remains available.** An admin who wants two days at ₹25,000 sets the
+  additional-day rate to ₹10,000. The schema supports it; the seed just doesn't use it.
+
+This is safe because a Bhavan booking is a **request, not a charge**: it is created
+as `BookingStatus.PENDING` and an admin approves it (`bookings.py:617`) — or, once
+#23 lands, rejects it. The computed total is a quote under review.
 
 ---
 
@@ -117,7 +135,7 @@ No schema changes. Lowest risk; can ship independently.
 | #1 | Remove "Register a household" | `Navbar.tsx:322`, `Footer.tsx:21` |
 | #2 | Delete the whole section | `(public)/page.tsx:18` + delete `PortalIndex.tsx` |
 | D9 | Retire `/register` | delete page; remove `CovenantHero.tsx:160`, `login/page.tsx:314` |
-| #14 | Drop Day-2 / Day-3 columns | `admin/pricing/page.tsx:430,438`, `(public)/bhavan/page.tsx:66-91`, backend defaults |
+| #14 | Replace Day-1/2/3 with first-day + additional-day (D10) | `admin/pricing/page.tsx:430,438`, `(public)/bhavan/page.tsx:66-91`, backend defaults |
 | #16 | Rename → "Apply for New Membership", move beside the search bar | `(public)/members/page.tsx:476` |
 | #17 | Enlarge year/month filter and "Write a Blog" icons | `(public)/blog/page.tsx:214,253` |
 | #24 | Replace placeholder leaders with the real roster | `(public)/about/page.tsx:6-10` |
@@ -314,8 +332,9 @@ special event price
       → room.price_per_day
 ```
 
-Note the standing assumption above: with #14 removing Day-2/Day-3, multi-day
-stays price as `day1 × nights`.
+Per D10, each unit stores a first-day and an additional-day rate, and
+`_price_for_day()` sums them across the stay. Seeded linear, so a two-day First
+Unit booking quotes ₹30,000.
 
 ### #21 — Dormitories
 
@@ -430,7 +449,7 @@ search input:
 | `rooms` | `+ is_ac`; `type` gains `dormitory` | #21 |
 | `event_passes` | `+ cancelled_by, cancelled_at, cancel_reason, refund_amount, refund_status` | #25 |
 | `PassStatus` enum | `+ CANCELLED` | #25 |
-| `bhavan_rate_cards` | **new table** — replaces the JSON file | #13 |
+| `bhavan_rate_cards` | **new table** — replaces the JSON file; per category+unit holds `first_day_rate`, `additional_day_rate`, `cleaning` (D10) | #13, #14 |
 
 Follow the existing convention: an Alembic revision plus best-effort
 `ALTER TABLE` statements in the `app/main.py` startup block (`main.py:55-80`),
