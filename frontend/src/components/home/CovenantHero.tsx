@@ -157,7 +157,6 @@ export default function CovenantHero() {
               <div className="mt-7 flex flex-wrap items-center justify-center gap-3 sm:mt-9 sm:gap-4 max-w-2xl mx-auto">
                 <ActionLink href="/bhavan">Bhavan Booking</ActionLink>
                 <ActionLink href="/members" variant="outline">Directory</ActionLink>
-                <ActionLink href="/register" variant="outline">Register as Member</ActionLink>
                 <ActionLink href="/events" variant="outline">Events</ActionLink>
               </div>
             </Reveal>

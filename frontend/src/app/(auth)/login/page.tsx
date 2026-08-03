@@ -309,12 +309,6 @@ export default function LoginPage() {
           Google Sign In
         </button>
 
-        <div className="text-center text-xs text-zinc-500 pt-2">
-          Don't have an account?{" "}
-          <Link href="/register" className="font-semibold text-amber-600 hover:text-amber-700">
-            Register here
-          </Link>
-        </div>
       </div>
     </div>
   );

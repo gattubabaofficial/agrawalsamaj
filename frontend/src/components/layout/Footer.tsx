@@ -18,7 +18,6 @@ const COLUMNS = [
       { label: "Book the Bhavan", href: "/bhavan" },
       { label: "Upcoming events", href: "/events" },
       { label: "Donation schemes", href: "/donate" },
-      { label: "Register a household", href: "/register" },
     ],
   },
   {

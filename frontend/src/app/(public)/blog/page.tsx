@@ -216,7 +216,7 @@ export default function BlogPage() {
                 <select
                   value={selectedYear}
                   onChange={(e) => handleYearChange(e.target.value)}
-                  className="px-3.5 py-2 rounded-xl bg-zinc-800/90 text-white border border-zinc-700 text-xs font-semibold focus:outline-none focus:border-amber-500 cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-zinc-800/90 text-white border border-zinc-700 text-sm font-semibold focus:outline-none focus:border-amber-500 cursor-pointer"
                 >
                   <option value="">🗓️ All Years</option>
                   <option value="2026">2026</option>
@@ -228,7 +228,7 @@ export default function BlogPage() {
                 <select
                   value={selectedMonth}
                   onChange={(e) => handleMonthChange(e.target.value)}
-                  className="px-3.5 py-2 rounded-xl bg-zinc-800/90 text-white border border-zinc-700 text-xs font-semibold focus:outline-none focus:border-amber-500 cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-zinc-800/90 text-white border border-zinc-700 text-sm font-semibold focus:outline-none focus:border-amber-500 cursor-pointer"
                 >
                   <option value="">📅 All Months</option>
                   <option value="1">January</option>
@@ -248,7 +248,7 @@ export default function BlogPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(true)}
-                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-lg shadow-amber-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold shadow-lg shadow-amber-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   ✍️ Write a Blog
                 </button>

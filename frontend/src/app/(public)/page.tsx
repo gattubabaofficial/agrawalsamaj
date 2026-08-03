@@ -1,7 +1,6 @@
 import CovenantHero from "@/components/home/CovenantHero";
 import Padadhikari from "@/components/home/Padadhikari";
 import Ledger from "@/components/home/Ledger";
-import PortalIndex from "@/components/home/PortalIndex";
 import Gallery from "@/components/home/Gallery";
 import Testament from "@/components/home/Testament";
 import Join from "@/components/home/Join";
@@ -15,7 +14,6 @@ export default function HomePage() {
       <CovenantHero />
       <Padadhikari />
       <Ledger />
-      <PortalIndex />
       <Gallery />
       <Testament />
       <Join />

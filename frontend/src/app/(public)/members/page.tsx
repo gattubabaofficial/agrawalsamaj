@@ -462,24 +462,10 @@ export default function PublicMembersPage() {
               </p>
             </div>
 
-            {/* Quick Actions Header Button */}
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                onClick={() => {
-                  setShowRegisterModal(true);
-                  setRegStep("details");
-                  setRegError("");
-                  setRegSuccessMsg("");
-                }}
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-white text-orange-600 font-bold text-sm shadow-lg hover:bg-amber-50 hover:scale-105 active:scale-95 transition-all"
-              >
-                <UserPlus className="w-4 h-4" /> Apply for Membership
-              </button>
-            </div>
           </div>
 
           {/* Search Bar Input */}
-          <div className="mt-8 max-w-3xl bg-white/95 backdrop-blur-md p-2 rounded-2xl shadow-xl border border-white/30 flex flex-col sm:flex-row items-center gap-2">
+          <div className="mt-8 max-w-5xl bg-white/95 backdrop-blur-md p-2 rounded-2xl shadow-xl border border-white/30 flex flex-col sm:flex-row items-center gap-2">
             <div className="relative flex-1 w-full">
               <Search className="w-5 h-5 text-zinc-400 absolute left-4 top-1/2 -translate-y-1/2" />
               <input
@@ -501,6 +487,17 @@ export default function PublicMembersPage() {
             <div className="px-4 py-2 bg-amber-50 rounded-xl text-xs font-bold text-amber-700 whitespace-nowrap border border-amber-200/50">
               Total Members: {filteredMembers.length}
             </div>
+            <button
+              onClick={() => {
+                setShowRegisterModal(true);
+                setRegStep("details");
+                setRegError("");
+                setRegSuccessMsg("");
+              }}
+              className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-5 py-3 text-sm font-bold text-white shadow-md transition-all hover:from-amber-600 hover:to-orange-700 sm:w-auto"
+            >
+              <UserPlus className="w-4 h-4" /> Apply for New Membership
+            </button>
           </div>
         </div>
       </div>
@@ -535,7 +532,7 @@ export default function PublicMembersPage() {
                 }}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold text-sm shadow-md transition-all"
               >
-                <UserPlus className="w-4 h-4" /> Member Not Listed? Apply for Membership
+                <UserPlus className="w-4 h-4" /> Member Not Listed? Apply for New Membership
               </button>
             </div>
           </div>

@@ -1,13 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { Users, Target, Award, ShieldCheck } from "lucide-react";
-
-const team = [
-  { name: "Shri Ramesh Agrawal", role: "President", image: "/team1.jpg" },
-  { name: "Shri Suresh Agrawal", role: "General Secretary", image: "/team2.jpg" },
-  { name: "Shri Mahesh Agrawal", role: "Treasurer", image: "/team3.jpg" },
-];
+import { LEADERS, photo } from "@/components/home/padadhikariRoster";
 
 export default function AboutPage() {
   return (
@@ -156,14 +152,21 @@ export default function AboutPage() {
         <div className="space-y-10">
           <h2 className="text-3xl font-bold text-center text-zinc-900">Committee Board</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
-            {team.map((member, idx) => (
-              <div key={member.name} className="p-6 rounded-2xl border border-zinc-200/50 bg-white text-center space-y-4">
-                <div className="w-24 h-24 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto text-xl font-bold border border-amber-500/20">
-                  {member.name.split(" ").slice(1).map(n => n[0]).join("")}
+            {LEADERS.map((leader) => (
+              <div key={leader.slug} className="p-6 rounded-2xl border border-zinc-200/50 bg-white text-center space-y-4">
+                <div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto border border-amber-500/20">
+                  <Image
+                    src={photo(leader.slug)}
+                    alt={`${leader.latin} — ${leader.name}`}
+                    fill
+                    sizes="96px"
+                    className="object-cover object-top"
+                  />
                 </div>
                 <div>
-                  <h3 className="font-bold text-zinc-900">{member.name}</h3>
-                  <p className="text-xs text-amber-600 font-semibold mt-1">{member.role}</p>
+                  <h3 className="font-bold text-zinc-900">{leader.name}</h3>
+                  <p className="text-xs text-zinc-500 mt-0.5">{leader.latin}</p>
+                  <p className="text-xs text-amber-600 font-semibold mt-1">{leader.designationEn}</p>
                 </div>
               </div>
             ))}

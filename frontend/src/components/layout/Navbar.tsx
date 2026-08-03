@@ -312,17 +312,7 @@ export default function Navbar() {
                       <LogOut className="h-4 w-4" /> Sign out
                     </button>
                   </>
-                ) : (
-                  <>
-                    <Link
-                      href="/register"
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center justify-center bg-vermilion px-6 py-3.5 text-[0.8125rem] font-medium uppercase tracking-[0.16em] text-paper"
-                    >
-                      Register a household
-                    </Link>
-                  </>
-                )}
+                ) : null}
               </motion.div>
             </div>
           </motion.div>
