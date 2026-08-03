@@ -5,6 +5,7 @@ import { CheckCircle, Clock, XCircle, Search, Home, Plus, X, MapPin, Pencil, Tra
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
 import { formatDateDDMonthYYYY } from "@/utils/date";
+import { EditButton } from "@/components/ui/EditButton";
 
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<any[]>([]);
@@ -217,30 +218,51 @@ export default function AdminBookingsPage() {
                           </span>
                           
                           {b.booking_status === 'pending' && (
-                            <button
-                              onClick={async () => {
-                                try {
-                                  const token = localStorage.getItem("token");
-                                  const res = await axios.post(`${getApiBaseUrl()}/bookings/${b.booking_id}/approve`, {}, {
-                                    headers: { Authorization: `Bearer ${token}` }
-                                  });
-                                  setSelectedReceipt({
-                                    number: res.data.receipt_number,
-                                    url: res.data.receipt_url,
-                                    user: b.user_name,
-                                    room: b.room_name,
-                                    amount: b.total_amount,
-                                    approver: b.approved_by_name || "Admin"
-                                  });
-                                  fetchData();
-                                } catch (error) {
-                                  alert("Failed to approve booking");
-                                }
-                              }}
-                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-1"
-                            >
-                              <CheckCircle className="w-3.5 h-3.5" /> Accept Request & Issue Receipt
-                            </button>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const token = localStorage.getItem("token");
+                                    const res = await axios.post(`${getApiBaseUrl()}/bookings/${b.booking_id}/approve`, {}, {
+                                      headers: { Authorization: `Bearer ${token}` }
+                                    });
+                                    setSelectedReceipt({
+                                      number: res.data.receipt_number,
+                                      url: res.data.receipt_url,
+                                      user: b.user_name,
+                                      room: b.room_name,
+                                      amount: b.total_amount,
+                                      approver: b.approved_by_name || "Admin"
+                                    });
+                                    fetchData();
+                                  } catch (error) {
+                                    alert("Failed to approve booking");
+                                  }
+                                }}
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-1"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  const reason = prompt("Enter rejection reason (optional):", "Rejected by Admin");
+                                  if (reason === null) return;
+                                  try {
+                                    const token = localStorage.getItem("token");
+                                    await axios.post(`${getApiBaseUrl()}/bookings/${b.booking_id}/reject`, { reason }, {
+                                      headers: { Authorization: `Bearer ${token}` }
+                                    });
+                                    alert("Booking rejected.");
+                                    fetchData();
+                                  } catch (error) {
+                                    alert("Failed to reject booking");
+                                  }
+                                }}
+                                className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-1"
+                              >
+                                Reject
+                              </button>
+                            </div>
                           )}
 
                           {b.booking_status === 'approved' && (
@@ -370,13 +392,7 @@ export default function AdminBookingsPage() {
                       <p className="text-xs text-zinc-500 font-medium">Per Day</p>
                     </div>
                     <div className="flex gap-1 ml-2">
-                      <button
-                        onClick={() => handleEditRoom(r)}
-                        className="p-1.5 text-zinc-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                        title="Edit Room"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
+                      <EditButton onClick={() => handleEditRoom(r)} size="sm" />
                       <button
                         onClick={() => handleDeleteRoom(r.room_id)}
                         className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"

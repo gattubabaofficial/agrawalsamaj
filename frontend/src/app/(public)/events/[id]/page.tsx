@@ -54,7 +54,7 @@ export default function EventDetailsPage() {
     id: string; name: string; phone: string; email: string; samaj_id: string;
   }>>([]);
 
-  const maxPassAllowed = attendeeType === "member" ? 10 : 4;
+  const maxPassAllowed = 4;
 
   useEffect(() => {
     // Pre-fetch directory members for instant search dropdown
@@ -67,7 +67,6 @@ export default function EventDetailsPage() {
 
   const handleMemberSearch = (query: string) => {
     setMemberSearchQuery(query);
-    setGuestName(query);
     const q = query.toLowerCase().trim();
     if (!q) {
       setMemberSearchResults(allMembersList.slice(0, 10));
@@ -106,9 +105,8 @@ export default function EventDetailsPage() {
     const updated = [...selectedAttendees, { id, name: fullName, phone, email, samaj_id: samajId }];
     setSelectedAttendees(updated);
     setPassCount(updated.length);
-    setGuestName(updated[0].name);
-    setGuestPhone(updated[0].phone);
-    setGuestEmail(updated[0].email);
+    if (!guestPhone && phone) setGuestPhone(phone);
+    if (!guestEmail && email) setGuestEmail(email);
     setMemberSearchQuery("");
     setShowMemberDropdown(false);
   };
@@ -447,25 +445,17 @@ export default function EventDetailsPage() {
                       )}
 
                       <div className="space-y-1 relative">
-                        <label className="text-xs font-semibold text-zinc-700 block">Search Member Directory or Type Attendee Name *</label>
+                        <label className="text-xs font-bold text-zinc-800 block uppercase tracking-wider">Search member to book a ticket *</label>
                         <div className="flex gap-2">
                           <input
                             type="text"
-                            placeholder="Type member name, father name or phone (e.g. Ramesh)..."
-                            value={guestName}
+                            placeholder="Name / Father's Name / Last 4 digit of Mobile"
+                            value={memberSearchQuery}
                             onChange={(e) => handleMemberSearch(e.target.value)}
-                            onFocus={() => { handleMemberSearch(guestName); }}
+                            onFocus={() => { handleMemberSearch(memberSearchQuery); }}
                             onBlur={() => { setTimeout(() => setShowMemberDropdown(false), 250); }}
-                            className="flex-1 px-3.5 py-2.5 border border-zinc-200 rounded-xl text-sm bg-white focus:outline-none focus:border-amber-500 shadow-sm font-medium"
+                            className="flex-1 px-3.5 py-2.5 border border-zinc-300 rounded-xl text-sm bg-white focus:outline-none focus:border-amber-500 shadow-sm font-medium placeholder-zinc-400 placeholder:italic"
                           />
-                          <button
-                            type="button"
-                            onClick={addCustomAttendee}
-                            disabled={!guestName.trim()}
-                            className="px-3.5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm disabled:opacity-50 transition-all shrink-0 cursor-pointer"
-                          >
-                            + Add Ticket
-                          </button>
                         </div>
 
                         {/* Dropdown List */}

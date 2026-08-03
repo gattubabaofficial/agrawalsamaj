@@ -73,7 +73,13 @@ async def on_startup():
         "ALTER TABLE saava_dates ADD COLUMN is_blocked BOOLEAN DEFAULT 0",
         "ALTER TABLE saava_dates ADD COLUMN min_stay_days INTEGER",
         "ALTER TABLE saava_dates ADD COLUMN custom_rule_notice VARCHAR(500)",
-        "ALTER TABLE saava_dates ADD COLUMN date_ranges JSON",
+        "ALTER TABLE users ADD COLUMN parent_relation VARCHAR(20)",
+        "ALTER TABLE rooms ADD COLUMN is_ac BOOLEAN DEFAULT 0",
+        "ALTER TABLE event_passes ADD COLUMN cancelled_by VARCHAR(36)",
+        "ALTER TABLE event_passes ADD COLUMN cancelled_at TIMESTAMP",
+        "ALTER TABLE event_passes ADD COLUMN cancel_reason VARCHAR(500)",
+        "ALTER TABLE event_passes ADD COLUMN refund_amount NUMERIC(10, 2)",
+        "ALTER TABLE event_passes ADD COLUMN refund_status VARCHAR(30) DEFAULT 'not_applicable'",
     ):
         try:
             async with engine.begin() as conn:

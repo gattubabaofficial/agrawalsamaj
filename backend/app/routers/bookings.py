@@ -661,6 +661,33 @@ async def approve_booking(
     }
 
 
+@router.post("/{booking_id}/reject")
+async def reject_booking(
+    booking_id: uuid.UUID,
+    payload: Optional[dict] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not is_admin_level(current_user):
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    result = await db.execute(select(Booking).filter(Booking.booking_id == booking_id))
+    booking = result.scalar_one_or_none()
+
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    reason = payload.get("reason", "Booking application rejected by Admin") if payload else "Booking application rejected by Admin"
+    booking.booking_status = BookingStatus.REJECTED
+    booking.notes = f"{booking.notes}\nRejection Reason: {reason}" if booking.notes else f"Rejection Reason: {reason}"
+    booking.approved_by = current_user.user_id
+    booking.approved_at = datetime.utcnow()
+    await db.commit()
+
+    return {"status": "success", "message": "Booking application rejected successfully", "booking_id": booking.booking_id}
+
+
+
 class BookingPaymentVerify(BaseModel):
     razorpay_payment_id: Optional[str] = None
     razorpay_signature: Optional[str] = None

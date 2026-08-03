@@ -34,7 +34,8 @@ class Room(Base, TimestampMixin):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     room_number: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     floor: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    type: Mapped[str] = mapped_column(String(50), default="room")  # 'hall', 'room', 'facility'
+    type: Mapped[str] = mapped_column(String(50), default="room")  # 'hall', 'room', 'facility', 'dormitory'
+    is_ac: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     capacity: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     price_per_day: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     floor_plan_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
@@ -245,5 +246,17 @@ class SaavaDate(Base, TimestampMixin):
     min_stay_days: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     custom_rule_notice: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     date_ranges: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
+
+class BhavanRateCard(Base, TimestampMixin):
+    __tablename__ = "bhavan_rate_cards"
+
+    card_id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    rate_category: Mapped[str] = mapped_column(String(50), nullable=False)  # e.g. "normal", "saava", "special"
+    unit_name: Mapped[str] = mapped_column(String(100), nullable=False)  # e.g. "First Unit", "Dormitory AC"
+    first_day_rate: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    additional_day_rate: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    cleaning_charge: Mapped[float] = mapped_column(Numeric(10, 2), default=0.0, nullable=False)
+
 
 

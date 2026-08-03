@@ -91,6 +91,7 @@ export default function PublicMembersPage() {
   // Form fields for Profile Edit
   const [editFirstName, setEditFirstName] = useState("");
   const [editSurname, setEditSurname] = useState("");
+  const [editParentRelation, setEditParentRelation] = useState("S/o");
   const [editFatherName, setEditFatherName] = useState("");
   const [editProfession, setEditProfession] = useState("");
   const [editNativePlace, setEditNativePlace] = useState("");
@@ -113,6 +114,7 @@ export default function PublicMembersPage() {
   const [regStep, setRegStep] = useState<"details" | "otp">("details");
   const [regFirstName, setRegFirstName] = useState("");
   const [regSurname, setRegSurname] = useState("");
+  const [regParentRelation, setRegParentRelation] = useState("S/o");
   const [regFatherName, setRegFatherName] = useState("");
   const [regMobile, setRegMobile] = useState("");
   const [regEmail, setRegEmail] = useState("");
@@ -598,7 +600,7 @@ export default function PublicMembersPage() {
                         <span className="font-semibold text-zinc-400 flex items-center gap-1"><Lock className="w-3 h-3 text-amber-600" /> Private</span>
                       ) : (
                         <span className="font-mono font-semibold text-zinc-700 truncate">
-                          {m.mobile_masked || (m.mobile ? `XXXXXXX${m.mobile.slice(-3)}` : "N/A")}
+                          {m.mobile_masked || (m.mobile ? `XXXXXX${m.mobile.slice(-4)}` : "N/A")}
                         </span>
                       )}
                     </div>
@@ -835,14 +837,26 @@ export default function PublicMembersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-zinc-700">Father's / Husband's Name</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Late Shri Ramesh Agrawal"
-                        value={editFatherName}
-                        onChange={(e) => setEditFatherName(e.target.value)}
-                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
-                      />
+                      <label className="text-xs font-bold text-zinc-700">Relation & Parent/Husband Name</label>
+                      <div className="flex gap-2">
+                        <select
+                          value={editParentRelation}
+                          onChange={(e) => setEditParentRelation(e.target.value)}
+                          className="px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none bg-white font-semibold"
+                        >
+                          <option value="S/o">S/o</option>
+                          <option value="D/o">D/o</option>
+                          <option value="W/o">W/o</option>
+                          <option value="C/o">C/o</option>
+                        </select>
+                        <input
+                          type="text"
+                          placeholder="e.g. Ramesh Agrawal"
+                          value={editFatherName}
+                          onChange={(e) => setEditFatherName(e.target.value)}
+                          className="flex-1 px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                        />
+                      </div>
                     </div>
 
                     {/* Profile Photo File Upload */}
@@ -1183,7 +1197,7 @@ export default function PublicMembersPage() {
                       </span>
                     ) : (
                       <span className="font-mono font-bold text-zinc-900">
-                        {viewMemberModal.mobile_masked || (viewMemberModal.mobile ? `XXXXXXX${viewMemberModal.mobile.slice(-3)}` : "N/A")}
+                        {viewMemberModal.mobile_masked || (viewMemberModal.mobile ? `XXXXXX${viewMemberModal.mobile.slice(-4)}` : "N/A")}
                       </span>
                     )}
                   </div>
@@ -1213,7 +1227,17 @@ export default function PublicMembersPage() {
                   </div>
                 </div>
 
-                <div className="pt-2 flex gap-3">
+                <div className="pt-2 flex flex-wrap gap-2.5">
+                  <button
+                    onClick={() => {
+                      const m = viewMemberModal;
+                      setViewMemberModal(null);
+                      handleOpenEdit(m);
+                    }}
+                    className="py-3 px-4 bg-amber-50 text-amber-800 border border-amber-300 font-bold rounded-2xl text-xs hover:bg-amber-100 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <Edit3 className="w-4 h-4 text-amber-600" /> Edit Profile
+                  </button>
                   <button
                     onClick={() => {
                       const m = viewMemberModal;
@@ -1227,9 +1251,9 @@ export default function PublicMembersPage() {
                       setMessageError("");
                       setMessageSuccessMsg("");
                     }}
-                    className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-2xl text-sm hover:from-amber-600 hover:to-orange-700 transition-all shadow-md flex items-center justify-center gap-2"
+                    className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-2xl text-xs hover:from-amber-600 hover:to-orange-700 transition-all shadow-md flex items-center justify-center gap-1.5 whitespace-nowrap"
                   >
-                    <MessageSquare className="w-4 h-4" /> Send Message Request
+                    <MessageSquare className="w-4 h-4" /> Send Message
                   </button>
                   <button
                     onClick={() => setViewMemberModal(null)}
@@ -1451,14 +1475,26 @@ export default function PublicMembersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-zinc-700">Father's / Husband's Name</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Late Shri Ramesh Agrawal"
-                        value={regFatherName}
-                        onChange={(e) => setRegFatherName(e.target.value)}
-                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
-                      />
+                      <label className="text-xs font-bold text-zinc-700">Relation & Parent/Husband Name</label>
+                      <div className="flex gap-2">
+                        <select
+                          value={regParentRelation}
+                          onChange={(e) => setRegParentRelation(e.target.value)}
+                          className="px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none bg-white font-semibold"
+                        >
+                          <option value="S/o">S/o</option>
+                          <option value="D/o">D/o</option>
+                          <option value="W/o">W/o</option>
+                          <option value="C/o">C/o</option>
+                        </select>
+                        <input
+                          type="text"
+                          placeholder="e.g. Ramesh Agrawal"
+                          value={regFatherName}
+                          onChange={(e) => setRegFatherName(e.target.value)}
+                          className="flex-1 px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-1">

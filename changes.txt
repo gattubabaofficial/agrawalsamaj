@@ -1,12 +1,26 @@
-make the four buttonsin hero section bhavan booking, directory, register as member, events
-make mahamantri at second position and koshaadhayaksh at 3rd
-use the actual data instead of dummy data in house hold roles and all and they can edit by the admin
-Matrimonial Links Aligned In One Place. in this when i click on the buttons the content will not visible so kindly fix instead
-instead of agrawal bhavan write agrasen bhawan remove sector 5
-google plus locationn write cordinates
-adress write ward 27 sector 5 mansrovar jaipur rajisthan 302020
-location oposite at neerja modi school behind saint marthoma church
-in admin when i click on send message it gose to group chat instead of that remove chat function and make the send message same as in website
-in blog there is tags in website don't show the tags make them search through the search bar instead
-in bhavan i want that the rate will apply as per the list given and in sava i just want to add some dates the price will remain same on that dates and i can customize things for that dates like there is no social dates book on that days and no individual romms are given and many more things and check if someone book the bhanav it will show occupied on that day for that particular unit and if possible then mark the dates with diffrent color which show its fully booked partially booked or no booking like that 
-make this changes carefully without any error and make thatm correctly
+1. remove register household from every where
+2. remove the other sites link from the home page remove that whole section
+3. convert the pencil icon with the edit button everywhere 
+4. add edit button on the bottom of view detail card in member or directory 
+5. there is many issues in search bar of members section not showing proper result make sure all the members should fetch properly and all
+6. and show the last four digits not the three digits every where
+7. remove add ticket button in book event for members near the search and after the ticket is added name is removed from the search bar
+8. in event member cant able to book 10 tickets it can only book 4 tickets at a time 
+9. in event registration admin paneli want the each person name with the event name date of booking and all the necessary details and i want each pass should come with the each person name not the first person name show 4 passes 
+10. and make search option in event registration so that i can sort the events with there names and search should work correctly it should fetch each and every word match inn any field which person type take a code from directory search option
+11. and make it responsive from 32 inches to 8 inches for all the screen present in the market
+12. aling everything properly 
+13. sawa rate card is unable to save and apply on dates make sure it should work properly
+14. remove two days and three days rate from the table of Master Rate List Table from this table
+15. image is not visible in directory for members check whats the problem i have tried to but its not working
+16. make the button name apply for new membership from apply to member ship and make it near to the search bar so that it should be visible
+17. make some icons bigger which are small like year and month filter button in blog and also a write a blog button they are pretty saml make them slightly bigger so that they visible clearley
+18. remove s/o do and all in the directory and give the option to user choose one and write the name of it in that present block present in edit and apply for membership section
+19. above search bar write search member to book a ticket
+20. inside the search bars write name/fathers name/last four digit of mobile numberr in with faded grey text 
+21. add dormitary and its of two type ac and non ac 
+22. the otp is not sending for new registration on the register mobile number which usr typed in to get register and if the otp is correct send request to the admin and it will make them the member by approving and they caan able to reject also 
+23. also the admin can reject the application ofbhavan bookinng 
+24. make the three main members again in the about section which is on home page in same order
+25. admin can also cancel any pass 
+26. and cancel pass should also show there and i can sort them event wise through search or anything and there is a search bar which can search any word present on that table 

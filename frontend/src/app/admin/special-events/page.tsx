@@ -5,8 +5,9 @@ import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
 import {
   Loader2, Plus, Trash2, CalendarRange, IndianRupee, Ban, CheckCircle2,
-  XCircle, Pencil, X, Sparkles,
+  XCircle, X, Sparkles,
 } from "lucide-react";
+import { EditButton } from "@/components/ui/EditButton";
 
 interface Room {
   room_id: string;
@@ -534,10 +535,8 @@ export default function SpecialEventsPage() {
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => openEdit(ev)} className="text-zinc-500 hover:text-amber-600" title="Edit">
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDelete(ev.event_id)} className="text-zinc-500 hover:text-red-600" title="Delete">
+                        <EditButton onClick={() => openEdit(ev)} size="sm" />
+                        <button onClick={() => handleDelete(ev.event_id)} className="text-zinc-500 hover:text-red-600 p-1 rounded hover:bg-zinc-100" title="Delete">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>

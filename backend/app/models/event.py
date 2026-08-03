@@ -53,6 +53,7 @@ class PaymentStatus(str, PyEnum):
 class PassStatus(str, PyEnum):
     UNUSED = "unused"
     USED = "used"
+    CANCELLED = "cancelled"
 
 
 class MediaType(str, PyEnum):
@@ -304,6 +305,13 @@ class EventPass(Base, TimestampMixin):
     guest_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     user_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
     guest_phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+
+    # Cancellation & Refund tracking
+    cancelled_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
+    cancelled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    cancel_reason: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    refund_amount: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), nullable=True)
+    refund_status: Mapped[Optional[str]] = mapped_column(String(30), default="not_applicable", nullable=True)
 
     # Relationships
     registration: Mapped[EventRegistration] = relationship("EventRegistration", back_populates="passes")

@@ -217,29 +217,62 @@ async def get_all_registrations(
         raise HTTPException(status_code=403, detail="Only admins can view all registrations")
 
     result = await db.execute(
-        select(EventRegistration, Event, User)
-        .join(Event, EventRegistration.event_id == Event.event_id)
-        .outerjoin(User, EventRegistration.user_id == User.user_id)
+        select(EventRegistration)
+        .options(
+            joinedload(EventRegistration.event),
+            joinedload(EventRegistration.user),
+            joinedload(EventRegistration.passes)
+        )
         .order_by(EventRegistration.created_at.desc())
     )
-    
-    registrations = []
-    for reg, event, user in result.all():
-        registrations.append({
-            "registration_id": reg.registration_id,
-            "pass_count": reg.pass_count,
-            "total_amount": reg.total_amount,
-            "payment_status": reg.payment_status,
-            "payment_mode": reg.payment_mode,
-            "event_title": event.title,
-            "event_start": event.start_datetime,
-            "user_name": f"{user.first_name} {user.surname}" if user else reg.guest_name,
-            "user_email": user.email if user else reg.guest_email,
-            "user_mobile": user.mobile if user else reg.guest_phone,
-            "created_at": reg.created_at
-        })
-        
-    return registrations
+
+    passes_list = []
+    for reg in result.scalars().unique().all():
+        event = reg.event
+        user = reg.user
+        primary_name = f"{user.first_name} {user.surname}" if user else (reg.guest_name or "Guest")
+        primary_mobile = (user.mobile if user else reg.guest_phone) or "N/A"
+        samaj_id = user.samaj_id if user else None
+
+        if reg.passes and len(reg.passes) > 0:
+            for p in reg.passes:
+                passes_list.append({
+                    "pass_id": str(p.pass_id),
+                    "registration_id": str(reg.registration_id),
+                    "event_id": str(event.event_id) if event else None,
+                    "event_title": event.title if event else "Unknown Event",
+                    "attendee_name": p.guest_name or primary_name,
+                    "booker_name": primary_name,
+                    "phone": p.guest_phone or primary_mobile,
+                    "samaj_id": samaj_id,
+                    "pass_status": p.status.value if hasattr(p.status, "value") else str(p.status),
+                    "payment_status": reg.payment_status.value if hasattr(reg.payment_status, "value") else str(reg.payment_status),
+                    "payment_mode": reg.payment_mode.value if (reg.payment_mode and hasattr(reg.payment_mode, "value")) else str(reg.payment_mode or ""),
+                    "amount": float(reg.total_amount) / max(1, reg.pass_count),
+                    "created_at": reg.created_at,
+                    "cancelled_at": p.cancelled_at,
+                    "cancel_reason": p.cancel_reason,
+                    "refund_amount": p.refund_amount,
+                    "refund_status": p.refund_status,
+                })
+        else:
+            passes_list.append({
+                "pass_id": str(reg.registration_id),
+                "registration_id": str(reg.registration_id),
+                "event_id": str(event.event_id) if event else None,
+                "event_title": event.title if event else "Unknown Event",
+                "attendee_name": primary_name,
+                "booker_name": primary_name,
+                "phone": primary_mobile,
+                "samaj_id": samaj_id,
+                "pass_status": "unused",
+                "payment_status": reg.payment_status.value if hasattr(reg.payment_status, "value") else str(reg.payment_status),
+                "payment_mode": reg.payment_mode.value if (reg.payment_mode and hasattr(reg.payment_mode, "value")) else str(reg.payment_mode or ""),
+                "amount": float(reg.total_amount),
+                "created_at": reg.created_at,
+            })
+
+    return passes_list
 
 @router.get("/{event_id}", response_model=EventResponse)
 async def get_event(
@@ -292,14 +325,10 @@ async def register_event(
     if event.total_passes and (event.passes_sold + reg_data.pass_count > event.total_passes):
         raise HTTPException(status_code=400, detail="Not enough passes available")
 
-    # Pass count limits: Members max 10, General Users max 4
-    is_member_user = bool(current_user and current_user.is_member)
-    max_tickets_allowed = 10 if is_member_user else 4
+    # Pass count limit: maximum 4 tickets per booking at a time (Task #8)
+    max_tickets_allowed = 4
     if reg_data.pass_count > max_tickets_allowed:
-        if is_member_user:
-            raise HTTPException(status_code=400, detail="Registered members can purchase maximum 10 tickets per event.")
-        else:
-            raise HTTPException(status_code=400, detail="General users can purchase maximum 4 tickets per event.")
+        raise HTTPException(status_code=400, detail="Maximum 4 tickets can be booked at a time per booking.")
 
     # 1. Visibility Check
     if event.visibility == EventVisibility.MEMBERS_ONLY:

@@ -117,9 +117,9 @@ def mask_phone_number(mobile: Optional[str]) -> Optional[str]:
     if not mobile:
         return None
     clean = mobile.strip()
-    if len(clean) <= 3:
+    if len(clean) <= 4:
         return clean
-    return "X" * (len(clean) - 3) + clean[-3:]
+    return "X" * (len(clean) - 4) + clean[-4:]
 
 
 def hash_otp(otp: str) -> str:

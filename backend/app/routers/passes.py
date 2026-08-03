@@ -90,9 +90,56 @@ async def check_in_pass(
         
     if event_pass.status == PassStatus.USED:
         raise HTTPException(status_code=400, detail="This pass has already been used!")
-        
+    if event_pass.status == PassStatus.CANCELLED:
+        raise HTTPException(status_code=400, detail="This pass has been cancelled and cannot be used!")
+
     event_pass.status = PassStatus.USED
     event_pass.scanned_at = datetime.utcnow()
     await db.commit()
     
     return {"status": "success", "message": "Pass successfully checked in"}
+
+
+class CancelPassRequest(BaseModel if 'BaseModel' in globals() else object):
+    reason: Optional[str] = "Cancelled by admin"
+    refund_amount: Optional[float] = 0.0
+    refund_status: Optional[str] = "not_applicable"
+
+
+@router.post("/admin/{pass_id}/cancel")
+async def cancel_pass(
+    pass_id: uuid.UUID,
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Admin endpoint to cancel an event pass."""
+    if current_user.role not in (UserRole.ADMIN, UserRole.SUPER_ADMIN):
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    result = await db.execute(
+        select(EventPass)
+        .options(joinedload(EventPass.event))
+        .filter(EventPass.pass_id == pass_id)
+    )
+    event_pass = result.scalar_one_or_none()
+
+    if not event_pass:
+        raise HTTPException(status_code=404, detail="Pass not found")
+
+    if event_pass.status == PassStatus.CANCELLED:
+        raise HTTPException(status_code=400, detail="This pass is already cancelled")
+
+    event_pass.status = PassStatus.CANCELLED
+    event_pass.cancelled_by = current_user.user_id
+    event_pass.cancelled_at = datetime.utcnow()
+    event_pass.cancel_reason = payload.get("reason", "Cancelled by Admin")
+    event_pass.refund_amount = payload.get("refund_amount", 0.0)
+    event_pass.refund_status = payload.get("refund_status", "not_applicable")
+
+    if event_pass.event and event_pass.event.passes_sold > 0:
+        event_pass.event.passes_sold -= 1
+
+    await db.commit()
+
+    return {"status": "success", "message": "Pass cancelled successfully"}
