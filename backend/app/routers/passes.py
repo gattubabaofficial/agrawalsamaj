@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import Optional
 
-from app.dependencies import get_db, get_current_user
+from app.dependencies import get_db, get_current_user, is_admin_level
 from app.models.user import User, UserRole
 from app.models.event import EventPass, PassStatus
 
@@ -21,7 +21,7 @@ async def get_pass_details(
     current_user: User = Depends(get_current_user)
 ):
     """Admin endpoint to view pass details."""
-    if current_user.role not in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER):
+    if not is_admin_level(current_user) and current_user.role != UserRole.VOLUNTEER:
         raise HTTPException(status_code=403, detail="Not authorized")
         
     result = await db.execute(
@@ -79,7 +79,7 @@ async def check_in_pass(
     current_user: User = Depends(get_current_user)
 ):
     """Mark a pass as used at the venue."""
-    if current_user.role not in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER):
+    if not is_admin_level(current_user) and current_user.role != UserRole.VOLUNTEER:
         raise HTTPException(status_code=403, detail="Not authorized")
         
     result = await db.execute(select(EventPass).filter(EventPass.pass_id == pass_id))
@@ -114,7 +114,7 @@ async def cancel_pass(
     current_user: User = Depends(get_current_user)
 ):
     """Admin endpoint to cancel an event pass."""
-    if current_user.role not in (UserRole.ADMIN, UserRole.SUPER_ADMIN):
+    if not is_admin_level(current_user):
         raise HTTPException(status_code=403, detail="Not authorized")
 
     result = await db.execute(

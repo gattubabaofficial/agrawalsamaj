@@ -120,5 +120,10 @@ async def get_current_super_admin(current_user=Depends(get_current_user)):
 
 
 def is_admin_level(user) -> bool:
-    """True if the user has admin or super-admin privileges."""
-    return getattr(user, "role", None) in ("admin", "super_admin", UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    """True if the user has admin, super-admin, or custom admin privileges."""
+    if not user:
+        return False
+    return (
+        getattr(user, "role", None) in ("admin", "super_admin", UserRole.ADMIN, UserRole.SUPER_ADMIN)
+        or getattr(user, "custom_role_id", None) is not None
+    )

@@ -6,7 +6,7 @@ from datetime import datetime
 import uuid
 from pydantic import BaseModel, Field
 
-from app.dependencies import get_db, get_current_user
+from app.dependencies import get_db, get_current_user, is_admin_level
 from app.models.user import User, UserRole
 from app.models.event import PaymentStatus
 from app.models.donation import Donation, DonationCategory
@@ -131,7 +131,7 @@ async def list_all_donations(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != UserRole.ADMIN:
+    if not is_admin_level(current_user):
         raise HTTPException(status_code=403, detail="Not authorized")
         
     result = await db.execute(
