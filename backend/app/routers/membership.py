@@ -54,6 +54,7 @@ class ApplyWithOtpRequest(BaseModel):
     first_name: str
     surname: str
     father_name: Optional[str] = None
+    parent_relation: Optional[str] = None
     mobile: str
     email: Optional[str] = None
     profession: Optional[str] = None
@@ -569,6 +570,7 @@ async def apply_for_membership_with_otp(
             first_name=payload.first_name.strip(),
             surname=payload.surname.strip(),
             father_name=payload.father_name.strip() if payload.father_name else None,
+            parent_relation=payload.parent_relation.strip() if payload.parent_relation else None,
             mobile=payload.mobile.strip(),
             email=payload.email.strip().lower() if payload.email else None,
             profession=payload.profession.strip() if payload.profession else None,
@@ -592,6 +594,8 @@ async def apply_for_membership_with_otp(
         # Update details if user already exists
         if payload.father_name:
             user.father_name = payload.father_name.strip()
+        if payload.parent_relation:
+            user.parent_relation = payload.parent_relation.strip()
         if payload.email:
             user.email = payload.email.strip().lower()
         if payload.profession:

@@ -411,6 +411,7 @@ export default function PublicMembersPage() {
         first_name: regFirstName.trim(),
         surname: regSurname.trim(),
         father_name: regFatherName.trim() || null,
+        parent_relation: regParentRelation.trim() || null,
         mobile: regMobile.trim(),
         email: regEmail.trim() || null,
         profession: regProfession.trim() || null,
