@@ -130,6 +130,32 @@ async def verify_otp_internal(db: AsyncSession, mobile: str, otp: str) -> bool:
     clean_mobile = mobile.strip()
     if not clean_mobile:
         return False
+
+    # 1. Try to check OtpLog first (for registration/application flow)
+    from app.models.auth import OtpLog
+    from datetime import timezone
+    otp_log_stmt = (
+        select(OtpLog)
+        .where(OtpLog.target == clean_mobile)
+        .where(OtpLog.otp_code == otp)
+        .where(OtpLog.is_used == False)
+        .order_by(OtpLog.created_at.desc())
+        .limit(1)
+    )
+    try:
+        otp_log_res = await db.execute(otp_log_stmt)
+        otp_log = otp_log_res.scalars().first()
+        if otp_log:
+            now = datetime.now(timezone.utc)
+            expires_at = otp_log.expires_at if otp_log.expires_at.tzinfo else otp_log.expires_at.replace(tzinfo=timezone.utc)
+            if expires_at >= now:
+                otp_log.is_used = True
+                await db.commit()
+                return True
+    except Exception:
+        pass
+
+    # 2. Fallback to PhoneOTPRequest (for login flow)
     result = await db.execute(
         select(PhoneOTPRequest)
         .where(PhoneOTPRequest.phone == clean_mobile)
