@@ -389,7 +389,7 @@ export default function PublicMembersPage() {
     setRegSendingOtp(true);
     setRegError("");
     try {
-      await axios.post(`${getApiBaseUrl()}/auth/phone/send-otp`, { phone: regMobile.trim() });
+      await axios.post(`${getApiBaseUrl()}/auth/register/send-otp`, { identifier: regMobile.trim() });
       setRegStep("otp");
     } catch (err: any) {
       setRegError(err.response?.data?.detail || "Failed to send OTP.");
@@ -1495,29 +1495,6 @@ export default function PublicMembersPage() {
                           className="flex-1 px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
                         />
                       </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-zinc-700">Mobile Number *</label>
-                      <input
-                        type="tel"
-                        required
-                        placeholder="10-digit mobile number"
-                        value={regMobile}
-                        onChange={(e) => setRegMobile(e.target.value)}
-                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-zinc-700">Email Address (Optional)</label>
-                      <input
-                        type="email"
-                        placeholder="name@example.com"
-                        value={regEmail}
-                        onChange={(e) => setRegEmail(e.target.value)}
-                        className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
-                      />
                     </div>
 
                     {/* Profile Photo Image File Upload */}
