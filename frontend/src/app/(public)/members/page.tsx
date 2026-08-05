@@ -172,7 +172,8 @@ export default function PublicMembersPage() {
       const res = await axios.post(`${getApiBaseUrl()}/membership/upload-photo`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      setPhotoUrl(`${getApiBaseUrl()}${res.data.url}`);
+      const baseUrl = getApiBaseUrl().replace(/\/api\/v1\/?$/, "");
+      setPhotoUrl(`${baseUrl}${res.data.url}`);
     } catch (err: any) {
       console.error("Photo upload failed, converting to local preview data URL", err);
       const reader = new FileReader();
