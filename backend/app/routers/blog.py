@@ -19,7 +19,7 @@ from app.models.blog import Blog, BlogComment, BlogLike, BlogStatus
 router = APIRouter(prefix="/api/v1/blog", tags=["Blog"])
 
 UPLOAD_BASE = Path("uploads")
-ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".mp4", ".webm"}
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".mp4", ".webm", ".pdf"}
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
 
 
@@ -29,6 +29,7 @@ class BlogCreate(BaseModel):
     title: str
     content: str
     cover_image_url: Optional[str] = None
+    pdf_url: Optional[str] = None
     tags: Optional[List[str]] = None
     status: BlogStatus = BlogStatus.DRAFT
     # Guest author info — required when not logged in
@@ -41,6 +42,7 @@ class BlogUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
     cover_image_url: Optional[str] = None
+    pdf_url: Optional[str] = None
     tags: Optional[List[str]] = None
     status: Optional[BlogStatus] = None
 
@@ -107,6 +109,7 @@ def blog_dict(blog: Blog, like_count: int = 0, user_liked: bool = False, comment
         "slug": blog.slug,
         "content": blog.content,
         "cover_image_url": blog.cover_image_url,
+        "pdf_url": blog.pdf_url,
         "tags": blog.tags or [],
         "status": blog.status,
         "views": blog.views,
@@ -340,6 +343,7 @@ async def create_blog(
             slug=slug,
             content=data.content,
             cover_image_url=data.cover_image_url,
+            pdf_url=data.pdf_url,
             tags=data.tags,
             status=data.status,
             guest_name=data.guest_name.strip() if data.guest_name else None,
@@ -451,6 +455,8 @@ async def update_blog(
         blog.content = data.content
     if data.cover_image_url is not None:
         blog.cover_image_url = data.cover_image_url
+    if data.pdf_url is not None:
+        blog.pdf_url = data.pdf_url
     if data.tags is not None:
         blog.tags = data.tags
     if data.status is not None:

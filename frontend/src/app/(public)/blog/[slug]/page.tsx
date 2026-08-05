@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import {
   Heart, MessageCircle, Eye, Clock, Share2, ArrowLeft,
-  Tag, Send, Trash2, ChevronDown, CheckCheck, Copy, Shield, PenSquare
+  Tag, Send, Trash2, ChevronDown, CheckCheck, Copy, Shield, PenSquare, FileText
 } from "lucide-react";
 import { getApiBaseUrl } from "@/utils/api";
 
@@ -38,6 +38,7 @@ interface Blog {
   content: string;
   status?: string;
   cover_image_url: string | null;
+  pdf_url: string | null;
   tags: string[];
   author: Author | null;
   like_count: number;
@@ -332,6 +333,29 @@ export default function BlogReaderPage() {
             </button>
           </div>
         </div>
+
+        {/* PDF Attachment Banner */}
+        {blog.pdf_url && (
+          <div className="mb-8 p-4 bg-amber-50/60 border border-amber-200/80 rounded-2xl flex flex-wrap items-center justify-between gap-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-amber-100 rounded-xl">
+                <FileText className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-zinc-900">PDF Document Attached</h4>
+                <p className="text-xs text-zinc-500">Official document related to this blog post.</p>
+              </div>
+            </div>
+            <a
+              href={`${getApiBaseUrl().replace('/api/v1', '')}${blog.pdf_url}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-all shadow-sm whitespace-nowrap"
+            >
+              View / Download PDF
+            </a>
+          </div>
+        )}
 
         {/* Markdown Content */}
         <div className="prose prose-zinc prose-lg max-w-none

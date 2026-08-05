@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Search, Tag, Heart, MessageCircle, Eye, Clock, ArrowRight, BookOpen, Upload, X } from "lucide-react";
+import { Search, Tag, Heart, MessageCircle, Eye, Clock, ArrowRight, BookOpen, Upload, X, FileText } from "lucide-react";
 import { getApiBaseUrl } from "@/utils/api";
 
 interface Blog {
@@ -53,6 +53,8 @@ export default function BlogPage() {
   const [newTags, setNewTags] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
+  const [newPdf, setNewPdf] = useState("");
+  const [pdfUploading, setPdfUploading] = useState(false);
   // Guest author fields
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
@@ -79,6 +81,34 @@ export default function BlogPage() {
       alert("Failed to upload image.");
     } finally {
       setCoverUploading(false);
+    }
+  };
+
+  const handlePdfFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      alert("Please select a valid PDF file.");
+      return;
+    }
+    setPdfUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`${getApiBaseUrl()}/blog/upload`, {
+        method: "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNewPdf(data.url);
+      } else {
+        alert("Failed to upload PDF.");
+      }
+    } catch {
+      alert("Failed to upload PDF.");
+    } finally {
+      setPdfUploading(false);
     }
   };
 
@@ -138,6 +168,7 @@ export default function BlogPage() {
         title: newTitle.trim(),
         content: newContent.trim(),
         cover_image_url: newCover.trim() || null,
+        pdf_url: newPdf.trim() || null,
         tags: tagsList,
         status: "published",
       };
@@ -152,7 +183,7 @@ export default function BlogPage() {
       });
       if (res.ok) {
         setShowCreateModal(false);
-        setNewTitle(""); setNewContent(""); setNewCover(""); setNewTags("");
+        setNewTitle(""); setNewContent(""); setNewCover(""); setNewPdf(""); setNewTags("");
         setGuestName(""); setGuestEmail(""); setGuestPhone("");
         fetchBlogs(1);
       } else {
@@ -475,6 +506,42 @@ export default function BlogPage() {
                         )}
                       </div>
                       <input type="file" accept="image/*" onChange={handleImageFileUpload} disabled={coverUploading} className="hidden" />
+                    </label>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block">Attach PDF Document (Optional)</label>
+                  {newPdf ? (
+                    <div className="flex items-center gap-3 p-3 bg-amber-50/50 rounded-xl border border-amber-200/80">
+                      <FileText className="w-8 h-8 text-amber-600 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-zinc-800 truncate">{newPdf.split('/').pop()}</p>
+                        <span className="text-[10px] text-zinc-400">Attached successfully</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setNewPdf("")}
+                        className="text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 px-2 py-1 rounded-lg"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-zinc-300 rounded-2xl cursor-pointer hover:border-amber-500 hover:bg-amber-50/50 transition-all">
+                      <div className="flex flex-col items-center justify-center text-zinc-500">
+                        {pdfUploading ? (
+                          <div className="flex items-center gap-2 font-semibold text-amber-600 text-xs">
+                            <span className="animate-spin">⏳</span> Uploading PDF...
+                          </div>
+                        ) : (
+                          <>
+                            <FileText className="w-5 h-5 mb-1 text-amber-500" />
+                            <p className="text-xs font-semibold text-zinc-700 font-medium">Click to select PDF document</p>
+                          </>
+                        )}
+                      </div>
+                      <input type="file" accept="application/pdf" onChange={handlePdfFileUpload} disabled={pdfUploading} className="hidden" />
                     </label>
                   )}
                 </div>

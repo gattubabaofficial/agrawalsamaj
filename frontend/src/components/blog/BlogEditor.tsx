@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Save, Send, ArrowLeft, ImagePlus, X, Tag, Plus,
-  Eye, Edit3, Loader2, CheckCircle
+  Eye, Edit3, Loader2, CheckCircle, FileText
 } from "lucide-react";
 import { getApiBaseUrl } from "@/utils/api";
 
@@ -22,6 +22,7 @@ interface BlogEditorProps {
     title?: string;
     content?: string;
     cover_image_url?: string | null;
+    pdf_url?: string | null;
     tags?: string[];
     status?: "draft" | "published";
   };
@@ -36,6 +37,7 @@ export default function BlogEditor({ initialData, mode }: BlogEditorProps) {
   const [title, setTitle] = useState(initialData?.title || "");
   const [content, setContent] = useState(initialData?.content || "");
   const [coverUrl, setCoverUrl] = useState(initialData?.cover_image_url || "");
+  const [pdfUrl, setPdfUrl] = useState(initialData?.pdf_url || "");
   const [tags, setTags] = useState<string[]>(initialData?.tags || []);
   const [tagInput, setTagInput] = useState("");
   const [status, setStatus] = useState<"draft" | "published">(initialData?.status || "draft");
@@ -43,10 +45,12 @@ export default function BlogEditor({ initialData, mode }: BlogEditorProps) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
+  const [pdfUploading, setPdfUploading] = useState(false);
   const [contentImageUploading, setContentImageUploading] = useState(false);
   const [error, setError] = useState("");
 
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
   const contentImageInputRef = useRef<HTMLInputElement>(null);
 
   // Upload file to backend
@@ -75,6 +79,25 @@ export default function BlogEditor({ initialData, mode }: BlogEditorProps) {
       setError("Cover image upload failed.");
     } finally {
       setCoverUploading(false);
+    }
+  };
+
+  // PDF document upload
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      setError("Please select a valid PDF file.");
+      return;
+    }
+    setPdfUploading(true);
+    try {
+      const url = await uploadFile(file);
+      setPdfUrl(url);
+    } catch {
+      setError("PDF upload failed.");
+    } finally {
+      setPdfUploading(false);
     }
   };
 
@@ -118,6 +141,7 @@ export default function BlogEditor({ initialData, mode }: BlogEditorProps) {
       title: title.trim(),
       content,
       cover_image_url: coverUrl || null,
+      pdf_url: pdfUrl || null,
       tags,
       status: finalStatus,
     };
@@ -243,6 +267,56 @@ export default function BlogEditor({ initialData, mode }: BlogEditorProps) {
             </button>
           )}
           <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
+        </div>
+
+        {/* PDF Upload */}
+        <div className="bg-white rounded-2xl border border-zinc-200 p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-zinc-800">Attach PDF Document (Optional)</h3>
+              <p className="text-xs text-zinc-400">Add an official PDF attachment or document related to this blog post.</p>
+            </div>
+            {pdfUrl && (
+              <button
+                type="button"
+                onClick={() => setPdfUrl("")}
+                className="text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+              >
+                Remove PDF
+              </button>
+            )}
+          </div>
+
+          {pdfUrl ? (
+            <div className="flex items-center gap-3 p-3 bg-amber-50/50 rounded-xl border border-amber-200/80">
+              <FileText className="w-8 h-8 text-amber-600 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-zinc-800 truncate">{pdfUrl.split('/').pop()}</p>
+                <a
+                  href={`${getApiBaseUrl().replace('/api/v1', '')}${pdfUrl}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[11px] text-amber-600 hover:underline font-bold"
+                >
+                  View Attachment
+                </a>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => pdfInputRef.current?.click()}
+              disabled={pdfUploading}
+              className="w-full py-4 flex flex-col items-center justify-center gap-1.5 text-zinc-400 hover:text-amber-500 hover:bg-amber-50/50 transition-colors border-2 border-dashed border-zinc-200 rounded-xl cursor-pointer"
+            >
+              {pdfUploading ? (
+                <><Loader2 className="w-6 h-6 animate-spin text-amber-500" /><span className="text-xs">Uploading PDF...</span></>
+              ) : (
+                <><FileText className="w-6 h-6" /><span className="text-xs font-semibold">Click to upload PDF document</span></>
+              )}
+            </button>
+          )}
+          <input ref={pdfInputRef} type="file" accept="application/pdf" className="hidden" onChange={handlePdfUpload} />
         </div>
 
         {/* Title */}

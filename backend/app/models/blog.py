@@ -26,6 +26,7 @@ class Blog(Base, TimestampMixin):
     # Markdown content stored here
     content: Mapped[str] = mapped_column(Text, nullable=False, default="")
     cover_image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    pdf_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     tags: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)  # List[str]
     status: Mapped[BlogStatus] = mapped_column(
         Enum(BlogStatus, name="blog_status"),
