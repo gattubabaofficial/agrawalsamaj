@@ -133,7 +133,7 @@ async def verify_otp_internal(db: AsyncSession, mobile: str, otp: str) -> bool:
         return False
 
     # 1. Try to check OtpLog first (for registration/application flow)
-    from app.models.auth import OtpLog
+    from app.models.user import OtpLog
     from datetime import timezone
     otp_log_stmt = (
         select(OtpLog)
