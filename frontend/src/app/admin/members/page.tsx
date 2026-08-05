@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Mail, Phone, MapPin, ShieldAlert, Award, FileUser, MessageSquare, HandHeart, Undo2, Edit, X, Trash2 } from "lucide-react";
+import { Search, Mail, Phone, MapPin, ShieldAlert, Award, FileUser, MessageSquare, HandHeart, Undo2, Edit, X, Trash2, Camera, Upload, RefreshCw } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
 import { formatParentage } from "@/utils/member";
@@ -62,6 +62,31 @@ export default function AdminMembersPage() {
   const [editForm, setEditForm] = useState<Partial<Member>>({});
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [editError, setEditError] = useState("");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const handlePhotoFileUpload = async (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setEditError("Please select a valid image file (JPG, PNG, WEBP).");
+      return;
+    }
+    setUploadingPhoto(true);
+    setEditError("");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await axios.post(`${getApiBaseUrl()}/membership/upload-photo`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const baseUrl = getApiBaseUrl().replace(/\/api\/v1\/?$/, "");
+      setEditForm(prev => ({ ...prev, profile_photo: `${baseUrl}${res.data.url}` }));
+    } catch (err: any) {
+      console.error("Photo upload failed", err);
+      setEditError("Failed to upload photo. Please try again.");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   // Send Message Modal State
   const [messageMember, setMessageMember] = useState<Member | null>(null);
@@ -129,6 +154,7 @@ export default function AdminMembersPage() {
       profession: m.profession || "",
       native_place: m.native_place || "",
       bio: m.bio || "",
+      profile_photo: m.profile_photo || "",
     });
     setEditError("");
   };
@@ -433,6 +459,47 @@ export default function AdminMembersPage() {
                   <span>{editError}</span>
                 </div>
               )}
+
+              {/* Profile Photo File Upload */}
+              <div className="space-y-1.5 p-4 bg-amber-50/50 rounded-2xl border border-amber-200/80">
+                <label className="text-xs font-bold text-zinc-700 block">Profile Photo (Upload Image File)</label>
+                <div className="flex items-center gap-4">
+                  {editForm.profile_photo ? (
+                    <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-amber-500/40 shadow-sm flex-shrink-0">
+                      <img src={editForm.profile_photo} alt="Profile Preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setEditForm(prev => ({ ...prev, profile_photo: "" }))}
+                        className="absolute top-1 right-1 bg-black/60 text-white p-1.5 rounded-full hover:bg-black/80 transition-colors"
+                        title="Remove photo"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-20 h-20 rounded-2xl bg-amber-100/70 border border-dashed border-amber-400 flex flex-col items-center justify-center text-amber-700 flex-shrink-0">
+                      <Camera className="w-8 h-8" />
+                    </div>
+                  )}
+                  <div className="flex-1 space-y-1.5">
+                    <label className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors shadow-sm">
+                      {uploadingPhoto ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                      {editForm.profile_photo ? "Change Image File" : "Choose Image File"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={uploadingPhoto}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handlePhotoFileUpload(file);
+                        }}
+                      />
+                    </label>
+                    <p className="text-[11px] text-zinc-500">Formats: JPG, PNG, WEBP (Max 5MB)</p>
+                  </div>
+                </div>
+              </div>
 
               {/* Core Information */}
               <div className="space-y-4">

@@ -454,7 +454,7 @@ async def list_members(
     is_admin = False
     if current_user:
         r_str = str(getattr(current_user, "role", "")).upper()
-        is_admin = r_str in ("ADMIN", "SUPER_ADMIN")
+        is_admin = r_str in ("ADMIN", "SUPER_ADMIN") or getattr(current_user, "custom_role_id", None) is not None
     
     data = []
     for u in users:
@@ -988,6 +988,7 @@ class AdminUpdateMemberRequest(BaseModel):
     profession: Optional[str] = None
     native_place: Optional[str] = None
     bio: Optional[str] = None
+    profile_photo: Optional[str] = None
 
 
 @router.put("/users/{user_id}/admin-update")
@@ -1047,6 +1048,8 @@ async def admin_update_user(
         user.native_place = payload.native_place.strip() or None
     if payload.bio is not None:
         user.bio = payload.bio.strip() or None
+    if payload.profile_photo is not None:
+        user.profile_photo = payload.profile_photo.strip() or None
 
     await db.commit()
     return {"status": "success", "message": "Member updated successfully."}
@@ -1066,7 +1069,7 @@ async def list_users(
     )
     users = result.scalars().all()
     
-    is_admin = current_user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    is_admin = current_user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN) or getattr(current_user, "custom_role_id", None) is not None
     
     data = []
     for u in users:
