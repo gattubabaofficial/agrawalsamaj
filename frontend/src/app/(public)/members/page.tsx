@@ -653,10 +653,9 @@ export default function PublicMembersPage() {
                   <div className="flex items-center gap-2 flex-shrink-0 lg:justify-end border-t border-zinc-100 pt-3 mt-1 lg:border-t-0 lg:pt-0 lg:mt-0">
                     <button
                       onClick={() => handleOpenEdit(m)}
-                      title="Edit profile via OTP"
-                      className="p-2.5 text-zinc-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all flex-shrink-0"
+                      className="py-2 px-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap"
                     >
-                      <Edit3 className="w-4 h-4" />
+                      <Edit3 className="w-4 h-4 text-zinc-500" /> Edit
                     </button>
                     <button
                       onClick={() => setViewMemberModal(m)}
