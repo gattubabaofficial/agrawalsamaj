@@ -245,6 +245,17 @@ async def phone_send_otp(payload: PhoneOtpSendRequest, db: AsyncSession = Depend
     user = user_query.scalars().first()
 
     if not user:
+        # Imported/legacy members keep their number in `contact_mobile` only
+        # (their `mobile` — the login column — was never set). Allow login
+        # through that number too, but only when it identifies exactly one
+        # member: contact_mobile is known to repeat across people in the
+        # imported list, so a duplicate is not safe to guess between.
+        cm_query = await db.execute(select(User).where(User.contact_mobile == normalized_mobile))
+        candidates = cm_query.scalars().all()
+        if len(candidates) == 1:
+            user = candidates[0]
+
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied. Only registered members with an assigned role are allowed to log in."
@@ -350,6 +361,18 @@ async def phone_verify_otp(payload: PhoneOtpVerifyRequest, db: AsyncSession = De
     # 3. Handle User Session
     user_query = await db.execute(select(User).where(User.mobile == normalized_mobile))
     user = user_query.scalars().first()
+
+    if not user:
+        # Same contact_mobile fallback as phone_send_otp above. The OTP just
+        # verified against this exact number is proof of ownership, so it's
+        # also safe to backfill `mobile` here — future logins then resolve
+        # through the primary column directly.
+        cm_query = await db.execute(select(User).where(User.contact_mobile == normalized_mobile))
+        candidates = cm_query.scalars().all()
+        if len(candidates) == 1:
+            user = candidates[0]
+            if not user.mobile:
+                user.mobile = normalized_mobile
 
     if not user:
         raise HTTPException(
