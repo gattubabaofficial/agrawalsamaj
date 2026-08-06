@@ -891,9 +891,13 @@ async def approve_profile_update(
     user.native_place = new_details.get("native_place", user.native_place)
     user.bio = new_details.get("bio", user.bio)
     if "email" in new_details:
-        user.email = new_details["email"]
+        email_val = new_details["email"]
+        if email_val and not ("*" in email_val or "x" in email_val):
+            user.email = email_val
     if "mobile" in new_details:
-        user.mobile = new_details["mobile"]
+        mobile_val = new_details["mobile"]
+        if mobile_val and not ("X" in mobile_val or "x" in mobile_val or "*" in mobile_val):
+            user.mobile = mobile_val
     if "address" in new_details:
         user.address = new_details["address"]
     if "profile_photo" in new_details:
@@ -1017,17 +1021,25 @@ async def admin_update_user(
     if payload.mobile is not None:
         mobile_val = payload.mobile.strip() or None
         if mobile_val:
-            m_check = await db.execute(select(User).where(User.mobile == mobile_val, User.user_id != user_uuid))
-            if m_check.scalars().first() is not None:
-                raise HTTPException(status_code=400, detail="Mobile number already registered by another member.")
-        user.mobile = mobile_val
+            # If it's a masked placeholder, ignore it to prevent overwriting the real phone number
+            if "X" in mobile_val or "x" in mobile_val or "*" in mobile_val:
+                pass
+            else:
+                m_check = await db.execute(select(User).where(User.mobile == mobile_val, User.user_id != user_uuid))
+                if m_check.scalars().first() is not None:
+                    raise HTTPException(status_code=400, detail="Mobile number already registered by another member.")
+                user.mobile = mobile_val
     if payload.email is not None:
         email_val = payload.email.strip().lower() or None
         if email_val:
-            e_check = await db.execute(select(User).where(User.email == email_val, User.user_id != user_uuid))
-            if e_check.scalars().first() is not None:
-                raise HTTPException(status_code=400, detail="Email already registered by another member.")
-        user.email = email_val
+            # If it's a masked placeholder, ignore it to prevent overwriting the real email
+            if "*" in email_val or "x" in email_val:
+                pass
+            else:
+                e_check = await db.execute(select(User).where(User.email == email_val, User.user_id != user_uuid))
+                if e_check.scalars().first() is not None:
+                    raise HTTPException(status_code=400, detail="Email already registered by another member.")
+                user.email = email_val
     if payload.address is not None:
         user.address = payload.address.strip() or None
     if payload.family_relation is not None:

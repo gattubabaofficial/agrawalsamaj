@@ -958,18 +958,28 @@ async def update_my_profile(
     # email/mobile are unique columns — check before committing so a collision
     # surfaces as a clean 400 instead of an unhandled IntegrityError (500).
     if update_data.get("email") and update_data["email"] != current_user.email:
-        clash = await db.execute(
-            select(User).where(User.email == update_data["email"], User.user_id != current_user.user_id)
-        )
-        if clash.scalars().first():
-            raise HTTPException(status_code=400, detail="This email address is already in use.")
+        email_val = update_data["email"]
+        if "*" in email_val or "x" in email_val:
+            # Masked, do not update
+            update_data.pop("email", None)
+        else:
+            clash = await db.execute(
+                select(User).where(User.email == email_val, User.user_id != current_user.user_id)
+            )
+            if clash.scalars().first():
+                raise HTTPException(status_code=400, detail="This email address is already in use.")
 
     if update_data.get("mobile") and update_data["mobile"] != current_user.mobile:
-        clash = await db.execute(
-            select(User).where(User.mobile == update_data["mobile"], User.user_id != current_user.user_id)
-        )
-        if clash.scalars().first():
-            raise HTTPException(status_code=400, detail="This mobile number is already in use.")
+        mobile_val = update_data["mobile"]
+        if "X" in mobile_val or "x" in mobile_val or "*" in mobile_val:
+            # Masked, do not update
+            update_data.pop("mobile", None)
+        else:
+            clash = await db.execute(
+                select(User).where(User.mobile == mobile_val, User.user_id != current_user.user_id)
+            )
+            if clash.scalars().first():
+                raise HTTPException(status_code=400, detail="This mobile number is already in use.")
 
     for key, value in update_data.items():
         setattr(current_user, key, value)
