@@ -262,7 +262,7 @@ async def phone_send_otp(payload: PhoneOtpSendRequest, db: AsyncSession = Depend
         )
 
     is_allowed = (
-        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER, UserRole.MEMBER)
+        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER)
         or user.custom_role_id is not None
     )
     if not is_allowed:
@@ -381,7 +381,7 @@ async def phone_verify_otp(payload: PhoneOtpVerifyRequest, db: AsyncSession = De
         )
 
     is_allowed = (
-        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER, UserRole.MEMBER)
+        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER)
         or user.custom_role_id is not None
     )
     if not is_allowed:
@@ -860,7 +860,7 @@ async def register_oauth(
         )
 
     is_allowed = (
-        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER, UserRole.MEMBER)
+        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER)
         or user.custom_role_id is not None
     )
     if not is_allowed:
