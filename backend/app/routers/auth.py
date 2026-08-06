@@ -166,7 +166,7 @@ async def login(
     _clear_login_failures(normalized_val)
 
     is_allowed = (
-        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER)
+        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER, UserRole.MEMBER)
         or user.custom_role_id is not None
     )
     if not is_allowed:
@@ -251,7 +251,7 @@ async def phone_send_otp(payload: PhoneOtpSendRequest, db: AsyncSession = Depend
         )
 
     is_allowed = (
-        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER)
+        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER, UserRole.MEMBER)
         or user.custom_role_id is not None
     )
     if not is_allowed:
@@ -277,7 +277,10 @@ async def phone_send_otp(payload: PhoneOtpSendRequest, db: AsyncSession = Depend
         raise HTTPException(status_code=429, detail="Too many OTP requests. Please try again later.")
         
     cooldown = int(os.getenv("OTP_RESEND_COOLDOWN_SECONDS", "30"))
-    if recent_requests and (now - recent_requests[0].created_at).total_seconds() < cooldown:
+    last_created_at = recent_requests[0].created_at if recent_requests else None
+    if last_created_at and not last_created_at.tzinfo:
+        last_created_at = last_created_at.replace(tzinfo=timezone.utc)
+    if last_created_at and (now - last_created_at).total_seconds() < cooldown:
         raise HTTPException(status_code=429, detail=f"Please wait {cooldown} seconds before requesting a new OTP.")
 
     # 2. Generate and store OTP
@@ -355,7 +358,7 @@ async def phone_verify_otp(payload: PhoneOtpVerifyRequest, db: AsyncSession = De
         )
 
     is_allowed = (
-        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER)
+        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER, UserRole.MEMBER)
         or user.custom_role_id is not None
     )
     if not is_allowed:
@@ -408,7 +411,10 @@ async def email_send_otp(payload: EmailOtpSendRequest, db: AsyncSession = Depend
         raise HTTPException(status_code=429, detail="Too many OTP requests. Please try again later.")
         
     cooldown = int(os.getenv("OTP_RESEND_COOLDOWN_SECONDS", "30"))
-    if recent_requests and (now - recent_requests[0].created_at).total_seconds() < cooldown:
+    last_created_at = recent_requests[0].created_at if recent_requests else None
+    if last_created_at and not last_created_at.tzinfo:
+        last_created_at = last_created_at.replace(tzinfo=timezone.utc)
+    if last_created_at and (now - last_created_at).total_seconds() < cooldown:
         raise HTTPException(status_code=429, detail=f"Please wait {cooldown} seconds before requesting a new OTP.")
 
     # 3. Generate and store OTP
@@ -831,7 +837,7 @@ async def register_oauth(
         )
 
     is_allowed = (
-        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER)
+        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER, UserRole.MEMBER)
         or user.custom_role_id is not None
     )
     if not is_allowed:
