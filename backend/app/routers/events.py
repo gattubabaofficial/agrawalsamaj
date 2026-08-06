@@ -368,9 +368,15 @@ async def register_event(
             total_amount = 0.0
             payment_status = PaymentStatus.VERIFIED
 
-    # Store entered contact details, or fallback to current user's profile details
+    # Store entered contact details, or fallback to current user's profile details.
+    # reg_data.guest_phone may be a masked value (e.g. "XXXXXX1234") echoed back from the
+    # public, unauthenticated /membership/members listing used by the directory search on
+    # this page — never trust it as a real delivery target.
     guest_name = reg_data.guest_name or (f"{current_user.first_name} {current_user.surname}" if current_user else None)
-    guest_phone = reg_data.guest_phone or (current_user.mobile if current_user else None)
+    guest_phone = reg_data.guest_phone
+    if guest_phone and "X" in guest_phone:
+        guest_phone = None
+    guest_phone = guest_phone or (current_user.mobile if current_user else None)
     guest_email = reg_data.guest_email or (current_user.email if current_user else None)
 
     import json

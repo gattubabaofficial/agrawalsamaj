@@ -255,7 +255,7 @@ export default function EventDetailsPage() {
       const payload: any = {
         pass_count: passCount,
         guest_name: guestName || undefined,
-        guest_phone: guestPhone || undefined,
+        guest_phone: (guestPhone && !guestPhone.includes("X")) ? guestPhone : undefined,
         guest_email: guestEmail || undefined,
         payment_mode: event.pricing_type === "paid" ? paymentMode : undefined,
         attendees: attendeesList
