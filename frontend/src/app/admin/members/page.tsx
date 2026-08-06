@@ -562,7 +562,7 @@ export default function AdminMembersPage() {
                     <label className="text-xs font-semibold text-zinc-700">Email Address</label>
                     <input type="email" value={editForm.email || ""} onChange={e => setEditForm({...editForm, email: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
                   </div>
-                  <div className="col-span-2 space-y-1.5">
+                  <div className="md:col-span-2 space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-700">Residential Address</label>
                     <input type="text" value={editForm.address || ""} onChange={e => setEditForm({...editForm, address: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
                   </div>
@@ -611,7 +611,7 @@ export default function AdminMembersPage() {
                     <label className="text-xs font-semibold text-zinc-700">Native Place / Origin</label>
                     <input type="text" value={editForm.native_place || ""} onChange={e => setEditForm({...editForm, native_place: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
                   </div>
-                  <div className="col-span-2 space-y-1.5">
+                  <div className="md:col-span-2 space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-700">Bio Note</label>
                     <textarea value={editForm.bio || ""} onChange={e => setEditForm({...editForm, bio: e.target.value})} rows={2} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
                   </div>
