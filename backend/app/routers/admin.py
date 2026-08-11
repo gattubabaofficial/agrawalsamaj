@@ -16,7 +16,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db, get_current_user, get_current_super_admin
 from app.models.user import User, UserRole
-from app.models.booking import Booking, PaymentMode, BookingStatus
 from app.models.event import EventRegistration, EventPaymentMode, PaymentStatus
 from app.models.receipt import Receipt
 from app.utils.security import hash_password

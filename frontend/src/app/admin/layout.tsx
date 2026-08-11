@@ -106,20 +106,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     ...((isSuperAdmin || isAdmin || permissions.length > 0) ? [{ name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard }] : []),
     ...(isSuperAdmin ? [{ name: "Admin Management", href: "/admin/admins", icon: Shield }] : []),
     ...((isSuperAdmin || isAdmin || hasPermission("manage_members")) ? [
-      { name: "Membership Requests", href: "/admin/requests", icon: UserPlus },
-      { name: "Members Directory", href: "/admin/members", icon: Contact },
+      { name: "Directory Requests", href: "/admin/requests", icon: UserPlus },
+      { name: "Manage Directory", href: "/admin/members", icon: Contact },
     ] : []),
     ...((isSuperAdmin || isAdmin || hasPermission("manage_events")) ? [
       { name: "Events Management", href: "/admin/events", icon: Calendar },
     ] : []),
     ...((isSuperAdmin || isAdmin || isVolunteer || hasPermission("scan_passes")) ? [
       { name: "Pass Verification", href: "/admin/scan", icon: QrCode },
-    ] : []),
-    ...((isSuperAdmin || isAdmin || hasPermission("manage_bhavan")) ? [
-      { name: "Bhavan Bookings", href: "/admin/bookings", icon: Home },
-      { name: "Room Pricing & Rules", href: "/admin/pricing", icon: Settings },
-      { name: "Special Events", href: "/admin/special-events", icon: CalendarRange },
-      { name: "Vouchers", href: "/admin/vouchers", icon: Ticket },
     ] : []),
     ...((isSuperAdmin || isAdmin || hasPermission("manage_donations")) ? [
       { name: "Donations Management", href: "/admin/donations", icon: Heart },

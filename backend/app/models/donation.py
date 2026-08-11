@@ -54,6 +54,7 @@ class Donation(Base):
     razorpay_order_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     razorpay_payment_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     message: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
+    purpose_of_donation: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     donated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=datetime.utcnow,

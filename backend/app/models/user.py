@@ -63,7 +63,7 @@ class User(Base, TimestampMixin):
     surname: Mapped[str] = mapped_column(String(100), nullable=False)
     father_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True) # Father's / Husband's name
     parent_relation: Mapped[Optional[str]] = mapped_column(String(20), nullable=True) # S/o, D/o, W/o, C/o relation
-    mobile: Mapped[Optional[str]] = mapped_column(String(15), unique=True, index=True, nullable=True)
+    mobile: Mapped[Optional[str]] = mapped_column(String(15), index=True, nullable=True)
     # Display-only contact number from the imported member list. Kept separate from the
     # unique `mobile` (used for login/OTP) because the source list repeats numbers across
     # people, so they can't all live on a unique column.
@@ -126,13 +126,6 @@ class User(Base, TimestampMixin):
         back_populates="user",
         cascade="all, delete-orphan",
         foreign_keys="[EventRegistration.user_id]"
-    )
-    
-    bookings: Mapped[List["Booking"]] = relationship(
-        "Booking",
-        back_populates="user",
-        cascade="all, delete-orphan",
-        foreign_keys="[Booking.user_id]"
     )
     
     donations: Mapped[List["Donation"]] = relationship(

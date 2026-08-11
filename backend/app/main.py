@@ -7,10 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.routers.auth import router as auth_router
 from app.routers.membership import router as membership_router
-from app.routers.special_events import router as special_events_router
 from app.routers.family import router as family_router
 from app.routers.events import router as events_router
-from app.routers.bookings import router as bookings_router
 from app.routers.donations import router as donations_router
 from app.routers.dashboard import router as dashboard_router
 from app.routers.passes import router as passes_router
@@ -18,7 +16,6 @@ from app.routers.chat import router as chat_router
 from app.routers.blog import router as blog_router
 from app.routers.admin import router as admin_router
 from app.routers.receipts import router as receipts_router
-from app.routers.vouchers import router as vouchers_router
 from app.routers.role import router as role_router
 
 app = FastAPI(
@@ -38,7 +35,6 @@ async def on_startup():
     import app.models.requests
     import app.models.role
     import app.models.blog
-    import app.models.booking
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         
@@ -80,6 +76,7 @@ async def on_startup():
         "ALTER TABLE event_passes ADD COLUMN cancel_reason VARCHAR(500)",
         "ALTER TABLE event_passes ADD COLUMN refund_amount NUMERIC(10, 2)",
         "ALTER TABLE event_passes ADD COLUMN refund_status VARCHAR(30) DEFAULT 'not_applicable'",
+        "ALTER TABLE donations ADD COLUMN purpose_of_donation VARCHAR(500)",
     ):
         try:
             async with engine.begin() as conn:
@@ -143,7 +140,6 @@ app.include_router(auth_router)
 app.include_router(membership_router)
 app.include_router(family_router)
 app.include_router(events_router)
-app.include_router(bookings_router)
 app.include_router(donations_router)
 app.include_router(dashboard_router)
 app.include_router(passes_router)
@@ -151,8 +147,6 @@ app.include_router(chat_router)
 app.include_router(blog_router)
 app.include_router(admin_router)
 app.include_router(receipts_router)
-app.include_router(vouchers_router)
-app.include_router(special_events_router)
 app.include_router(role_router)
 
 

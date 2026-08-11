@@ -111,7 +111,7 @@ export default function EventsPage() {
           </div>
 
           <div className="flex flex-wrap gap-1.5 self-stretch md:self-auto overflow-x-auto pb-1 md:pb-0">
-            {["all", "cultural", "religious", "sports", "social", "educational"].map((cat) => (
+            {["all", "cultural", "religious", "sports", "social", "educational", "other"].map((cat) => (
               <button
                 key={cat}
                 onClick={() => setCategory(cat)}

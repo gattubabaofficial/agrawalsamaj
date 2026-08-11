@@ -1,158 +1,133 @@
 "use client";
 
 import Link from "next/link";
-import { Users, Calendar, Home, CreditCard, ArrowUpRight, ArrowDownRight, UserCheck, Shield } from "lucide-react";
+import { 
+  UserPlus, Contact, Calendar, QrCode, Heart, BookOpen, Settings, Shield, ArrowRight, LayoutDashboard 
+} from "lucide-react";
+import { motion } from "framer-motion";
+
+const ADMIN_CARDS = [
+  {
+    title: "Directory Requests",
+    desc: "Review, cross-check, and approve member registrations and profile edit applications.",
+    href: "/admin/requests",
+    icon: UserPlus,
+    badge: "Applications",
+    color: "from-amber-500 to-orange-600",
+  },
+  {
+    title: "Manage Directory",
+    desc: "View verified Samaj members directory, edit member details, assign roles & status.",
+    href: "/admin/members",
+    icon: Contact,
+    badge: "Directory",
+    color: "from-blue-500 to-indigo-600",
+  },
+  {
+    title: "Events Management",
+    desc: "Create and publish Samaj events, manage registrations, ticket pricing, and schedules.",
+    href: "/admin/events",
+    icon: Calendar,
+    badge: "Events",
+    color: "from-emerald-500 to-teal-600",
+  },
+  {
+    title: "Pass Verification",
+    desc: "Scan and verify QR codes on event entry passes for attendees.",
+    href: "/admin/scan",
+    icon: QrCode,
+    badge: "Passes",
+    color: "from-purple-500 to-violet-600",
+  },
+  {
+    title: "Donations Management",
+    desc: "Monitor financial contributions, view donor details, and export CSV reports.",
+    href: "/admin/donations",
+    icon: Heart,
+    badge: "Donations",
+    color: "from-rose-500 to-pink-600",
+  },
+  {
+    title: "Receipts",
+    desc: "View and verify receipts generated for event registrations and donations.",
+    href: "/admin/receipts",
+    icon: BookOpen,
+    badge: "Billing",
+    color: "from-red-500 to-rose-600",
+  },
+  {
+    title: "Blog Management",
+    desc: "Moderate, edit, publish, or delete community blog posts.",
+    href: "/admin/blog",
+    icon: BookOpen,
+    badge: "Articles",
+    color: "from-cyan-500 to-blue-600",
+  },
+  {
+    title: "Settings & Custom Roles",
+    desc: "Configure site settings, custom admin roles, and permission capabilities.",
+    href: "/admin/settings",
+    icon: Settings,
+    badge: "Settings",
+    color: "from-zinc-700 to-zinc-900",
+  },
+];
 
 export default function AdminDashboard() {
   return (
-    <div className="space-y-6 max-w-7xl">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-900">Dashboard Overview</h1>
-        <p className="text-sm text-zinc-500 mt-1">Key metrics and statistics for the Agrawal Samaj Mansrovar Jaipur portal.</p>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Stat Cards */}
-        <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
-          <div className="flex justify-between items-start mb-4">
-            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-              <UserCheck className="w-5 h-5" />
-            </div>
-            <span className="flex items-center text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
-              <ArrowUpRight className="w-3 h-3 mr-1" />
-              12%
-            </span>
-          </div>
-          <h3 className="text-2xl font-bold text-zinc-900">1,245</h3>
-          <p className="text-sm font-medium text-zinc-500 mt-1">Total Members</p>
-        </div>
-        
-        <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
-          <div className="flex justify-between items-start mb-4">
-            <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600">
-              <Users className="w-5 h-5" />
-            </div>
-            <span className="flex items-center text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
-              <ArrowUpRight className="w-3 h-3 mr-1" />
-              8%
-            </span>
-          </div>
-          <h3 className="text-2xl font-bold text-zinc-900">3,490</h3>
-          <p className="text-sm font-medium text-zinc-500 mt-1">Total Users (Non-Members)</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
-          <div className="flex justify-between items-start mb-4">
-            <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
-              <Calendar className="w-5 h-5" />
-            </div>
-          </div>
-          <h3 className="text-2xl font-bold text-zinc-900">3</h3>
-          <p className="text-sm font-medium text-zinc-500 mt-1">Active Events</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
-          <div className="flex justify-between items-start mb-4">
-            <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center text-rose-600">
-              <Home className="w-5 h-5" />
-            </div>
-            <span className="flex items-center text-xs font-medium text-rose-600 bg-rose-50 px-2 py-1 rounded-full">
-              <ArrowDownRight className="w-3 h-3 mr-1" />
-              2%
-            </span>
-          </div>
-          <h3 className="text-2xl font-bold text-zinc-900">14</h3>
-          <p className="text-sm font-medium text-zinc-500 mt-1">Bhavan Bookings (This Month)</p>
+    <div className="space-y-8 max-w-7xl">
+      {/* Header Banner */}
+      <div className="bg-zinc-900 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden border border-zinc-800">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10 space-y-2 max-w-2xl">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-xs font-semibold border border-amber-500/30">
+            <Shield className="w-4 h-4" /> Admin Portal Management
+          </span>
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            Manage Directory &amp; Portal Modules
+          </h1>
+          <p className="text-zinc-400 text-sm sm:text-base leading-relaxed">
+            Select any management card below to access administrative modules, approve directory requests, or manage events and communications.
+          </p>
         </div>
       </div>
 
-      {/* Custom Roles & Permissions Management Banner */}
-      <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-600 shrink-0">
-            <Shield className="w-6 h-6" />
-          </div>
-          <div>
-            <h3 className="font-bold text-zinc-900 text-lg">Custom Roles &amp; Capability Permissions</h3>
-            <p className="text-xs text-zinc-500 mt-0.5">Create custom roles (Bhavan Manager, Event Coordinator, Editor) and assign capability permissions.</p>
-          </div>
-        </div>
-        <Link
-          href="/admin/roles"
-          className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-md hover:shadow-amber-200 transition-all shrink-0 cursor-pointer"
-        >
-          Manage Custom Roles &rarr;
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Chart / Stats Area */}
-        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden lg:col-span-2">
-          <div className="px-6 py-5 border-b border-zinc-200 flex justify-between items-center bg-zinc-50/50">
-            <div>
-              <h3 className="font-semibold text-zinc-900">Donation Statistics</h3>
-              <p className="text-xs text-zinc-500">Revenue over the last 6 months</p>
-            </div>
-            <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
-              <CreditCard className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="p-6">
-            {/* Visual placeholder for a chart */}
-            <div className="h-64 w-full flex items-end justify-between gap-2 px-2">
-              {[40, 70, 45, 90, 65, 100].map((height, i) => (
-                <div key={i} className="w-full flex flex-col items-center gap-2 group">
-                  <div 
-                    className="w-full bg-amber-500/20 group-hover:bg-amber-500 rounded-t-lg transition-colors relative"
-                    style={{ height: `${height}%` }}
-                  >
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                      ₹{height * 1200}
-                    </div>
+      {/* Admin Navigation Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {ADMIN_CARDS.map((card, i) => (
+          <motion.div
+            key={card.title}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: i * 0.05 }}
+          >
+            <Link
+              href={card.href}
+              className="group block h-full bg-white rounded-3xl border border-zinc-200 p-6 shadow-sm hover:shadow-xl hover:border-amber-500 transition-all duration-300 relative overflow-hidden flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${card.color} text-white flex items-center justify-center shadow-md transition-transform group-hover:scale-110`}>
+                    <card.icon className="w-6 h-6" />
                   </div>
-                  <span className="text-xs text-zinc-500 font-medium">Month {i+1}</span>
+                  <span className="text-xs font-bold px-2.5 py-1 bg-zinc-100 text-zinc-600 rounded-full">
+                    {card.badge}
+                  </span>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
+                <h3 className="text-lg font-bold text-zinc-900 group-hover:text-amber-600 transition-colors">
+                  {card.title}
+                </h3>
+                <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
+                  {card.desc}
+                </p>
+              </div>
 
-        {/* Recent Activity */}
-        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-5 border-b border-zinc-200 bg-zinc-50/50">
-            <h3 className="font-semibold text-zinc-900">Recent Activity</h3>
-          </div>
-          <div className="divide-y divide-zinc-100 p-6 space-y-4">
-            <div className="flex gap-4">
-              <div className="w-2 h-2 mt-2 rounded-full bg-blue-500 flex-shrink-0"></div>
-              <div>
-                <p className="text-sm text-zinc-900">New member registration: <span className="font-medium">Ramesh Agrawal</span></p>
-                <p className="text-xs text-zinc-500 mt-1">2 hours ago</p>
+              <div className="mt-6 pt-4 border-t border-zinc-100 flex items-center text-xs font-bold text-amber-600 group-hover:text-amber-700">
+                Manage Section <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
               </div>
-            </div>
-            <div className="flex gap-4 pt-4">
-              <div className="w-2 h-2 mt-2 rounded-full bg-emerald-500 flex-shrink-0"></div>
-              <div>
-                <p className="text-sm text-zinc-900">Donation received: <span className="font-medium">₹11,000</span></p>
-                <p className="text-xs text-zinc-500 mt-1">5 hours ago</p>
-              </div>
-            </div>
-            <div className="flex gap-4 pt-4">
-              <div className="w-2 h-2 mt-2 rounded-full bg-amber-500 flex-shrink-0"></div>
-              <div>
-                <p className="text-sm text-zinc-900">Event passes sold out: <span className="font-medium">Diwali Milan Samaroh</span></p>
-                <p className="text-xs text-zinc-500 mt-1">1 day ago</p>
-              </div>
-            </div>
-            <div className="flex gap-4 pt-4">
-              <div className="w-2 h-2 mt-2 rounded-full bg-rose-500 flex-shrink-0"></div>
-              <div>
-                <p className="text-sm text-zinc-900">Bhavan booking cancellation</p>
-                <p className="text-xs text-zinc-500 mt-1">2 days ago</p>
-              </div>
-            </div>
-          </div>
-        </div>
+            </Link>
+          </motion.div>
+        ))}
       </div>
     </div>
   );

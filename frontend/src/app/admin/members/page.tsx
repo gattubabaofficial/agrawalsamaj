@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Mail, Phone, MapPin, ShieldAlert, Award, FileUser, MessageSquare, HandHeart, Undo2, Edit, X, Trash2, Camera, Upload, RefreshCw } from "lucide-react";
+import { Search, Mail, Phone, MapPin, ShieldAlert, Award, FileUser, MessageSquare, HandHeart, Undo2, Edit, X, Trash2, Camera, Upload, RefreshCw, Eye } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
 import { formatParentage } from "@/utils/member";
@@ -56,6 +56,9 @@ export default function AdminMembersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+
+  // View Details Modal State
+  const [viewMemberModal, setViewMemberModal] = useState<Member | null>(null);
 
   // Edit Member Modal State
   const [editingMember, setEditingMember] = useState<Member | null>(null);
@@ -269,7 +272,7 @@ export default function AdminMembersPage() {
     <div className="space-y-6 max-w-7xl">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900">Members Directory (Admin View)</h1>
+          <h1 className="text-2xl font-bold text-zinc-900">Manage Directory</h1>
           <p className="text-sm text-zinc-500 mt-1">Full view of Samaj members, including contact details and address details.</p>
         </div>
         <div className="px-4 py-2 bg-amber-50 text-amber-700 text-sm font-semibold rounded-xl border border-amber-200">
@@ -388,6 +391,12 @@ export default function AdminMembersPage() {
 
                   <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setViewMemberModal(m)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-zinc-600" /> View Details
+                      </button>
                       <button
                         onClick={() => handleOpenMessageModal(m)}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
@@ -710,6 +719,104 @@ export default function AdminMembersPage() {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* View Details Modal */}
+      {viewMemberModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-xl w-full border border-zinc-200 shadow-2xl overflow-hidden my-8">
+            <div className="px-6 py-5 bg-gradient-to-r from-amber-500 to-orange-600 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {viewMemberModal.profile_photo ? (
+                  <img src={viewMemberModal.profile_photo} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-white/40" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold text-sm">
+                    {viewMemberModal.first_name?.[0]}{viewMemberModal.surname?.[0]}
+                  </div>
+                )}
+                <div>
+                  <h3 className="font-bold text-lg leading-tight">{viewMemberModal.first_name} {viewMemberModal.surname}</h3>
+                  <p className="text-xs text-amber-100">{viewMemberModal.samaj_id || "Samaj Member"}</p>
+                </div>
+              </div>
+              <button onClick={() => setViewMemberModal(null)} className="p-2 rounded-full hover:bg-white/20 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 text-sm divide-y divide-zinc-100 max-h-[75vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-4 pt-1">
+                <div>
+                  <p className="text-xs text-zinc-400 font-semibold uppercase">Full Name</p>
+                  <p className="font-bold text-zinc-900 mt-0.5">{viewMemberModal.first_name} {viewMemberModal.surname}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-400 font-semibold uppercase">Samaj ID</p>
+                  <p className="font-mono font-bold text-amber-700 mt-0.5">{viewMemberModal.samaj_id || "Pending"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-400 font-semibold uppercase">Father / Guardian</p>
+                  <p className="font-semibold text-zinc-800 mt-0.5">{formatParentage(viewMemberModal.father_name) || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-400 font-semibold uppercase">LM No.</p>
+                  <p className="font-medium text-zinc-800 mt-0.5">{viewMemberModal.lm_no || "N/A"}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-3">
+                <div>
+                  <p className="text-xs text-zinc-400 font-semibold uppercase">Mobile Number</p>
+                  <p className="font-mono font-semibold text-zinc-800 mt-0.5">{viewMemberModal.mobile || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-400 font-semibold uppercase">Email Address</p>
+                  <p className="font-medium text-zinc-800 mt-0.5 break-all">{viewMemberModal.email || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-400 font-semibold uppercase">Profession / Business</p>
+                  <p className="font-medium text-zinc-800 mt-0.5">{viewMemberModal.profession || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-400 font-semibold uppercase">Native Place / Origin</p>
+                  <p className="font-medium text-zinc-800 mt-0.5">{viewMemberModal.native_place || "N/A"}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-3">
+                <div>
+                  <p className="text-xs text-zinc-400 font-semibold uppercase">Zone</p>
+                  <p className="font-medium text-zinc-800 mt-0.5">{viewMemberModal.zone || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-400 font-semibold uppercase">House No.</p>
+                  <p className="font-medium text-zinc-800 mt-0.5">{viewMemberModal.house_no || "N/A"}</p>
+                </div>
+              </div>
+
+              <div className="pt-3">
+                <p className="text-xs text-zinc-400 font-semibold uppercase">Residential Address</p>
+                <p className="font-medium text-zinc-800 mt-0.5">{viewMemberModal.address || "No address configured"}</p>
+              </div>
+
+              {viewMemberModal.bio && (
+                <div className="pt-3">
+                  <p className="text-xs text-zinc-400 font-semibold uppercase">Bio / Note</p>
+                  <p className="font-medium text-zinc-700 italic mt-0.5 bg-amber-50 p-2.5 rounded-xl border border-amber-100">"{viewMemberModal.bio}"</p>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 bg-zinc-50 border-t border-zinc-200 flex justify-end">
+              <button
+                onClick={() => setViewMemberModal(null)}
+                className="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold rounded-xl transition-colors"
+              >
+                Close Details
+              </button>
+            </div>
           </div>
         </div>
       )}

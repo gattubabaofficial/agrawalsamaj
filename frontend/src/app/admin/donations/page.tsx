@@ -170,6 +170,11 @@ export default function AdminDonationsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-zinc-900 font-medium">{d.category_name}</div>
+                      {d.purpose_of_donation && (
+                        <div className="text-xs font-semibold text-amber-700 mt-1">
+                          Purpose: {d.purpose_of_donation}
+                        </div>
+                      )}
                       {d.message && <div className="text-xs text-zinc-500 mt-1 italic">"{d.message}"</div>}
                     </td>
                     <td className="px-6 py-4">

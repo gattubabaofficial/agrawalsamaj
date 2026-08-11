@@ -18,7 +18,6 @@ const navItems = [
   { name: "Directory", href: "/members", icon: Users },
   { name: "Events", href: "/events", icon: Calendar },
   { name: "Blog", href: "/blog", icon: BookOpen },
-  { name: "Bhavan", href: "/bhavan", icon: Building },
   { name: "Donate", href: "/donate", icon: Heart },
 ];
 
