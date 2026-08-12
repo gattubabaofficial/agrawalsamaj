@@ -17,6 +17,8 @@ from app.routers.blog import router as blog_router
 from app.routers.admin import router as admin_router
 from app.routers.receipts import router as receipts_router
 from app.routers.role import router as role_router
+from app.routers.bhavan import router as bhavan_router
+from app.routers.bhavan_admin import router as bhavan_admin_router
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -79,6 +81,10 @@ async def on_startup():
         "ALTER TABLE event_passes ADD COLUMN refund_status VARCHAR(30) DEFAULT 'not_applicable'",
         "ALTER TABLE donations ADD COLUMN purpose_of_donation VARCHAR(500)",
         "ALTER TABLE phone_otp_requests ADD COLUMN purpose VARCHAR(40) DEFAULT 'generic'",
+        "ALTER TABLE bhavan_accommodation_types ADD COLUMN composition_json JSON",
+        "ALTER TABLE bhavan_accommodation_types ADD COLUMN allow_standalone_booking BOOLEAN DEFAULT TRUE",
+        "ALTER TABLE bhavan_amenities ADD COLUMN allow_standalone_booking BOOLEAN DEFAULT TRUE",
+        "ALTER TABLE bhavan_rule_profiles ADD COLUMN is_public_visible BOOLEAN DEFAULT TRUE",
     ):
         try:
             async with engine.begin() as conn:
@@ -93,11 +99,7 @@ from pathlib import Path
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://agrawalsamaj.vercel.app",
-        "https://agrawalsamaj-backend-production.up.railway.app",
-        "http://localhost:3000", # Keeping localhost so your local development doesn't break!
-    ],
+    allow_origin_regex=r"https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -150,6 +152,8 @@ app.include_router(blog_router)
 app.include_router(admin_router)
 app.include_router(receipts_router)
 app.include_router(role_router)
+app.include_router(bhavan_router)
+app.include_router(bhavan_admin_router)
 
 
 @app.get("/")

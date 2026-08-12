@@ -56,6 +56,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
+      data-scroll-behavior="smooth"
       style={{ colorScheme: "light" }}
       className={`${inter.variable} ${lora.variable} ${notoDevanagari.variable} ${geistMono.variable} h-full antialiased`}
     >

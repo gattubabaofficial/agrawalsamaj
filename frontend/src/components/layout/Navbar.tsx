@@ -13,6 +13,7 @@ import { EASE } from "@/components/ui/motion";
 
 const navItems = [
   { name: "Home", href: "/", icon: Home },
+  { name: "Bhavan", href: "/bhavan", icon: Building },
   { name: "About", href: "/about", icon: Info },
   { name: "History", href: "/history", icon: History },
   { name: "Directory", href: "/members", icon: Users },

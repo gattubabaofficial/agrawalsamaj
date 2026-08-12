@@ -98,6 +98,8 @@ class BhavanAccommodationType(Base, TimestampMixin):
     base_price_per_night: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    allow_standalone_booking: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    composition_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     images: Mapped[List["BhavanAccommodationImage"]] = relationship(
         "BhavanAccommodationImage", back_populates="accommodation_type",
@@ -168,6 +170,7 @@ class BhavanAmenity(Base, TimestampMixin):
     available_quantity: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     allow_over_request: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    allow_standalone_booking: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
 
@@ -218,6 +221,7 @@ class BhavanRuleProfile(Base, TimestampMixin):
         default=RuleStatus.ACTIVE, nullable=False,
     )
     is_template: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_public_visible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_by: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True,
     )
