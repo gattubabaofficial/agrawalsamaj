@@ -6161,7 +6161,8 @@ async def test_detail_includes_the_admin_only_rules_snapshot(
 
     detail = (await client.get(f"/api/v1/admin/bhavan/enquiries/{enquiry.id}")).json()
     assert "rules_snapshot" in detail
-    assert detail["quote_snapshot"]["estimated_total"] == "1500.00" or True
+    # 1 AC Room x 2 nights x 1,500
+    assert detail["quote_snapshot"]["estimated_total"] == "3000.00"
     assert detail["accommodations"][0]["type_name_snapshot"] == "AC Room"
 
 
