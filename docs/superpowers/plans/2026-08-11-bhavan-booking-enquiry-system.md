@@ -149,8 +149,15 @@ async def test_rule_assignment_stores_config_snapshot_and_dates(db_session: Asyn
     profile.config = {"conditions": {"min_nights": 5}}
     await db_session.commit()
 
+    # populate_existing is required, not decoration. The test fixture uses
+    # expire_on_commit=False, so a plain select() returns the identity-mapped
+    # Python object with its already-loaded attributes intact and never reads
+    # the row back. Without this the assertion below passes even if the
+    # persisted snapshot were corrupted.
     loaded = (await db_session.execute(
-        select(BhavanRuleAssignment).where(BhavanRuleAssignment.id == assignment.id)
+        select(BhavanRuleAssignment)
+        .where(BhavanRuleAssignment.id == assignment.id)
+        .execution_options(populate_existing=True)
     )).scalar_one()
     assert loaded.config_snapshot == {"conditions": {"min_nights": 2}}
 
@@ -191,7 +198,7 @@ from typing import List, Optional
 
 from sqlalchemy import (
     Boolean, CheckConstraint, Date, DateTime, Enum, ForeignKey, Index, Integer,
-    JSON, Numeric, String, Text, UniqueConstraint,
+    JSON, Numeric, String, Text, UniqueConstraint, func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -601,8 +608,12 @@ class BhavanEnquiryNote(Base):
         ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True,
     )
     note: Mapped[str] = mapped_column(Text, nullable=False)
+    # server_default, not default=datetime.utcnow: utcnow() returns a NAIVE
+    # datetime, and storing that in a timezone=True column makes it
+    # incomparable with every other timestamp in this module (all of which
+    # come from TimestampMixin). It is also deprecated on Python 3.12+.
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=datetime.utcnow, nullable=False,
+        DateTime(timezone=True), server_default=func.now(), nullable=False,
     )
 
     enquiry: Mapped[BhavanEnquiry] = relationship("BhavanEnquiry", back_populates="notes")
@@ -658,6 +669,21 @@ Expected: all pass
 - [ ] **Step 7: Add the Alembic revision**
 
 Create `backend/alembic/versions/b1c2d3e4f5a6_add_bhavan_booking_enquiry_system.py` with `revision = "b1c2d3e4f5a6"`, `down_revision` set to the current head (find it with `cd backend && python -m alembic heads`), and an `upgrade()` that creates all fourteen `bhavan_*` tables plus the `phone_otp_requests.purpose` column, mirroring the model definitions above. `downgrade()` drops them in reverse dependency order.
+
+**Enum literals must be the Python enum members' NAMES, not their values.**
+`sa.Enum(SomePyEnum)` persists `.name` unless `values_callable` is given, so
+the migration must declare `sa.Enum("ROOM", "DORMITORY", …)`, not
+`("room", "dormitory", …)`. Getting this wrong creates Postgres enum labels
+the ORM never writes, so every insert fails — and SQLite hides it completely.
+
+**`downgrade()` must also drop the seven native enum types.** `op.drop_table()`
+emits only `DROP TABLE`; on Postgres the `bhavan_*` enum types survive, so a
+downgrade followed by an upgrade fails with "type already exists". End
+`downgrade()` with, for each of the seven type names:
+
+```python
+    postgresql.ENUM(name="bhavan_accommodation_kind").drop(op.get_bind(), checkfirst=True)
+```
 
 - [ ] **Step 8: Commit**
 
@@ -5667,8 +5693,13 @@ async def test_the_price_snapshot_survives_a_later_rate_change(
     acc.base_price_per_night = Decimal("9999.00")
     await db_session.commit()
 
+    # populate_existing forces a real read: the fixture sets
+    # expire_on_commit=False, so without it the identity-mapped object is
+    # returned unchanged and the assertion proves nothing about the DB.
     enquiry = (await db_session.execute(
-        select(BhavanEnquiry).where(BhavanEnquiry.reference == created["reference"])
+        select(BhavanEnquiry)
+        .where(BhavanEnquiry.reference == created["reference"])
+        .execution_options(populate_existing=True)
     )).scalar_one()
 
     assert enquiry.estimated_total == Decimal("6000.00")
