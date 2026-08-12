@@ -43,7 +43,7 @@ def upgrade() -> None:
             sa.Column("name", sa.String(length=200), nullable=False),
             sa.Column(
                 "kind",
-                sa.Enum("room", "dormitory", name="bhavan_accommodation_kind"),
+                sa.Enum("ROOM", "DORMITORY", name="bhavan_accommodation_kind"),
                 nullable=False,
             ),
             sa.Column("description", sa.Text(), nullable=True),
@@ -80,7 +80,7 @@ def upgrade() -> None:
             sa.Column("capacity", sa.Integer(), nullable=True),
             sa.Column(
                 "status",
-                sa.Enum("available", "maintenance", "inactive", name="bhavan_unit_status"),
+                sa.Enum("AVAILABLE", "MAINTENANCE", "INACTIVE", name="bhavan_unit_status"),
                 nullable=False,
             ),
             sa.Column("notes", sa.String(length=500), nullable=True),
@@ -104,7 +104,7 @@ def upgrade() -> None:
             sa.Column(
                 "pricing_type",
                 sa.Enum(
-                    "per_unit", "per_day", "per_night", "per_booking", "one_time",
+                    "PER_UNIT", "PER_DAY", "PER_NIGHT", "PER_BOOKING", "ONE_TIME",
                     name="bhavan_amenity_pricing_type",
                 ),
                 nullable=False,
@@ -156,7 +156,7 @@ def upgrade() -> None:
             sa.Column(
                 "category",
                 sa.Enum(
-                    "event", "pricing", "discount", "closure", "custom",
+                    "EVENT", "PRICING", "DISCOUNT", "CLOSURE", "CUSTOM",
                     name="bhavan_rule_category",
                 ),
                 nullable=False,
@@ -165,7 +165,7 @@ def upgrade() -> None:
             sa.Column("config", sa.JSON(), nullable=False),
             sa.Column(
                 "status",
-                sa.Enum("active", "inactive", "archived", name="bhavan_rule_status"),
+                sa.Enum("ACTIVE", "INACTIVE", "ARCHIVED", name="bhavan_rule_status"),
                 nullable=False,
             ),
             sa.Column("is_template", sa.Boolean(), nullable=False),
@@ -260,14 +260,14 @@ def upgrade() -> None:
             sa.Column(
                 "status",
                 sa.Enum(
-                    "pending", "under_review", "approved", "rejected", "cancelled",
-                    "completed", "expired", name="bhavan_enquiry_status",
+                    "PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED", "CANCELLED",
+                    "COMPLETED", "EXPIRED", name="bhavan_enquiry_status",
                 ),
                 nullable=False,
             ),
             sa.Column(
                 "source",
-                sa.Enum("online", "phone", "walk_in", "admin", name="bhavan_enquiry_source"),
+                sa.Enum("ONLINE", "PHONE", "WALK_IN", "ADMIN", name="bhavan_enquiry_source"),
                 nullable=False,
             ),
             sa.Column("mobile_verified", sa.Boolean(), nullable=False),
