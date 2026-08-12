@@ -101,8 +101,15 @@ async def test_rule_assignment_stores_config_snapshot_and_dates(db_session: Asyn
     profile.config = {"conditions": {"min_nights": 5}}
     await db_session.commit()
 
+    # populate_existing is required, not decoration. The test fixture uses
+    # expire_on_commit=False, so a plain select() returns the identity-mapped
+    # Python object with its already-loaded attributes intact and never reads
+    # the row back. Without this the assertion below passes even if the
+    # persisted snapshot were corrupted.
     loaded = (await db_session.execute(
-        select(BhavanRuleAssignment).where(BhavanRuleAssignment.id == assignment.id)
+        select(BhavanRuleAssignment)
+        .where(BhavanRuleAssignment.id == assignment.id)
+        .execution_options(populate_existing=True)
     )).scalar_one()
     assert loaded.config_snapshot == {"conditions": {"min_nights": 2}}
 

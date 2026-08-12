@@ -17,7 +17,7 @@ from typing import List, Optional
 
 from sqlalchemy import (
     Boolean, CheckConstraint, Date, DateTime, Enum, ForeignKey, Index, Integer,
-    JSON, Numeric, String, Text, UniqueConstraint,
+    JSON, Numeric, String, Text, UniqueConstraint, func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -427,8 +427,12 @@ class BhavanEnquiryNote(Base):
         ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True,
     )
     note: Mapped[str] = mapped_column(Text, nullable=False)
+    # server_default, not default=datetime.utcnow: utcnow() returns a NAIVE
+    # datetime, and storing that in a timezone=True column makes it
+    # incomparable with every other timestamp in this module (all of which
+    # come from TimestampMixin). It is also deprecated on Python 3.12+.
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=datetime.utcnow, nullable=False,
+        DateTime(timezone=True), server_default=func.now(), nullable=False,
     )
 
     enquiry: Mapped[BhavanEnquiry] = relationship("BhavanEnquiry", back_populates="notes")

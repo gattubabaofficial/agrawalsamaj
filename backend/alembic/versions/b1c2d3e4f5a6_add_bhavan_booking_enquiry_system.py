@@ -23,6 +23,7 @@ from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "b1c2d3e4f5a6"
@@ -387,3 +388,20 @@ def downgrade() -> None:
     op.drop_table("bhavan_units")
     op.drop_table("bhavan_accommodation_images")
     op.drop_table("bhavan_accommodation_types")
+
+    # op.drop_table() only emits DROP TABLE. On Postgres, sa.Enum(...) columns
+    # create real native ENUM types, and Alembic has no column type
+    # information left at this point to drop them itself -- leaving all seven
+    # orphaned would make a later upgrade fail with "type already exists".
+    # checkfirst=True keeps this safe on a partially-migrated database.
+    bind = op.get_bind()
+    for enum_name in (
+        "bhavan_accommodation_kind",
+        "bhavan_unit_status",
+        "bhavan_amenity_pricing_type",
+        "bhavan_rule_category",
+        "bhavan_rule_status",
+        "bhavan_enquiry_status",
+        "bhavan_enquiry_source",
+    ):
+        postgresql.ENUM(name=enum_name).drop(bind, checkfirst=True)
