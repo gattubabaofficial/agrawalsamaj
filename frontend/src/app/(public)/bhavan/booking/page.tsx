@@ -13,6 +13,7 @@ interface AccommodationType {
   id: string;
   name: string;
   kind: string;
+  description?: string;
   capacity_per_unit: number;
   base_price_per_night: number;
 }
