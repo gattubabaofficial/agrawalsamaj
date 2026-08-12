@@ -35,6 +35,7 @@ async def on_startup():
     import app.models.requests
     import app.models.role
     import app.models.blog
+    import app.models.bhavan
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         
@@ -77,6 +78,7 @@ async def on_startup():
         "ALTER TABLE event_passes ADD COLUMN refund_amount NUMERIC(10, 2)",
         "ALTER TABLE event_passes ADD COLUMN refund_status VARCHAR(30) DEFAULT 'not_applicable'",
         "ALTER TABLE donations ADD COLUMN purpose_of_donation VARCHAR(500)",
+        "ALTER TABLE phone_otp_requests ADD COLUMN purpose VARCHAR(40) DEFAULT 'generic'",
     ):
         try:
             async with engine.begin() as conn:

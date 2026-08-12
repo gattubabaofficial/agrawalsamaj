@@ -169,6 +169,9 @@ class PhoneOTPRequest(Base, TimestampMixin):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     attempts: Mapped[int] = mapped_column(default=0, nullable=False)
     verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    #: Scopes an OTP to a flow. A login OTP must never satisfy a Bhavan
+    #: enquiry, and vice versa.
+    purpose: Mapped[str] = mapped_column(String(40), default="generic", nullable=False)
 
 
 class EmailOTPRequest(Base, TimestampMixin):
