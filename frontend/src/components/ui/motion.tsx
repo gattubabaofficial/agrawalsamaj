@@ -178,7 +178,17 @@ export function SplitHeading({
       viewport={VIEWPORT}
     >
       {lines.map((line, i) => (
-        <span key={i} className="block overflow-hidden pb-[0.08em]">
+        <motion.span
+          key={i}
+          className="block py-1"
+          variants={{
+            hidden: { overflow: "hidden" },
+            shown: {
+              overflow: "hidden",
+              transitionEnd: { overflow: "visible" },
+            },
+          }}
+        >
           <motion.span
             className="block"
             variants={{
@@ -191,7 +201,7 @@ export function SplitHeading({
           >
             {line}
           </motion.span>
-        </span>
+        </motion.span>
       ))}
     </Heading>
   );

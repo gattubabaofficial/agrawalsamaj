@@ -19,13 +19,7 @@ const COLUMNS = [
       { label: "Donation schemes", href: "/donate" },
     ],
   },
-  {
-    heading: "Your account",
-    links: [
-      { label: "Dashboard", href: "/dashboard" },
-      { label: "Receipts", href: "/dashboard/receipts" },
-    ],
-  },
+
   {
     heading: "Samaj Network",
     links: [

@@ -38,7 +38,7 @@
   --font-display: var(--font-lora), Georgia, "Times New Roman", serif;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
-  --font-deva: var(--font-noto-deva), "Nirmala UI", sans-serif;
+  --font-deva: var(--font-noto-serif-deva), var(--font-noto-deva), "Nirmala UI", serif;
 
   /* ── Motion ────────────────────────────────────────────────────── */
   /* One curve for the whole site. Expo-out: fast commit, soft landing. */

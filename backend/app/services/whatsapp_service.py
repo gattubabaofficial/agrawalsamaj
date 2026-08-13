@@ -413,14 +413,20 @@ async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = Fal
                     logger.info("QR image missing for pass %s, regenerating.", event_pass.pass_id)
                     _, qr_file = generate_qr_code(event_pass.pass_id)
 
+                desc_clean = (event.description or "").replace("*", "").strip()
+                desc_snippet = f"\n📝 *Event Description:* {desc_clean[:180]}..." if len(desc_clean) > 180 else (f"\n📝 *Event Description:* {desc_clean}" if desc_clean else "")
+
                 caption = (
-                    f"🎟️ *{event.title}*\n\n"
-                    f"Hello *{event_pass.guest_name or attendee_name}*,\n"
-                    f"Your entry pass {pass_number} of {len(existing_passes)} is attached.\n\n"
-                    f"📅 *Date:* {event_date_str}\n"
-                    f"📍 *Venue:* {venue_str}\n\n"
-                    f"Please show this QR code at the venue entrance.\n\n"
-                    f"— Agrawal Samaj Mansrovar Jaipur"
+                    f"🚩 *Agrawal Samaj Mansrovar Jaipur* 🚩\n\n"
+                    f"Hello *{event_pass.guest_name or attendee_name}*,\n\n"
+                    f"This is your official entry ticket for *{event.title}*! 🎟️\n\n"
+                    f"📅 *Date & Time:* {event_date_str}\n"
+                    f"📍 *Venue:* {venue_str}\n"
+                    f"🎫 *Ticket Pass:* #{pass_number} of {len(existing_passes)}\n"
+                    f"👤 *Attendee Name:* {event_pass.guest_name or attendee_name}"
+                    f"{desc_snippet}\n\n"
+                    f"📌 *Gate Entry Notice:* This ticket will be scanned at the venue entrance gate for entry verification. Please keep this digital QR pass ready on your phone.\n\n"
+                    f"— *Agrawal Samaj Mansrovar Jaipur Samiti*"
                 )
 
                 message_sid = await asyncio.to_thread(
@@ -512,14 +518,20 @@ async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = Fal
             if not target_phone:
                 continue
                 
+            desc_clean = (event.description or "").replace("*", "").strip()
+            desc_snippet = f"\n📝 *Event Description:* {desc_clean[:180]}..." if len(desc_clean) > 180 else (f"\n📝 *Event Description:* {desc_clean}" if desc_clean else "")
+
             caption = (
-                f"🎟️ *{event.title}*\n\n"
-                f"Hello *{ticket_guest_name}*,\n"
-                f"Your entry pass {pass_number} of {registration.pass_count} is attached.\n\n"
-                f"📅 *Date:* {event_date_str}\n"
-                f"📍 *Venue:* {venue_str}\n\n"
-                f"Please show this QR code at the venue entrance.\n\n"
-                f"— Agrawal Samaj Mansrovar Jaipur"
+                f"🚩 *Agrawal Samaj Mansrovar Jaipur* 🚩\n\n"
+                f"Hello *{ticket_guest_name}*,\n\n"
+                f"This is your official entry ticket for *{event.title}*! 🎟️\n\n"
+                f"📅 *Date & Time:* {event_date_str}\n"
+                f"📍 *Venue:* {venue_str}\n"
+                f"🎫 *Ticket Pass:* #{pass_number} of {registration.pass_count}\n"
+                f"👤 *Attendee Name:* {ticket_guest_name}"
+                f"{desc_snippet}\n\n"
+                f"📌 *Gate Entry Notice:* This ticket will be scanned at the venue entrance gate for entry verification. Please keep this digital QR pass ready on your phone.\n\n"
+                f"— *Agrawal Samaj Mansrovar Jaipur Samiti*"
             )
 
             message_sid = await asyncio.to_thread(

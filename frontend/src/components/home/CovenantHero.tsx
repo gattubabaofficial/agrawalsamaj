@@ -125,12 +125,18 @@ export default function CovenantHero() {
           </Reveal>
 
           <div className="order-last col-span-2 flex flex-col items-center text-center lg:order-none lg:col-span-1">
-            <SplitHeading
-              as="h1"
-              className="deva text-[clamp(2.5rem,7vw,4.75rem)] leading-[0.95]"
-              lines={["एक ईंट।", "एक रुपया।"]}
-              delay={0.14}
-            />
+            <Reveal delay={0.14}>
+              <h1
+                className="text-[clamp(2.5rem,7vw,4.75rem)] leading-tight text-center font-medium"
+                style={{ fontFamily: "var(--font-noto-serif-deva), 'Noto Serif Devanagari', serif" }}
+              >
+                <span className="block">
+                  {/* ईं rendered without native anusvara; dot placed manually for cross-browser clarity */}
+                  एक <span className="relative inline-block">ई<span aria-hidden className="absolute pointer-events-none select-none rounded-full bg-current" style={{ top: '-0.008em', left: '81%', transform: 'translateX(-50%)', width: '0.12em', height: '0.12em' }} /></span>ट
+                </span>
+                <span className="block">एक रुपया</span>
+              </h1>
+            </Reveal>
 
             <Reveal delay={0.26}>
               <p className="mx-auto mt-6 max-w-md text-[0.9375rem] leading-relaxed text-ink-2 sm:mt-7">
