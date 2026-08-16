@@ -6,6 +6,10 @@ import { Reveal, SplitHeading } from "@/components/ui/motion";
 /* Closing the loop the hero opened: where the covenant is actually kept. */
 
 export default function Join() {
+  const mapQuery = "VQ87+JX6, Ward 27, Mansarovar Sector 5, Mansarovar, Jaipur, Rajasthan 302020, India";
+  const embedUrl = `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed`;
+  const directionsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
+
   return (
     <Section className="bg-paper py-24 sm:py-32">
       <Reveal>
@@ -27,14 +31,14 @@ export default function Join() {
           <Reveal delay={0.14}>
             <div className="mt-8 max-w-lg text-[0.9375rem] leading-relaxed text-ink-2 space-y-2">
               <p>📍 <strong>Address:</strong> Ward 27, Sector 5, Mansarovar, Jaipur, Rajasthan 302020</p>
-              <p>🌐 <strong>Coordinates:</strong> 26.8532573° N, 75.7667823° E</p>
+              <p>🌐 <strong>Plus Code:</strong> VQ87+JX6, Ward 27, Mansarovar Sector 5</p>
               <p>🏫 <strong>Location:</strong> Opposite Neerja Modi School, Behind Saint Marthoma Church</p>
             </div>
           </Reveal>
 
           <Reveal delay={0.18}>
             <a
-              href="https://www.google.com/maps/search/?api=1&query=26.8532573,75.7667823"
+              href={directionsUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="eyebrow !tracking-[0.18em] mt-8 inline-block border-b border-ink pb-1 text-ink transition-colors hover:border-vermilion hover:text-vermilion"
@@ -49,7 +53,7 @@ export default function Join() {
             <div className="aspect-[4/3] w-full overflow-hidden border border-rule sm:aspect-[16/10]">
               <iframe
                 title="Agrasen Bhawan, Mansarovar, Jaipur — location"
-                src="https://www.google.com/maps?q=26.8532573,75.7667823&output=embed"
+                src={embedUrl}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
                 className="h-full w-full"
@@ -61,3 +65,4 @@ export default function Join() {
     </Section>
   );
 }
+

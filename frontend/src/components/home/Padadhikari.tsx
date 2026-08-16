@@ -57,7 +57,9 @@ function Plate({
           src={photo(person.slug)}
           alt={`${person.latin} — ${person.name}`}
           fill
+          unoptimized
           sizes={sizes}
+          quality={100}
           onError={() => setFailed(true)}
           className="object-cover object-top"
         />
@@ -68,24 +70,31 @@ function Plate({
 
 function MemberRow({ person }: { person: Person }) {
   return (
-    <RevealItem as="li" distance={14}>
-      <article className="flex items-start gap-4 border-b border-rule pb-5">
-        <Plate person={person} sizes="112px" className="aspect-[3/4] w-28" />
-        <div className="min-w-0 pt-0.5">
-          <h4 className="deva text-[0.9375rem] leading-snug text-ink">{person.name}</h4>
-          <p className="mt-0.5 text-xs leading-tight text-ink-3">{person.latin}</p>
-          {/* Quiet, not vermilion: today every member carries the same seat, and
-              thirty identical red lines read as alarm rather than information.
-              Accent is spent on the lead's role, which is the one that differs. */}
-          <p className="deva mt-1.5 text-xs leading-tight text-ink-2">
-            {person.designation}
-          </p>
-          {person.description && (
-            <p className="deva mt-2 text-[0.8125rem] leading-relaxed text-ink-2">
-              {person.description}
+    <RevealItem as="li" distance={14} className="h-full">
+      <article className="flex h-full flex-col gap-4 rounded-lg border border-rule bg-paper p-4">
+        <div className="flex items-start gap-4">
+          <Plate person={person} sizes="96px" className="aspect-[3/4] w-24 shrink-0" />
+          <div className="min-w-0 pt-0.5">
+            <h4 className="deva text-[0.9375rem] font-medium leading-snug text-ink">{person.name}</h4>
+            <p className="mt-0.5 text-xs leading-tight text-ink-3">{person.latin}</p>
+            <p className="deva mt-1.5 text-xs font-semibold leading-tight text-vermilion">
+              {person.designation}
             </p>
-          )}
+            <p className="eyebrow text-[0.65rem] text-ink-3 tracking-wider mt-0.5">
+              {person.designationEn}
+            </p>
+            {person.mobile && (
+              <p className="mt-1 text-xs text-ink-3 font-mono">
+                📞 {person.mobile}
+              </p>
+            )}
+          </div>
         </div>
+        {person.description && (
+          <p className="deva mt-auto text-[0.8125rem] leading-relaxed text-ink-2 border-t border-rule pt-3">
+            {person.description}
+          </p>
+        )}
       </article>
     </RevealItem>
   );
@@ -128,9 +137,14 @@ export default function Padadhikari() {
                   <p className="eyebrow text-vermilion">{leader.designationEn}</p>
                   <p className="deva mt-2 text-lg leading-snug text-ink">{leader.name}</p>
                   <p className="mt-0.5 text-xs text-ink-3">{leader.latin}</p>
-                  <p className="deva mt-2 text-sm leading-tight text-vermilion">
+                  <p className="deva mt-2 text-sm font-semibold leading-tight text-vermilion">
                     {leader.designation}
                   </p>
+                  {leader.mobile && (
+                    <p className="mt-1 text-xs text-ink-3 font-mono">
+                      📞 {leader.mobile}
+                    </p>
+                  )}
                   {leader.description && (
                     <p className="deva mt-3 text-[0.8125rem] leading-relaxed text-ink-2">
                       {leader.description}
@@ -159,7 +173,7 @@ export default function Padadhikari() {
         </Reveal>
 
         <RevealGroup as="div" stagger={0.03} className="mt-10">
-          <ul className="grid gap-x-10 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid items-stretch gap-x-6 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
             {COMMITTEE.map((p) => (
               <MemberRow key={p.slug} person={p} />
             ))}

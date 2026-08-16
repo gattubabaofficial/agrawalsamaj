@@ -106,8 +106,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     ...((isSuperAdmin || isAdmin || permissions.length > 0) ? [{ name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard }] : []),
     ...(isSuperAdmin ? [{ name: "Admin Management", href: "/admin/admins", icon: Shield }] : []),
     ...((isSuperAdmin || isAdmin || hasPermission("manage_members")) ? [
-      { name: "Membership Requests", href: "/admin/requests", icon: UserPlus },
-      { name: "Members Directory", href: "/admin/members", icon: Contact },
+      { name: "Directory Requests", href: "/admin/requests", icon: UserPlus },
+      { name: "Manage Directory", href: "/admin/members", icon: Contact },
     ] : []),
     ...((isSuperAdmin || isAdmin || hasPermission("manage_events")) ? [
       { name: "Events Management", href: "/admin/events", icon: Calendar },
@@ -115,16 +115,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     ...((isSuperAdmin || isAdmin || isVolunteer || hasPermission("scan_passes")) ? [
       { name: "Pass Verification", href: "/admin/scan", icon: QrCode },
     ] : []),
-    ...((isSuperAdmin || isAdmin || hasPermission("manage_bhavan")) ? [
-      { name: "Bhavan Bookings", href: "/admin/bookings", icon: Home },
-      { name: "Room Pricing & Rules", href: "/admin/pricing", icon: Settings },
-      { name: "Special Events", href: "/admin/special-events", icon: CalendarRange },
-      { name: "Vouchers", href: "/admin/vouchers", icon: Ticket },
-    ] : []),
     ...((isSuperAdmin || isAdmin || hasPermission("manage_donations")) ? [
       { name: "Donations Management", href: "/admin/donations", icon: Heart },
     ] : []),
     ...((isSuperAdmin || isAdmin || hasPermission("manage_bhavan")) ? [
+      { name: "Bhavan Booking", href: "/admin/bhavan", icon: Home },
       { name: "Receipts", href: "/admin/receipts", icon: BookOpen },
     ] : []),
     ...((isSuperAdmin || isAdmin || hasPermission("manage_blogs")) ? [
@@ -135,10 +130,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     ] : [])
   ];
 
-  if (!isClient || loadingMe) return null;
+  if (!isClient || loadingMe) {
+    return (
+      <div className="min-h-screen bg-zinc-900 flex items-center justify-center text-zinc-400" suppressHydrationWarning>
+        <div className="flex flex-col items-center gap-3" suppressHydrationWarning>
+          <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" suppressHydrationWarning />
+          <p className="text-xs uppercase tracking-wider font-semibold">Loading Admin Portal...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-zinc-50 flex flex-col md:flex-row" suppressHydrationWarning>
       {isMobileNavOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-30 md:hidden"

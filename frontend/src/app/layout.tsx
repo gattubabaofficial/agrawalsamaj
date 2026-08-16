@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Inter, Lora, Noto_Sans_Devanagari } from "next/font/google";
+import { Geist_Mono, Inter, Lora, Noto_Sans_Devanagari, Noto_Serif_Devanagari } from "next/font/google";
 import "./globals.css";
 
 /* Typefaces are chosen for a readership roughly 25 to 70 years old, much of
@@ -25,11 +25,18 @@ const lora = Lora({
   display: "swap",
 });
 
-// Devanagari. The sans cut, not the serif one: at the sizes we set Hindi
-// here, sans shapes stay clearer.
+// Devanagari Sans.
 const notoDevanagari = Noto_Sans_Devanagari({
   variable: "--font-noto-deva",
   subsets: ["devanagari", "latin"],
+  display: "swap",
+});
+
+// Devanagari Serif. Tapered strokes ensure top matras and anusvara dots (e.g. ईंट) stand out clearly without clashing into character hooks.
+const notoSerifDevanagari = Noto_Serif_Devanagari({
+  variable: "--font-noto-serif-deva",
+  subsets: ["devanagari", "latin"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -56,8 +63,9 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
+      data-scroll-behavior="smooth"
       style={{ colorScheme: "light" }}
-      className={`${inter.variable} ${lora.variable} ${notoDevanagari.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${lora.variable} ${notoDevanagari.variable} ${notoSerifDevanagari.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-paper text-ink" suppressHydrationWarning>
         {/* Standard practice: let keyboard and screen-reader users jump the

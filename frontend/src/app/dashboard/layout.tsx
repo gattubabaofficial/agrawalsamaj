@@ -64,9 +64,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const generalItems = [
     { name: "My Profile", href: "/dashboard/profile", icon: User },
     { name: "My Family", href: "/dashboard/family", icon: Users },
-    { name: "Members Directory", href: "/dashboard/members", icon: Contact },
+    { name: "Samaj Directory", href: "/dashboard/members", icon: Contact },
     { name: "My Events", href: "/dashboard/events", icon: Calendar },
-    { name: "My Bookings", href: "/dashboard/bookings", icon: Home },
     { name: "My Receipts", href: "/dashboard/receipts", icon: BookOpen },
     { name: "Donations", href: "/dashboard/donations", icon: Heart },
     { name: "Chat", href: "/dashboard/chat", icon: MessageCircle },
@@ -75,14 +74,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const managementItems = [
     { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard, perm: "any" },
-    { name: "Membership Requests", href: "/admin/requests", icon: UserPlus, perm: "manage_members" },
-    { name: "Members Directory", href: "/admin/members", icon: Contact, perm: "manage_members" },
+    { name: "Directory Requests", href: "/admin/requests", icon: UserPlus, perm: "manage_members" },
+    { name: "Manage Directory", href: "/admin/members", icon: Contact, perm: "manage_members" },
     { name: "Events Management", href: "/admin/events", icon: Calendar, perm: "manage_events" },
     { name: "Pass Verification", href: "/admin/scan", icon: QrCode, perm: "scan_passes" },
-    { name: "Bhavan Bookings", href: "/admin/bookings", icon: Home, perm: "manage_bhavan" },
-    { name: "Room Pricing & Rules", href: "/admin/pricing", icon: Settings, perm: "manage_bhavan" },
-    { name: "Special Events", href: "/admin/special-events", icon: CalendarRange, perm: "manage_bhavan" },
-    { name: "Vouchers", href: "/admin/vouchers", icon: Ticket, perm: "manage_bhavan" },
     { name: "Donations Management", href: "/admin/donations", icon: Heart, perm: "manage_donations" },
     { name: "Receipts", href: "/admin/receipts", icon: BookOpen, perm: "manage_bhavan" },
     { name: "Blog Management", href: "/admin/blog", icon: BookOpen, perm: "manage_blogs" },

@@ -568,30 +568,35 @@ export default function UserEventsPage() {
       {viewingPassesReg && (
         <div className="fixed inset-0 bg-zinc-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl shadow-xl max-w-xl w-full overflow-hidden border border-zinc-200 flex flex-col max-h-[90vh] animate-scale-up">
-            <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
+            <div className="px-6 py-5 bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 text-white flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-zinc-900 text-lg">Your Entry Tickets</h3>
-                <p className="text-xs text-zinc-500">{viewingPassesReg.event_title}</p>
+                <p className="text-[10px] font-extrabold uppercase tracking-widest text-amber-200">Agrawal Samaj Mansrovar Jaipur</p>
+                <h3 className="font-bold text-lg leading-tight">Official Event Entry Tickets</h3>
               </div>
               <button 
                 type="button"
                 onClick={() => setViewingPassesReg(null)}
-                className="p-1.5 hover:bg-zinc-100 rounded-lg text-zinc-500 transition-colors"
+                className="p-1.5 hover:bg-white/20 rounded-lg text-white/90 hover:text-white transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 space-y-6 overflow-y-auto flex-1">
-              <p className="text-sm text-zinc-500 text-center">
-                Present these QR codes at the venue entrance for verification.
-              </p>
-              
+            <div className="p-6 space-y-5 overflow-y-auto flex-1">
+              <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-center space-y-1">
+                <p className="text-xs font-bold text-amber-900 uppercase tracking-wide">
+                  🎟️ Gate Entry Ticket — {viewingPassesReg.event_title}
+                </p>
+                <p className="text-xs text-amber-800 leading-relaxed font-medium">
+                  This is your official ticket. It will be scanned at the gate by committee volunteers for entry verification.
+                </p>
+              </div>
+
               <div className="space-y-6">
                 {!viewingPassesReg.passes || viewingPassesReg.passes.length === 0 ? (
                   <div className="text-center p-8 text-zinc-400 bg-zinc-50 rounded-2xl border border-dashed border-zinc-200">
                     <Ticket className="w-8 h-8 mx-auto mb-2 text-zinc-300 animate-pulse" />
-                    <p className="text-sm">Passes are still generating. Please refresh in a moment!</p>
+                    <p className="text-sm font-medium">Passes are generating. Please refresh in a moment!</p>
                   </div>
                 ) : (
                   viewingPassesReg.passes.map((pass: any, index: number) => {
@@ -600,25 +605,29 @@ export default function UserEventsPage() {
                       : "";
                       
                     return (
-                      <div key={pass.pass_id} className="bg-zinc-50 rounded-2xl border border-zinc-200 p-5 flex flex-col items-center text-center gap-4 relative overflow-hidden">
+                      <div key={pass.pass_id} className="bg-zinc-50 rounded-2xl border border-zinc-200 p-5 flex flex-col items-center text-center gap-4 relative overflow-hidden shadow-sm">
                         {/* Decorative side ticket cuts */}
                         <div className="absolute top-1/2 -left-3 w-6 h-6 rounded-full bg-white border-r border-zinc-200 -translate-y-1/2"></div>
                         <div className="absolute top-1/2 -right-3 w-6 h-6 rounded-full bg-white border-l border-zinc-200 -translate-y-1/2"></div>
                         
-                        <div>
-                          <span className="px-3 py-1 bg-amber-50 text-amber-800 text-xs font-bold rounded-full border border-amber-100 uppercase tracking-wide">
-                            Pass {index + 1} of {viewingPassesReg.passes.length}
+                        <div className="space-y-1">
+                          <span className="px-3 py-1 bg-amber-100 text-amber-900 text-xs font-bold rounded-full border border-amber-200 uppercase tracking-wide">
+                            Ticket #{index + 1} of {viewingPassesReg.passes.length}
                           </span>
-                          <p className="text-[10px] text-zinc-400 font-mono mt-1.5 select-all">ID: {pass.pass_id}</p>
+                          <p className="text-sm font-bold text-zinc-900 mt-1">
+                            Attendee: {pass.guest_name || viewingPassesReg.guest_name || "Valued Guest"}
+                          </p>
+                          <p className="text-[10px] text-zinc-400 font-mono select-all">ID: {pass.pass_id}</p>
                         </div>
                         
                         {qrUrl ? (
-                          <div className="bg-white p-3 rounded-2xl border border-zinc-200 shadow-sm">
+                          <div className="bg-white p-3.5 rounded-2xl border border-zinc-200 shadow-md">
                             <img 
                               src={qrUrl} 
-                              alt={`QR Ticket Pass ${index + 1}`}
+                              alt={`QR Entry Ticket ${index + 1}`}
                               className="w-48 h-48 object-contain"
                             />
+                            <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider mt-2">Scan at Gate for Entry</p>
                           </div>
                         ) : (
                           <div className="w-48 h-48 bg-zinc-100 rounded-2xl flex items-center justify-center border border-zinc-200 text-zinc-400 text-xs">
@@ -626,10 +635,10 @@ export default function UserEventsPage() {
                           </div>
                         )}
                         
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 pt-1">
                           <span className={`w-2.5 h-2.5 rounded-full ${pass.status === 'used' ? 'bg-zinc-400' : 'bg-emerald-500 animate-pulse'}`}></span>
-                          <span className="text-xs font-bold text-zinc-600 uppercase tracking-wider">
-                            {pass.status === 'used' ? 'Used / Checked In' : 'Active / Unused'}
+                          <span className="text-xs font-bold text-zinc-700 uppercase tracking-wider">
+                            {pass.status === 'used' ? 'Used / Checked In at Gate' : 'Valid Entry Ticket'}
                           </span>
                         </div>
                       </div>

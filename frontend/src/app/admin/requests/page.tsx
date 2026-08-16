@@ -73,7 +73,7 @@ export default function AdminRequestsPage() {
   return (
     <div className="space-y-6 max-w-7xl">
       <div>
-        <h1 className="text-2xl font-bold text-zinc-900">Admin Approvals Hub</h1>
+        <h1 className="text-2xl font-bold text-zinc-900">Manage Directory Requests</h1>
         <p className="text-sm text-zinc-500 mt-1">Review, cross-check, and approve member registrations and profile edit requests.</p>
       </div>
 
@@ -232,21 +232,6 @@ export default function AdminRequestsPage() {
                       </div>
                       <p className="text-xs text-zinc-400 mt-0.5">Submitted on {new Date(req.created_at).toLocaleString()}</p>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleProfileUpdateAction(req.request_id, "approve")}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow-sm"
-                      >
-                        <CheckCircle className="w-4 h-4" /> Approve Edits
-                      </button>
-                      <button
-                        onClick={() => handleProfileUpdateAction(req.request_id, "reject")}
-                        className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5"
-                      >
-                        <XCircle className="w-4 h-4" /> Reject Request
-                      </button>
-                    </div>
                   </div>
 
                   {/* Side-by-side Cross-Check Table */}
@@ -358,6 +343,22 @@ export default function AdminRequestsPage() {
                         </tr>
                       </tbody>
                     </table>
+                  </div>
+
+                  {/* Actions Footer - Bottom Aligned */}
+                  <div className="pt-3 border-t border-zinc-100 flex items-center justify-end gap-3">
+                    <button
+                      onClick={() => handleProfileUpdateAction(req.request_id, "reject")}
+                      className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5"
+                    >
+                      <XCircle className="w-4 h-4" /> Reject Request
+                    </button>
+                    <button
+                      onClick={() => handleProfileUpdateAction(req.request_id, "approve")}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow-sm"
+                    >
+                      <CheckCircle className="w-4 h-4" /> Approve Edits
+                    </button>
                   </div>
                 </div>
               );

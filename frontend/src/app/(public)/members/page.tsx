@@ -64,13 +64,14 @@ export default function PublicMembersPage() {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [viewMemberModal, setViewMemberModal] = useState<Member | null>(null);
   const [messageMemberModal, setMessageMemberModal] = useState<Member | null>(null);
-
-  // Contact Message Form State
   const [senderName, setSenderName] = useState("");
   const [senderMobile, setSenderMobile] = useState("");
   const [senderEmail, setSenderEmail] = useState("");
   const [messageReason, setMessageReason] = useState("General Inquiry");
   const [messageText, setMessageText] = useState("");
+  const [msgStep, setMsgStep] = useState<"form" | "otp">("form");
+  const [msgOtp, setMsgOtp] = useState("");
+  const [msgSendingOtp, setMsgSendingOtp] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [messageSuccessMsg, setMessageSuccessMsg] = useState("");
   const [messageError, setMessageError] = useState("");
@@ -91,7 +92,7 @@ export default function PublicMembersPage() {
   // Form fields for Profile Edit
   const [editFirstName, setEditFirstName] = useState("");
   const [editSurname, setEditSurname] = useState("");
-  const [editParentRelation, setEditParentRelation] = useState("S/o");
+  const [editParentRelation, setEditParentRelation] = useState("C/o");
   const [editFatherName, setEditFatherName] = useState("");
   const [editProfession, setEditProfession] = useState("");
   const [editNativePlace, setEditNativePlace] = useState("");
@@ -114,7 +115,7 @@ export default function PublicMembersPage() {
   const [regStep, setRegStep] = useState<"details" | "otp">("details");
   const [regFirstName, setRegFirstName] = useState("");
   const [regSurname, setRegSurname] = useState("");
-  const [regParentRelation, setRegParentRelation] = useState("S/o");
+  const [regParentRelation, setRegParentRelation] = useState("C/o");
   const [regFatherName, setRegFatherName] = useState("");
   const [regMobile, setRegMobile] = useState("");
   const [regEmail, setRegEmail] = useState("");
@@ -354,12 +355,30 @@ export default function PublicMembersPage() {
     }
   };
 
+  // Send OTP for Contact Message
+  const handleSendMsgOtp = async () => {
+    if (!senderName.trim() || !senderMobile.trim() || !messageText.trim()) {
+      setMessageError("Your Name, Contact Mobile, and Message are required.");
+      return;
+    }
+    setMsgSendingOtp(true);
+    setMessageError("");
+    try {
+      await axios.post(`${getApiBaseUrl()}/auth/phone/send-otp`, { phone: senderMobile.trim() });
+      setMsgStep("otp");
+    } catch (err: any) {
+      setMessageError(err.response?.data?.detail || "Failed to send OTP code to your phone number.");
+    } finally {
+      setMsgSendingOtp(false);
+    }
+  };
+
   // Submit Contact Message Form
   const handleSubmitMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageMemberModal) return;
-    if (!senderName.trim() || !senderMobile.trim() || !messageText.trim()) {
-      setMessageError("Your Name, Contact Mobile, and Message are required.");
+    if (!msgOtp.trim() || msgOtp.trim().length !== 6) {
+      setMessageError("Please enter the 6-digit verification OTP code.");
       return;
     }
     setSendingMessage(true);
@@ -372,6 +391,7 @@ export default function PublicMembersPage() {
         sender_email: senderEmail.trim() || null,
         reason: messageReason,
         message: messageText.trim(),
+        otp: msgOtp.trim(),
       });
       setMessageSuccessMsg(res.data.message || `Your message request has been sent to ${messageMemberModal.first_name} ${messageMemberModal.surname}.`);
     } catch (err: any) {
@@ -599,10 +619,13 @@ export default function PublicMembersPage() {
                     <div className="flex items-center gap-1.5 min-w-0">
                       <Phone className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
                       {m.mobile_private ? (
-                        <span className="font-semibold text-zinc-400 flex items-center gap-1"><Lock className="w-3 h-3 text-amber-600" /> Private</span>
+                        <span className="font-mono font-semibold text-zinc-600 truncate flex items-center gap-1">
+                          <Lock className="w-3 h-3 text-amber-600 flex-shrink-0" />
+                          {m.mobile ? `XXXXXX${m.mobile.slice(-4)}` : (m.mobile_masked || "XXXXXX")}
+                        </span>
                       ) : (
-                        <span className="font-mono font-semibold text-zinc-700 truncate">
-                          {m.mobile_masked || (m.mobile ? `XXXXXX${m.mobile.slice(-4)}` : "N/A")}
+                        <span className="font-mono font-semibold text-zinc-800 truncate">
+                          {m.mobile || m.mobile_masked || "N/A"}
                         </span>
                       )}
                     </div>
@@ -1308,10 +1331,10 @@ export default function PublicMembersPage() {
                       Close Window
                     </button>
                   </div>
-                ) : (
-                  <form onSubmit={handleSubmitMessage} className="space-y-4">
+                ) : msgStep === "form" ? (
+                  <div className="space-y-4">
                     <div className="p-3 bg-amber-50 text-amber-900 rounded-2xl text-xs font-medium border border-amber-200/70">
-                      📩 Enter your contact details below. Your message request will be delivered to <strong>{messageMemberModal.first_name} {messageMemberModal.surname}</strong> ({messageMemberModal.samaj_id || "Member"}).
+                      📩 Enter your contact details below. An OTP will be requested on your mobile number to verify your request to <strong>{messageMemberModal.first_name} {messageMemberModal.surname}</strong>.
                     </div>
 
                     <div className="space-y-1">
@@ -1384,13 +1407,57 @@ export default function PublicMembersPage() {
                     )}
 
                     <button
-                      type="submit"
-                      disabled={sendingMessage}
-                      className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold rounded-xl text-sm transition-all shadow-md flex items-center justify-center gap-2"
+                      type="button"
+                      onClick={handleSendMsgOtp}
+                      disabled={msgSendingOtp}
+                      className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold rounded-xl text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      {sendingMessage ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                      Send Message Request
+                      {msgSendingOtp ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                      Request OTP to Send Message
                     </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubmitMessage} className="space-y-4">
+                    <div className="p-3.5 bg-amber-50 text-amber-900 rounded-2xl text-xs font-medium border border-amber-200">
+                      📲 Verification OTP sent to <strong>{senderMobile}</strong>. Please enter the 6-digit code below to dispatch your message.
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-zinc-700">6-Digit Verification OTP *</label>
+                      <input
+                        type="text"
+                        required
+                        maxLength={6}
+                        placeholder="e.g. 123456"
+                        value={msgOtp}
+                        onChange={(e) => setMsgOtp(e.target.value)}
+                        className="w-full px-3.5 py-3 border border-amber-300 rounded-xl text-center text-lg font-mono font-bold tracking-widest focus:ring-2 focus:ring-amber-500 focus:outline-none bg-amber-50/30"
+                      />
+                    </div>
+
+                    {messageError && (
+                      <p className="text-xs text-rose-600 font-medium flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" /> {messageError}
+                      </p>
+                    )}
+
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setMsgStep("form")}
+                        className="px-4 py-3 border border-zinc-200 text-zinc-700 font-bold rounded-xl text-xs hover:bg-zinc-50"
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={sendingMessage}
+                        className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold rounded-xl text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        {sendingMessage ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                        Verify OTP &amp; Send Message
+                      </button>
+                    </div>
                   </form>
                 )}
               </div>

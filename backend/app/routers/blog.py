@@ -32,10 +32,11 @@ class BlogCreate(BaseModel):
     pdf_url: Optional[str] = None
     tags: Optional[List[str]] = None
     status: BlogStatus = BlogStatus.DRAFT
-    # Guest author info — required when not logged in
+    # Guest / Author info & OTP verification
     guest_name: Optional[str] = None
     guest_email: Optional[str] = None
     guest_phone: Optional[str] = None
+    otp: Optional[str] = None
 
 
 class BlogUpdate(BaseModel):
@@ -314,8 +315,19 @@ async def create_blog(
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_current_user),
 ):
-    """Allow anyone (logged in or guest) to write & publish a blog without prior verification."""
+    """Require OTP verification on the author's phone number before publishing a blog."""
     try:
+        phone_to_verify = data.guest_phone or (current_user.mobile if current_user else None)
+        if not phone_to_verify:
+            raise HTTPException(status_code=400, detail="Phone number is required for OTP verification when writing a blog.")
+        if not data.otp:
+            raise HTTPException(status_code=400, detail="OTP code is required to publish a blog.")
+            
+        from app.routers.membership import verify_otp_internal
+        otp_valid = await verify_otp_internal(db, phone_to_verify, data.otp)
+        if not otp_valid:
+            raise HTTPException(status_code=400, detail="Invalid or expired OTP code for writing a blog.")
+
         author_id = current_user.user_id if current_user else None
         if not author_id:
             # Guest must provide name, email, and phone

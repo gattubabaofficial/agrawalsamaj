@@ -1,26 +1,12 @@
-1. remove register household from every where
-2. remove the other sites link from the home page remove that whole section
-3. convert the pencil icon with the edit button everywhere 
-4. add edit button on the bottom of view detail card in member or directory 
-5. there is many issues in search bar of members section not showing proper result make sure all the members should fetch properly and all
-6. and show the last four digits not the three digits every where
-7. remove add ticket button in book event for members near the search and after the ticket is added name is removed from the search bar
-8. in event member cant able to book 10 tickets it can only book 4 tickets at a time 
-9. in event registration admin paneli want the each person name with the event name date of booking and all the necessary details and i want each pass should come with the each person name not the first person name show 4 passes 
-10. and make search option in event registration so that i can sort the events with there names and search should work correctly it should fetch each and every word match inn any field which person type take a code from directory search option
-11. and make it responsive from 32 inches to 8 inches for all the screen present in the market
-12. aling everything properly 
-13. sawa rate card is unable to save and apply on dates make sure it should work properly
-14. remove two days and three days rate from the table of Master Rate List Table from this table
-15. image is not visible in directory for members check whats the problem i have tried to but its not working
-16. make the button name apply for new membership from apply to member ship and make it near to the search bar so that it should be visible
-17. make some icons bigger which are small like year and month filter button in blog and also a write a blog button they are pretty saml make them slightly bigger so that they visible clearley
-18. remove s/o do and all in the directory and give the option to user choose one and write the name of it in that present block present in edit and apply for membership section
-19. above search bar write search member to book a ticket
-20. inside the search bars write name/fathers name/last four digit of mobile numberr in with faded grey text 
-21. add dormitary and its of two type ac and non ac 
-22. the otp is not sending for new registration on the register mobile number which usr typed in to get register and if the otp is correct send request to the admin and it will make them the member by approving and they caan able to reject also 
-23. also the admin can reject the application ofbhavan bookinng 
-24. make the three main members again in the about section which is on home page in same order
-25. admin can also cancel any pass 
-26. and cancel pass should also show there and i can sort them event wise through search or anything and there is a search bar which can search any word present on that table 
+1. in donation form add a field in form purpose of donation
+2. request otp on the given number for sending a message to any member
+3. when some one click on hide detail for phone no show last four digit of its no and if some one don't click on it show all the numbers
+4. add a categorie in event called other
+5. instead of son of do care of by default
+6. ask for otp on the given no for writing a blog
+7. remove dashboard and show the nav links in that in form of cards and sidebar nav remain same
+8. instead of writing the manage members or anything similar write there manage directory or something
+9. make approve and reject button below not at the top anywhere you give approve and reject button change there locations
+10. in members i can view details 
+11. from one number there can be more that one member so mobile no should not be unique in new member creation don't fetch any detail by the mobile number
+12. remove everything related to bhavan booking we start it from the bigning for now remove each and every thing related to it

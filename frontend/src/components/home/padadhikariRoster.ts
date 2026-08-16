@@ -1,44 +1,38 @@
 /**
- * पदाधिकारी — office bearers of Agrawal Samaj Mansrovar Jaipur Samiti,
- * Jaipur, under the leadership of Ramgopal Singhal.
+ * पदाधिकारी — office bearers of Mansarovar Agrawal Samaj Samiti, Jaipur.
  *
- * Names and photographs are taken from the Maharaja Shri Agrasen Group
- * pamphlet. The pamphlet carries no designations and no biographies, so every
- * entry below holds the one role the pamphlet does support — a seat on the
- * कार्यकारिणी — rather than a title invented for a named, real person. Fill in
- * `designation` / `designationEn` per person as the real titles are confirmed;
- * the cards pick them up with no other change.
- *
- * `description` is optional by design. A card renders it only when it is
- * present, so an empty roster reads as complete rather than half-filled.
+ * Designations and contact numbers updated as per the official executive members list
+ * (कार्यकारिणी सदस्यों की पदवार, मोबाईल नम्बर सहित सूची).
  */
 
 export type Padadhikari = {
   /** Also the photograph's filename: `public/padadhikari/<slug>.jpg`. */
   slug: string;
-  /** Name as printed on the pamphlet, in Devanagari. */
+  /** Name as printed on the official list, in Devanagari. */
   name: string;
-  /** Transliteration. Carries the name to alt text and to Latin-only readers. */
+  /** Transliteration for alt text and Latin readers. */
   latin: string;
   designation: string;
   designationEn: string;
+  mobile?: string;
   /** A line or two about their work for the samaj. Omitted from the card when absent. */
   description?: string;
 };
 
-/** The default seat, until the committee confirms individual portfolios. */
+/** The default seat fallback, if ever needed. */
 export const MEMBER_ROLE = "कार्यकारिणी सदस्य";
 export const MEMBER_ROLE_EN = "Executive Committee Member";
 
-/** The three leaders of the group. */
+/** The three core leaders of the group. */
 export const LEADERS: Padadhikari[] = [
   {
     slug: "ramgopal-singhal-lead",
-    name: "रामगोपाल सिंघल",
+    name: "राम गोपाल सिंघल",
     latin: "Ramgopal Singhal",
     designation: "अध्यक्ष",
     designationEn: "President",
-    description: "अग्रवाल समाज समिति के सफल नेतृत्वकर्ता एवं समाज उत्थान के लिए समर्पित।",
+    mobile: "9314874859",
+    description: "अग्रवाल समाज समिति के सफल नेतृत्वकर्ता एवं समाज के सर्वांगीण विकास हेतु समर्पित।",
   },
   {
     slug: "lakhmi-chand-singhal",
@@ -46,7 +40,8 @@ export const LEADERS: Padadhikari[] = [
     latin: "Lakhmi Chand Singhal",
     designation: "महामंत्री",
     designationEn: "General Secretary",
-    description: "वरिष्ठ समाजसेवी एवं समाज के मार्गदर्शन मण्डल के सदस्य।",
+    mobile: "9829144284",
+    description: "समिति के प्रशासनिक कार्यों, पत्राचार एवं संगठन संचालन के मुख्य उत्तरदायी महामंत्री।",
   },
   {
     slug: "pramod-kumar-gupta",
@@ -54,60 +49,305 @@ export const LEADERS: Padadhikari[] = [
     latin: "Pramod Kumar Gupta",
     designation: "कोषाध्यक्ष",
     designationEn: "Treasurer",
-    description: "मूल निवासी भरतपुर। वर्तमान 10/506 कावेरी पथ मानसरोवर जयपुर। जन्म तिथि 04.10.1958। सेवा निवृत जिला श्रम कल्याण अधिकारी। वर्तमान में मीडियेटर राजस्थान उच्च न्यायालय जयपुर।",
+    mobile: "9414375719",
+    description: "सेवानिवृत्त जिला श्रम कल्याण अधिकारी। समिति के आय-व्यय एवं वित्तीय प्रबंधन के मुख्य उत्तरदायी कोषाध्यक्ष।",
   },
 ];
 
 /** Backward-compatible alias — the first leader. */
 export const LEAD = LEADERS[0];
 
-const member = (slug: string, name: string, latin: string, description?: string): Padadhikari => ({
-  slug,
-  name,
-  latin,
-  designation: MEMBER_ROLE,
-  designationEn: MEMBER_ROLE_EN,
-  description: description || "समाज सेवा, संगठन सुदृढ़ीकरण एवं जनकल्याणकारी गतिविधियों में सक्रिय योगदान।",
-});
-
 export const PADADHIKARI: Padadhikari[] = [
-  member("anand-gupta", "आनन्द गुप्ता", "Anand Gupta", "समाज कल्याण एवं सांस्कृतिक कार्यक्रमों के आयोजन में समर्पित सेवा।"),
-  member("anil-kumar-dani", "अनिल कुमार दानी", "Anil Kumar Dani", "सामाजिक समरसता एवं युवा मार्गदर्शन अभियानों में सक्रिय।"),
-  member("ankur-gupta", "अंकुर गुप्ता", "Ankur Gupta", "समाज के डिजिटल एवं तकनीकी विकास में निरन्तर प्रयासरत।"),
-  member("dinesh-chand-goyal", "दिनेश चन्द गोयल", "Dinesh Chand Goyal", "धार्मिक एवं सामाजिक अनुष्ठानों के सुचारू संचालन में योगदान।"),
-  member("ishwar-das-goyal", "ईश्वर दास गोयल", "Ishwar Das Goyal", "वरिष्ठ सलाहकार एवं सामाजिक परंपराओं के संरक्षण में अग्रणी।"),
-  member("jugal-kishore-agrawal", "जुगल किशोर अग्रवाल", "Jugal Kishore Agrawal", "समाज भवन विकास एवं प्रबंधन समिति में समर्पित भूमिका।"),
-  member("kalicharan-gupta", "कालीचरण गुप्ता", "Kalicharan Gupta", "भारतीय खाद्य निगम से प्रबंधक के पद से सेवानिवृत्त। मूल रूप से भरतपुर का निवासी। पिछले लगभग 38 वर्षों से मानसरोवर जयपुर में निवास। मानसरोवर अग्रवाल समाज समिति की कार्यकारिणी में पिछले 24 वर्षों से विभिन्न पदों पर सेवारत।"),
-  member("kavita-mittal", "कविता मित्तल", "Kavita Mittal", "महिला मण्डल गतिविधियों एवं समर कैंप कार्यक्रमों की आयोजक।"),
-  member("krishnavtar-mittal", "कृष्णावतार मित्तल", "Krishnavtar Mittal", "समाज सेवा एवं अन्न क्षेत्र गतिविधियों में निष्ठापूर्वक संलग्न।"),
-  member("kunj-bihari-agrawal", "कुंजबिहारी अग्रवाल", "Kunj Bihari Agrawal", "शैक्षणिक सहायता एवं मेधावी छात्र प्रोत्साहन योजनाओं में सक्रिय।"),
-  member("lakhmi-chand-singhal", "लखमी चन्द सिंघल", "Lakhmi Chand Singhal", "वरिष्ठ समाजसेवी एवं समाज के मार्गदर्शन मण्डल के सदस्य।"),
-  member("mahesh-chand-goyal", "महेश चन्द गोयल", "Mahesh Chand Goyal", "बैंक ऑफ़ बड़ौदा से सीनियर मैनेजर रिटायर्ड। पता: 35/94 रजत पथ, मानसरोवर जयपुर। जन्मस्थान: खेरली, जिला अलवर, राजस्थान।"),
-  member("manoj-kumar-gupta", "मनोज कुमार गुप्ता", "Manoj Kumar Gupta", "युवा ऊर्जा प्रोत्साहन एवं खेलकूद प्रतियोगिताओं के संयोजक।"),
-  member("manoj-garg", "श्रीमती मनोज गर्ग", "Smt. Manoj Garg", "महिला सशक्तिकरण, हस्तकला एवं सांस्कृतिक विंग की सह-संयोजक।"),
-  member("narendra-kumar-bansal", "नरेन्द्र कुमार बंसल", "Narendra Kumar Bansal", "सामाजिक सुरक्षा एवं आपातकालीन सहायता टीम के समर्पित सदस्य।"),
-  member("prahlad-kumar-garg", "प्रहलाद कुमार गर्ग", "Prahlad Kumar Garg", "समाज भवन व्यवस्था एवं अतिथि सत्कार समिति में सक्रिय सेवा।"),
-  member("pramod-kumar-gupta", "प्रमोद कुमार गुप्ता", "Pramod Kumar Gupta", "रक्तदान शिविर एवं चिकित्सा सहायता प्रकल्पों में अग्रणी भूमिका।"),
-  member("praveen-kumar-gupta", "प्रवीण कुमार गुप्ता", "Praveen Kumar Gupta", "समाज प्रचार-प्रसार एवं सूचना तंत्र के सुचारू संचालन में योगदान।"),
-  member("puneet-kumar-gupta", "पुनीत कुमार गुप्ता", "Puneet Kumar Gupta", "युवा विंग एवं नवीन सदस्य जोड़ो अभियान के सक्रिय कार्यकर्ता।"),
-  member("purushottam-mangal", "पुरूषोत्तम मंगल", "Purushottam Mangal", "सांस्कृतिक संध्या एवं वार्षिकोत्सव आयोजनों के व्यवस्थापक।"),
-  member("radha-raman-gupta", "राधारामण गुप्ता", "Radha Raman Gupta", "धार्मिक आयोजनों एवं भागवत कथा प्रबंधन में समर्पित।"),
-  member("ram-bharosi-gupta", "रामभरोसी गुप्ता", "Ram Bharosi Gupta", "वरिष्ठ नागरिक सेवा एवं समाज कल्याण कार्यों में निष्ठावान।"),
-  member("ramgopal-singhal", "रामगोपाल सिंघल", "Ramgopal Singhal", "समूह नेतृत्व एवं समाज के समग्र विकास हेतु मार्गदर्शक।"),
-  member("ram-avtar-gupta", "रामअवतार गुप्ता", "Ram Avtar Gupta", "सामूहिक विवाह सम्मेलन एवं समाज एकता अभियानों में सक्रिय।"),
-  member("seetu-gupta", "सीटू गुप्ता", "Seetu Gupta", "महिला मंडल आयोजनों एवं बाल विकास गतिविधियों में संलग्न।"),
-  member("shyam-sunder-gupta", "श्याम सुन्दर गुप्ता", "Shyam Sunder Gupta", "पर्यावरण संरक्षण एवं पौधारोपण अभियानों के प्रमुख संयोजक।"),
-  member("sunil-kumar-modi", "सुनील कुमार मोदी", "Sunil Kumar Modi", "समाज विकास योजनाओं एवं निर्माण कार्यों के पर्यवेक्षक।"),
-  member("sunita-agrawal", "सुनीता अग्रवाल", "Sunita Agrawal", "महिला कल्याण, सिलाई एवं कला प्रशिक्षण कार्यक्रमों की संयोजिका।"),
-  member("vikas-gupta", "विकास गुप्ता", "Vikas Gupta", "तकनीकी नवाचार एवं डिजिटल डायरेक्टरी प्रबंधन में सक्रिय।"),
-  member("vinod-kumar-agrawal", "विनोद कुमार अग्रवाल", "Vinod Kumar Agrawal", "वित्तीय लेखा-जोखा एवं पारदर्शी प्रबंधन में विशेष भूमिका।"),
-  member("vipul-mittal", "विपुल मित्तल", "Vipul Mittal", "युवा महोत्सव एवं समाज जोड़ो गतिविधियों में समर्पित कार्यकर्ता।"),
+  {
+    slug: "ramgopal-singhal",
+    name: "राम गोपाल सिंघल",
+    latin: "Ramgopal Singhal",
+    designation: "अध्यक्ष",
+    designationEn: "President",
+    mobile: "9314874859",
+    description: "अग्रवाल समाज समिति के सफल नेतृत्वकर्ता एवं समाज के सर्वांगीण विकास हेतु समर्पित।",
+  },
+  {
+    slug: "seetu-gupta",
+    name: "सीटू गुप्ता",
+    latin: "Seetu Gupta",
+    designation: "उपाध्यक्ष",
+    designationEn: "Vice President",
+    mobile: "8559970390",
+    description: "समाज की विभिन्न गतिविधियों एवं विकास योजनाओं के संचालन में उपाध्यक्ष के रूप में सेवारत।",
+  },
+  {
+    slug: "ram-avtar-gupta",
+    name: "राम अवतार गुप्ता",
+    latin: "Ram Avtar Gupta",
+    designation: "उपाध्यक्ष",
+    designationEn: "Vice President",
+    mobile: "9414710425",
+    description: "समाज संगठन, सामाजिक सम्मेलनों एवं जनकल्याणकारी कार्यों में उपाध्यक्ष के रूप में सक्रिय।",
+  },
+  {
+    slug: "ishwar-das-goyal",
+    name: "ईश्वर दास गोयल",
+    latin: "Ishwar Das Goyal",
+    designation: "उपाध्यक्ष",
+    designationEn: "Vice President",
+    mobile: "9414780006",
+    description: "वरिष्ठ सामाजिक सलाहकार एवं परंपराओं के संरक्षण हेतु उपाध्यक्ष पद पर सेवारत।",
+  },
+  {
+    slug: "sunil-kumar-modi",
+    name: "सुनील कुमार मोदी",
+    latin: "Sunil Kumar Modi",
+    designation: "उपाध्यक्ष",
+    designationEn: "Vice President",
+    mobile: "8952099999",
+    description: "समाज विकास परियोजनाओं एवं भवन निर्माण कार्यों के उपाध्यक्ष के रूप में पर्यवेक्षक।",
+  },
+  {
+    slug: "lakhmi-chand-singhal",
+    name: "लखमी चन्द सिंघल",
+    latin: "Lakhmi Chand Singhal",
+    designation: "महामंत्री",
+    designationEn: "General Secretary",
+    mobile: "9829144284",
+    description: "समिति के प्रशासनिक कार्यों, पत्राचार एवं संगठन संचालन के मुख्य उत्तरदायी महामंत्री।",
+  },
+  {
+    slug: "kalicharan-gupta",
+    name: "कालीचरण गुप्ता",
+    latin: "Kalicharan Gupta",
+    designation: "अतिरिक्त महामंत्री",
+    designationEn: "Additional General Secretary",
+    mobile: "9460407593",
+    description: "भारतीय खाद्य निगम से प्रबंधक के पद से सेवानिवृत्त। मूल रूप से भरतपुर का निवासी। पिछले लगभग 38 वर्षों से मानसरोवर जयपुर में निवास। मानसरोवर अग्रवाल समाज समिति की कार्यकारिणी में पिछले 24 वर्षों से विभिन्न पदों पर सेवारत।",
+  },
+  {
+    slug: "manoj-kumar-gupta",
+    name: "मनोज कुमार गुप्ता",
+    latin: "Manoj Kumar Gupta",
+    designation: "अतिरिक्त महामंत्री",
+    designationEn: "Additional General Secretary",
+    mobile: "9636378121",
+    description: "समिति के संगठनात्मक कार्यों, युवा गतिविधियों एवं प्रशासनिक समन्वय में अतिरिक्त महामंत्री।",
+  },
+  {
+    slug: "pramod-kumar-gupta",
+    name: "प्रमोद कुमार गुप्ता",
+    latin: "Pramod Kumar Gupta",
+    designation: "कोषाध्यक्ष",
+    designationEn: "Treasurer",
+    mobile: "9414375719",
+    description: "सेवानिवृत्त जिला श्रम कल्याण अधिकारी। समिति के आय-व्यय एवं वित्तीय प्रबंधन के मुख्य उत्तरदायी कोषाध्यक्ष।",
+  },
+  {
+    slug: "anil-kumar-dani",
+    name: "अनिल कुमार दानी",
+    latin: "Anil Kumar Dani",
+    designation: "सह कोषाध्यक्ष",
+    designationEn: "Co-Treasurer",
+    mobile: "9414771361",
+    description: "समिति के वित्तीय अभिलेखों एवं बजट प्रबंधन में सह कोषाध्यक्ष के रूप में सेवारत।",
+  },
+  {
+    slug: "dinesh-chand-goyal",
+    name: "दिनेश चन्द गोयल",
+    latin: "Dinesh Chand Goyal",
+    designation: "संयुक्त मंत्री",
+    designationEn: "Joint Secretary",
+    mobile: "9414795870",
+    description: "समिति के पत्राचार, बैठकों के संचालन एवं प्रशासनिक कार्यों में संयुक्त मंत्री।",
+  },
+  {
+    slug: "praveen-kumar-gupta",
+    name: "प्रवीन कुमार गुप्ता",
+    latin: "Praveen Kumar Gupta",
+    designation: "सह संयुक्त मंत्री",
+    designationEn: "Co-Joint Secretary",
+    mobile: "9414335955",
+    description: "समिति की सूचनाओं एवं प्रशासनिक व्यवस्थाओं के क्रियान्वयन में सह संयुक्त मंत्री।",
+  },
+  {
+    slug: "jugal-kishore-agrawal",
+    name: "जुगल किशोर अग्रवाल",
+    latin: "Jugal Kishore Agrawal",
+    designation: "सामाजिक सुधार एवं कल्याण मंत्री",
+    designationEn: "Social Reform & Welfare Secretary",
+    mobile: "9414054426",
+    description: "कुरीति निवारण, सामाजिक कुप्रथाओं के उन्मूलन एवं जनकल्याणकारी योजनाओं के प्रभारी मंत्री।",
+  },
+  {
+    slug: "ankur-gupta",
+    name: "अंकुर गुप्ता",
+    latin: "Ankur Gupta",
+    designation: "सामाजिक सुधार एवं कल्याण सह मंत्री",
+    designationEn: "Social Reform & Welfare Co-Secretary",
+    mobile: "9828843456",
+    description: "सामाजिक सुधार अभियानों एवं कल्याणकारी योजनाओं के क्रियान्वयन में सह मंत्री।",
+  },
+  {
+    slug: "manoj-garg",
+    name: "श्रीमती मनोज गर्ग",
+    latin: "Smt. Manoj Garg",
+    designation: "सांस्कृतिक मंत्री",
+    designationEn: "Cultural Secretary",
+    mobile: "9462809499",
+    description: "समाज के सांस्कृतिक महोत्सवों, जयंतियों एवं साहित्यिक कार्यक्रमों की प्रभारी मंत्री।",
+  },
+  {
+    slug: "krishnavtar-mittal",
+    name: "कृष्ण अवतार मित्तल",
+    latin: "Krishna Avtar Mittal",
+    designation: "संगठन मंत्री",
+    designationEn: "Organization Secretary",
+    mobile: "7726996648",
+    description: "समाज के सदस्यों को जोड़ने, संगठन सुदृढ़ीकरण एवं शाखा विस्तार के प्रभारी मंत्री।",
+  },
+  {
+    slug: "vinod-kumar-agrawal",
+    name: "विनोद कुमार अग्रवाल",
+    latin: "Vinod Kumar Agrawal",
+    designation: "आई टी, सूचना एवं प्रचार मंत्री",
+    designationEn: "IT, Information & Publicity Secretary",
+    mobile: "8003198003",
+    description: "समाज की डिजिटल उपस्थिति, आईटी पहलों, वेबसाइट एवं सूचना-प्रचार के प्रभारी मंत्री।",
+  },
+  {
+    slug: "shyam-sunder-gupta",
+    name: "श्याम सुन्दर गुप्ता",
+    latin: "Shyam Sunder Gupta",
+    designation: "वैवाहिक गतिविधि एवं परिचय सम्मेलन संयोजक",
+    designationEn: "Matrimonial Activity & Introduction Meet Convener",
+    mobile: "9414778967",
+    description: "युवक-युवती परिचय सम्मेलन एवं वैवाहिक सहायता गतिविधियों के प्रमुख संयोजक।",
+  },
+  {
+    slug: "sunita-agrawal",
+    name: "श्रीमती सुनीता अग्रवाल",
+    latin: "Smt. Sunita Agrawal",
+    designation: "महिला प्रकोष्ठ संयोजक",
+    designationEn: "Women Cell Convener",
+    mobile: "9462085127",
+    description: "महिला सशक्तिकरण, स्वावलंबन एवं महिला मंडल की गतिविधियों की प्रमुख संयोजिका।",
+  },
+  {
+    slug: "kavita-mittal",
+    name: "श्रीमती कविता मित्तल",
+    latin: "Smt. Kavita Mittal",
+    designation: "महिला प्रकोष्ठ सह संयोजक",
+    designationEn: "Women Cell Co-Convener",
+    mobile: "7014696469",
+    description: "महिला प्रकोष्ठ के आयोजनों, कार्यशालाओं एवं कल्याणकारी कार्यक्रमों की सह संयोजिका।",
+  },
+  {
+    slug: "narendra-kumar-bansal",
+    name: "नरेन्द्र कुमार बंसल",
+    latin: "Narendra Kumar Bansal",
+    designation: "युवा प्रकोष्ठ संयोजक",
+    designationEn: "Youth Cell Convener",
+    mobile: "8561022097",
+    description: "युवाओं को समाज सेवा से जोड़ने, युवा सम्मेलनों एवं आयोजनों के प्रमुख संयोजक।",
+  },
+  {
+    slug: "vipul-mittal",
+    name: "विपुल मित्तल",
+    latin: "Vipul Mittal",
+    designation: "युवा प्रकोष्ठ सह संयोजक",
+    designationEn: "Youth Cell Co-Convener",
+    mobile: "9950002999",
+    description: "युवा प्रकोष्ठ की गतिविधियों, स्पोर्ट्स एवं सांस्कृतिक सहभागिता के सह संयोजक।",
+  },
+  {
+    slug: "prahlad-kumar-garg",
+    name: "प्रहलाद कुमार गर्ग",
+    latin: "Prahlad Kumar Garg",
+    designation: "खेलकूद गतिविधि संयोजक",
+    designationEn: "Sports Activity Convener",
+    mobile: "9414712065",
+    description: "समाज की खेलकूद प्रतियोगिताओं, स्पोर्ट्स मीट एवं युवा फिटनेस आयोजनों के संयोजक।",
+  },
+  {
+    slug: "radha-raman-gupta",
+    name: "राधा रमन गुप्ता",
+    latin: "Radha Raman Gupta",
+    designation: "विधि प्रकोष्ठ संयोजक",
+    designationEn: "Legal Cell Convener",
+    mobile: "8947837630",
+    description: "समिति के विधिक मामलों, नियम-उपनियमों एवं कानूनी परामर्श के प्रमुख संयोजक।",
+  },
+  {
+    slug: "mahesh-chand-goyal",
+    name: "महेश चन्द गोयल",
+    latin: "Mahesh Chand Goyal",
+    designation: "क्षेत्रीय उप समिति समन्वयक संयोजक",
+    designationEn: "Regional Sub-Committee Coordinator Convener",
+    mobile: "9887566400",
+    description: "बैंक ऑफ़ बड़ौदा से सेवानिवृत्त सीनियर मैनेजर। मानसरोवर के विभिन्न सेक्टरों की क्षेत्रीय उप समितियों के मुख्य समन्वयक।",
+  },
+  {
+    slug: "vikas-gupta",
+    name: "विकास गुप्ता",
+    latin: "Vikas Gupta",
+    designation: "पर्यावरण संयोजक",
+    designationEn: "Environment Convener",
+    mobile: "9772391222",
+    description: "पर्यावरण संरक्षण, पौधारोपण अभियानों एवं हरित समाज पहल के प्रमुख संयोजक।",
+  },
+  {
+    slug: "ram-bharosi-gupta",
+    name: "राम भरोसे गुप्ता",
+    latin: "Ram Bharosi Gupta",
+    designation: "चिकित्सा शिविर सह संयोजक",
+    designationEn: "Medical Camp Co-Convener",
+    mobile: "9414073960",
+    description: "निःशुल्क स्वास्थ्य जाँच, रक्तदान शिविर एवं चिकित्सा सहायता प्रकल्पों के सह संयोजक।",
+  },
+  {
+    slug: "puneet-kumar-gupta",
+    name: "पुनीत कुमार गुप्ता",
+    latin: "Puneet Kumar Gupta",
+    designation: "सदस्यता अभियान सह संयोजक",
+    designationEn: "Membership Campaign Co-Convener",
+    mobile: "9309303920",
+    description: "समाज के नवीन परिवारों को जोड़ने एवं सदस्यता अभियान के सह संयोजक।",
+  },
+  {
+    slug: "kunj-bihari-agrawal",
+    name: "कुंज बिहारी अग्रवाल",
+    latin: "Kunj Bihari Agrawal",
+    designation: "सनातन संरक्षण सह संयोजक",
+    designationEn: "Sanatan Preservation Co-Convener",
+    mobile: "9314873494",
+    description: "धार्मिक आयोजनों, संवर्धन एवं सनातन संस्कृति संरक्षण अभियानों के सह संयोजक।",
+  },
+  {
+    slug: "purushottam-mangal",
+    name: "पुरुषोत्तम मंगल",
+    latin: "Purushottam Mangal",
+    designation: "भवन अनु-संरक्षण सह संयोजक",
+    designationEn: "Bhavan Preservation Co-Convener",
+    mobile: "9982366915",
+    description: "अग्रवाल समाज भवन के रख-रखाव, सौंदर्यीकरण एवं अनु-संरक्षण के सह संयोजक।",
+  },
+  {
+    slug: "anand-gupta",
+    name: "आनंद गुप्ता",
+    latin: "Anand Gupta",
+    designation: "अग्रवाल समाज त्वरित सहायता प्रकोष्ठ सह संयोजक",
+    designationEn: "Agrawal Samaj Quick Assistance Cell Co-Convener",
+    mobile: "9667758519",
+    description: "आपात्कालीन परिस्थितियों में समाज बंधुओं को त्वरित सहायता पहुँचाने वाले प्रकोष्ठ के सह संयोजक।",
+  },
 ];
 
 /** Leaders are shown separately above, so remove them from the grid. */
 const LEADER_SLUGS = new Set(["ramgopal-singhal", "pramod-kumar-gupta", "lakhmi-chand-singhal"]);
 export const COMMITTEE = PADADHIKARI.filter((p) => !LEADER_SLUGS.has(p.slug));
 
+const JPEG_SLUGS = new Set(["seetu-gupta", "kavita-mittal"]);
+
 export function photo(slug: string) {
-  return `/padadhikari/${slug}.jpg`;
+  const ext = JPEG_SLUGS.has(slug) ? "jpeg" : "jpg";
+  return `/padadhikari/${slug}.${ext}`;
 }
+
+

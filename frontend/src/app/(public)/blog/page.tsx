@@ -55,9 +55,86 @@ export default function BlogPage() {
   const [coverUploading, setCoverUploading] = useState(false);
   const [newPdf, setNewPdf] = useState("");
   const [pdfUploading, setPdfUploading] = useState(false);
-  // Guest author fields
+  // Guest author fields & OTP verification
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
+  const [blogStep, setBlogStep] = useState<"details" | "otp">("details");
+  const [blogOtp, setBlogOtp] = useState("");
+  const [blogSendingOtp, setBlogSendingOtp] = useState(false);
+  const [blogOtpError, setBlogOtpError] = useState("");
+
+  const handleSendBlogOtp = async () => {
+    if (!newTitle.trim() || !newContent.trim()) {
+      alert("Blog Title and Content are required.");
+      return;
+    }
+    if (!guestPhone.trim()) {
+      alert("Mobile number is required for OTP verification when writing a blog.");
+      return;
+    }
+    setBlogSendingOtp(true);
+    setBlogOtpError("");
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/auth/phone/send-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: guestPhone.trim() })
+      });
+      if (res.ok) {
+        setBlogStep("otp");
+      } else {
+        const err = await res.json().catch(() => null);
+        alert(err?.detail || "Failed to send OTP to your phone number.");
+      }
+    } catch {
+      alert("Failed to send OTP to your phone number.");
+    } finally {
+      setBlogSendingOtp(false);
+    }
+  };
+
+  const handleCreateBlogSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTitle.trim() || !newContent.trim()) return;
+    if (!blogOtp.trim() || blogOtp.trim().length !== 6) {
+      setBlogOtpError("Please enter the 6-digit verification OTP code.");
+      return;
+    }
+    setIsSubmitting(true);
+    setBlogOtpError("");
+    try {
+      const tagsList = newTags.split(",").map(t => t.trim()).filter(Boolean);
+      const body: Record<string, unknown> = {
+        title: newTitle.trim(),
+        content: newContent.trim(),
+        cover_image_url: newCover.trim() || null,
+        pdf_url: newPdf.trim() || null,
+        tags: tagsList,
+        status: "published",
+        guest_name: guestName.trim() || "Community Member",
+        guest_phone: guestPhone.trim(),
+        otp: blogOtp.trim(),
+      };
+      const res = await fetch(`${getApiBaseUrl()}/blog/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        setShowCreateModal(false);
+        setNewTitle(""); setNewContent(""); setNewCover(""); setNewPdf(""); setNewTags("");
+        setGuestName(""); setGuestPhone(""); setBlogOtp(""); setBlogStep("details");
+        fetchBlogs(1);
+      } else {
+        const errData = await res.json().catch(() => null);
+        setBlogOtpError(errData?.detail || "Failed to publish blog post.");
+      }
+    } catch (err) {
+      setBlogOtpError("Failed to publish blog post.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -155,44 +232,6 @@ export default function BlogPage() {
     setSelectedMonth(mn);
     setPage(1);
     fetchBlogs(1, search, activeTag, selectedYear, mn);
-  };
-
-  const handleCreateBlogSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim() || !newContent.trim()) return;
-    setIsSubmitting(true);
-    try {
-      const tagsList = newTags.split(",").map(t => t.trim()).filter(Boolean);
-      const body: Record<string, unknown> = {
-        title: newTitle.trim(),
-        content: newContent.trim(),
-        cover_image_url: newCover.trim() || null,
-        pdf_url: newPdf.trim() || null,
-        tags: tagsList,
-        status: "published",
-      };
-      // Always send guest fields — backend will validate if user is not logged in
-      if (guestName.trim()) body.guest_name = guestName.trim();
-      if (guestPhone.trim()) body.guest_phone = guestPhone.trim();
-      const res = await fetch(`${getApiBaseUrl()}/blog/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
-      if (res.ok) {
-        setShowCreateModal(false);
-        setNewTitle(""); setNewContent(""); setNewCover(""); setNewPdf(""); setNewTags("");
-        setGuestName(""); setGuestPhone("");
-        fetchBlogs(1);
-      } else {
-        const errData = await res.json().catch(() => null);
-        alert(errData?.detail || "Failed to publish blog post.");
-      }
-    } catch (err) {
-      alert("Failed to publish blog post.");
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const totalPages = Math.ceil(total / PER_PAGE);
@@ -556,22 +595,67 @@ export default function BlogPage() {
                   />
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100">
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateModal(false)}
-                    className="px-5 py-2.5 rounded-xl border border-zinc-200 text-sm font-semibold text-zinc-600 hover:bg-zinc-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || !newTitle.trim() || !newContent.trim()}
-                    className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white text-sm font-bold rounded-xl shadow-md disabled:opacity-50 transition-all"
-                  >
-                    {isSubmitting ? "Publishing..." : "Publish Immediately 🚀"}
-                  </button>
-                </div>
+                {blogStep === "details" ? (
+                  <div className="space-y-4">
+                    <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100">
+                      <button
+                        type="button"
+                        onClick={() => setShowCreateModal(false)}
+                        className="px-5 py-2.5 rounded-xl border border-zinc-200 text-sm font-semibold text-zinc-600 hover:bg-zinc-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSendBlogOtp}
+                        disabled={blogSendingOtp || !newTitle.trim() || !newContent.trim() || !guestPhone.trim()}
+                        className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white text-sm font-bold rounded-xl shadow-md disabled:opacity-50 transition-all flex items-center gap-2 cursor-pointer"
+                      >
+                        {blogSendingOtp ? "Sending OTP..." : "Request OTP to Publish 📲"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4 pt-4 border-t border-zinc-100">
+                    <div className="p-3.5 bg-amber-50 text-amber-900 rounded-2xl text-xs font-medium border border-amber-200">
+                      📲 Verification OTP code sent to <strong>{guestPhone}</strong>. Enter the 6-digit code to publish your blog article.
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block">6-Digit Verification OTP *</label>
+                      <input
+                        type="text"
+                        required
+                        maxLength={6}
+                        placeholder="e.g. 123456"
+                        value={blogOtp}
+                        onChange={(e) => setBlogOtp(e.target.value)}
+                        className="w-full px-4 py-3 border border-amber-300 rounded-xl text-center text-lg font-mono font-bold tracking-widest focus:ring-2 focus:ring-amber-500 focus:outline-none bg-amber-50/30"
+                      />
+                    </div>
+
+                    {blogOtpError && (
+                      <p className="text-xs text-rose-600 font-semibold">{blogOtpError}</p>
+                    )}
+
+                    <div className="flex justify-end gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setBlogStep("details")}
+                        className="px-4 py-2.5 rounded-xl border border-zinc-200 text-sm font-semibold text-zinc-600 hover:bg-zinc-50"
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSubmitting || !blogOtp.trim()}
+                        className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white text-sm font-bold rounded-xl shadow-md disabled:opacity-50 transition-all cursor-pointer"
+                      >
+                        {isSubmitting ? "Publishing..." : "Verify OTP & Publish 🚀"}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </form>
             </div>
           </div>

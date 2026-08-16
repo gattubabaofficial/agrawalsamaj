@@ -27,11 +27,13 @@ class DonationCreate(BaseModel):
     category_id: uuid.UUID
     amount: float = Field(..., gt=0)
     message: Optional[str] = None
+    purpose_of_donation: Optional[str] = None
 
 class GuestDonationCreate(BaseModel):
     category_id: uuid.UUID
     amount: float = Field(..., gt=0)
     message: Optional[str] = None
+    purpose_of_donation: Optional[str] = None
     guest_name: str
     guest_email: str
     guest_mobile: str
@@ -42,6 +44,7 @@ class DonationResponse(BaseModel):
     amount: float
     payment_status: PaymentStatus
     message: Optional[str]
+    purpose_of_donation: Optional[str] = None
     donated_at: datetime
     guest_name: Optional[str] = None
     guest_email: Optional[str] = None
@@ -81,7 +84,8 @@ async def create_donation(
         category_id=category.category_id,
         amount=donation_data.amount,
         payment_status=PaymentStatus.PAID,
-        message=donation_data.message
+        message=donation_data.message,
+        purpose_of_donation=donation_data.purpose_of_donation
     )
     
     db.add(new_donation)
@@ -104,6 +108,7 @@ async def create_guest_donation(
         amount=donation_data.amount,
         payment_status=PaymentStatus.PAID,
         message=donation_data.message,
+        purpose_of_donation=donation_data.purpose_of_donation,
         guest_name=donation_data.guest_name,
         guest_email=donation_data.guest_email,
         guest_mobile=donation_data.guest_mobile
@@ -149,6 +154,7 @@ async def list_all_donations(
             "amount": donation.amount,
             "payment_status": donation.payment_status,
             "message": donation.message,
+            "purpose_of_donation": donation.purpose_of_donation,
             "donated_at": donation.donated_at,
             "guest_name": donation.guest_name,
             "guest_email": donation.guest_email,

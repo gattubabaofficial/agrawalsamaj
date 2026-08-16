@@ -40,6 +40,7 @@ export default function DonatePage() {
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
   const [guestMobile, setGuestMobile] = useState("");
+  const [purposeOfDonation, setPurposeOfDonation] = useState("");
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -116,7 +117,12 @@ export default function DonatePage() {
       if (isLoggedIn && token) {
         await axios.post(
           `${getApiBaseUrl()}/donations/`,
-          { category_id: selectedCat, amount: amt, message: `Payment ID: ${paymentId}` },
+          {
+            category_id: selectedCat,
+            amount: amt,
+            message: `Payment ID: ${paymentId}`,
+            purpose_of_donation: purposeOfDonation.trim() || null,
+          },
           { headers: { Authorization: `Bearer ${token}` } }
         );
       } else {
@@ -124,6 +130,7 @@ export default function DonatePage() {
           category_id: selectedCat,
           amount: amt,
           message: `Payment ID: ${paymentId}`,
+          purpose_of_donation: purposeOfDonation.trim() || null,
           guest_name: guestName.trim(),
           guest_email: guestEmail.trim(),
           guest_mobile: guestMobile.trim(),
@@ -317,6 +324,18 @@ export default function DonatePage() {
                 </p>
               </div>
             )}
+
+            {/* Purpose of Donation */}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-zinc-700">Purpose of Donation</label>
+              <input
+                type="text"
+                placeholder="e.g. Samaj Bhavan maintenance, Youth program, General welfare..."
+                value={purposeOfDonation}
+                onChange={e => setPurposeOfDonation(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-zinc-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-300"
+              />
+            </div>
 
             {/* Amount */}
             <div className="space-y-3">

@@ -17,7 +17,6 @@ from app.models.event import (
 from app.models.receipt import ReceiptType
 from app.services.whatsapp_service import generate_and_send_passes
 from app.services.receipt_service import create_receipt
-from app.services.voucher_service import apply_voucher, redeem_voucher
 
 
 async def _issue_event_receipt(db, registration, *, is_offline, issuer=None):

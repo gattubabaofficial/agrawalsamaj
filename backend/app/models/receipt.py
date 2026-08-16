@@ -10,14 +10,13 @@ from app.models.base import TimestampMixin
 
 
 class ReceiptType(str, PyEnum):
-    BOOKING = "booking"          # Bhavan (room/hall) booking
     EVENT = "event"              # Event registration / pass
+    DONATION = "donation"        # Donation receipt
 
 
 class Receipt(Base, TimestampMixin):
-    """A payment receipt for either a Bhavan booking or an event registration.
-    Generated automatically when an online payment is verified, or after an
-    admin approves an offline (cash / pay-at-venue) payment."""
+    """A payment receipt for event registration or donation.
+    Generated automatically when a payment is verified."""
     __tablename__ = "receipts"
 
     receipt_id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
@@ -27,11 +26,6 @@ class Receipt(Base, TimestampMixin):
         nullable=False
     )
 
-    # One of these two is set depending on receipt_type
-    booking_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey("bookings.booking_id", ondelete="CASCADE"),
-        nullable=True
-    )
     registration_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("event_registrations.registration_id", ondelete="CASCADE"),
         nullable=True

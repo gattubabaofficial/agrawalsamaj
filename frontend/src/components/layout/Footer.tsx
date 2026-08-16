@@ -15,19 +15,11 @@ const COLUMNS = [
   {
     heading: "Take part",
     links: [
-      { label: "Book the Bhavan", href: "/bhavan" },
       { label: "Upcoming events", href: "/events" },
       { label: "Donation schemes", href: "/donate" },
     ],
   },
-  {
-    heading: "Your account",
-    links: [
-      { label: "Dashboard", href: "/dashboard" },
-      { label: "Receipts", href: "/dashboard/receipts" },
-      { label: "My bookings", href: "/dashboard/bookings" },
-    ],
-  },
+
   {
     heading: "Samaj Network",
     links: [

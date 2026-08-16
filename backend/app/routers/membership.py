@@ -110,6 +110,7 @@ class ContactMemberPayload(BaseModel):
     sender_email: Optional[str] = None
     reason: str
     message: str
+    otp: str
 
 
 
@@ -515,6 +516,11 @@ async def contact_member(
     payload: ContactMemberPayload,
     db: AsyncSession = Depends(get_db_session)
 ):
+    # Verify OTP on sender_mobile
+    otp_valid = await verify_otp_internal(db, payload.sender_mobile, payload.otp)
+    if not otp_valid:
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP code for your mobile number.")
+
     try:
         u_uuid = uuid.UUID(payload.recipient_user_id)
         res = await db.execute(select(User).where(User.user_id == u_uuid))
@@ -561,59 +567,31 @@ async def apply_for_membership_with_otp(
     if not otp_valid:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP code.")
 
-    # 2. Check if mobile already exists
-    user_res = await db.execute(select(User).where(User.mobile == payload.mobile.strip()))
-    user = user_res.scalars().first()
-    
-    if not user:
-        user = User(
-            first_name=payload.first_name.strip(),
-            surname=payload.surname.strip(),
-            father_name=payload.father_name.strip() if payload.father_name else None,
-            parent_relation=payload.parent_relation.strip() if payload.parent_relation else None,
-            mobile=payload.mobile.strip(),
-            email=payload.email.strip().lower() if payload.email else None,
-            profession=payload.profession.strip() if payload.profession else None,
-            native_place=payload.native_place.strip() if payload.native_place else None,
-            bio=payload.bio.strip() if payload.bio else None,
-            address=payload.address.strip() if payload.address else None,
-            profile_photo=payload.profile_photo.strip() if payload.profile_photo else None,
-            mobile_private=payload.mobile_private,
-            email_private=payload.email_private,
-            address_private=payload.address_private,
-            profession_private=payload.profession_private,
-            native_place_private=payload.native_place_private,
-            bio_private=payload.bio_private,
-            role=UserRole.GUEST,
-            is_active=True,
-            is_member=False
-        )
-        db.add(user)
-        await db.flush()
-    else:
-        # Update details if user already exists
-        if payload.father_name:
-            user.father_name = payload.father_name.strip()
-        if payload.parent_relation:
-            user.parent_relation = payload.parent_relation.strip()
-        if payload.email:
-            user.email = payload.email.strip().lower()
-        if payload.profession:
-            user.profession = payload.profession.strip()
-        if payload.native_place:
-            user.native_place = payload.native_place.strip()
-        if payload.bio:
-            user.bio = payload.bio.strip()
-        if payload.address:
-            user.address = payload.address.strip()
-        if payload.profile_photo:
-            user.profile_photo = payload.profile_photo.strip()
-        user.mobile_private = payload.mobile_private
-        user.email_private = payload.email_private
-        user.address_private = payload.address_private
-        user.profession_private = payload.profession_private
-        user.native_place_private = payload.native_place_private
-        user.bio_private = payload.bio_private
+    # 2. Always create a new User record (mobile number is not unique)
+    user = User(
+        first_name=payload.first_name.strip(),
+        surname=payload.surname.strip(),
+        father_name=payload.father_name.strip() if payload.father_name else None,
+        parent_relation=payload.parent_relation.strip() if payload.parent_relation else None,
+        mobile=payload.mobile.strip(),
+        email=payload.email.strip().lower() if payload.email else None,
+        profession=payload.profession.strip() if payload.profession else None,
+        native_place=payload.native_place.strip() if payload.native_place else None,
+        bio=payload.bio.strip() if payload.bio else None,
+        address=payload.address.strip() if payload.address else None,
+        profile_photo=payload.profile_photo.strip() if payload.profile_photo else None,
+        mobile_private=payload.mobile_private,
+        email_private=payload.email_private,
+        address_private=payload.address_private,
+        profession_private=payload.profession_private,
+        native_place_private=payload.native_place_private,
+        bio_private=payload.bio_private,
+        role=UserRole.GUEST,
+        is_active=True,
+        is_member=False
+    )
+    db.add(user)
+    await db.flush()
 
     # 3. Create pending MembershipRequest
     new_req = MembershipRequest(

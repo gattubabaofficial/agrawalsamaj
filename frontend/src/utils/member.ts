@@ -11,7 +11,7 @@
  *   "Narayan Goyal"      -> "Narayan Goyal"   (no marker → no prefix)
  *   null / ""            -> null
  */
-const RELATION_MARKER = /^\s*(w\s*[/.]?\s*o|s\s*[/.]?\s*o|d\s*[/.]?\s*o|wife\s+of|son\s+of|daughter\s+of)\b\.?\s*(.*)$/i;
+const RELATION_MARKER = /^\s*(w\s*[/.]?\s*o|c\s*[/.]?\s*o|s\s*[/.]?\s*o|d\s*[/.]?\s*o|wife\s+of|care\s+of|son\s+of|daughter\s+of)\b\.?\s*(.*)$/i;
 
 export function formatParentage(raw: string | null | undefined): string | null {
   if (!raw) return null;
@@ -23,6 +23,6 @@ export function formatParentage(raw: string | null | undefined): string | null {
 
   const marker = match[1].toLowerCase();
   const rest = match[2].trim();
-  const prefix = marker.startsWith("w") ? "W/o" : marker.startsWith("d") ? "D/o" : "S/o";
+  const prefix = marker.startsWith("w") ? "W/o" : marker.startsWith("d") ? "D/o" : "C/o";
   return rest ? `${prefix} ${rest}` : prefix;
 }
