@@ -321,8 +321,6 @@ async def create_blog(
             # Guest must provide name, email, and phone
             if not data.guest_name or not data.guest_name.strip():
                 raise HTTPException(status_code=400, detail="Name is required for guest authors")
-            if not data.guest_email or not data.guest_email.strip():
-                raise HTTPException(status_code=400, detail="Email is required for guest authors")
             if not data.guest_phone or not data.guest_phone.strip():
                 raise HTTPException(status_code=400, detail="Phone number is required for guest authors")
             # Assign to the first admin user for the FK constraint

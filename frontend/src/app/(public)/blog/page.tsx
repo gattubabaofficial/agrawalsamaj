@@ -57,7 +57,6 @@ export default function BlogPage() {
   const [pdfUploading, setPdfUploading] = useState(false);
   // Guest author fields
   const [guestName, setGuestName] = useState("");
-  const [guestEmail, setGuestEmail] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
 
   const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -174,7 +173,6 @@ export default function BlogPage() {
       };
       // Always send guest fields — backend will validate if user is not logged in
       if (guestName.trim()) body.guest_name = guestName.trim();
-      if (guestEmail.trim()) body.guest_email = guestEmail.trim();
       if (guestPhone.trim()) body.guest_phone = guestPhone.trim();
       const res = await fetch(`${getApiBaseUrl()}/blog/`, {
         method: "POST",
@@ -184,7 +182,7 @@ export default function BlogPage() {
       if (res.ok) {
         setShowCreateModal(false);
         setNewTitle(""); setNewContent(""); setNewCover(""); setNewPdf(""); setNewTags("");
-        setGuestName(""); setGuestEmail(""); setGuestPhone("");
+        setGuestName(""); setGuestPhone("");
         fetchBlogs(1);
       } else {
         const errData = await res.json().catch(() => null);
@@ -440,7 +438,7 @@ export default function BlogPage() {
                 {/* Guest Author Info */}
                 <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 space-y-3">
                   <p className="text-xs font-bold text-amber-700 uppercase tracking-wider">👤 Your Details (as author)</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-[11px] font-semibold text-zinc-600 block mb-1">Full Name *</label>
                       <input
@@ -449,17 +447,6 @@ export default function BlogPage() {
                         placeholder="Your name"
                         value={guestName}
                         onChange={(e) => setGuestName(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-sm focus:outline-none focus:border-amber-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-semibold text-zinc-600 block mb-1">Email *</label>
-                      <input
-                        type="email"
-                        required
-                        placeholder="you@email.com"
-                        value={guestEmail}
-                        onChange={(e) => setGuestEmail(e.target.value)}
                         className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-sm focus:outline-none focus:border-amber-500"
                       />
                     </div>

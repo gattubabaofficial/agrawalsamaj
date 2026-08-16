@@ -283,11 +283,13 @@ export default function BlogReaderPage() {
       {/* Cover Image */}
       {blog.cover_image_url && (
         <div className="max-w-5xl mx-auto px-4 mb-8">
-          <img
-            src={blog.cover_image_url.startsWith('http') || blog.cover_image_url.startsWith('https') ? blog.cover_image_url : blog.cover_image_url.startsWith('/uploads/') ? `${getApiBaseUrl().replace('/api/v1', '')}${blog.cover_image_url}` : blog.cover_image_url}
-            alt={blog.title}
-            className="w-full max-h-[480px] object-cover rounded-3xl shadow-md"
-          />
+          <div className="w-full max-h-[480px] rounded-3xl shadow-md bg-zinc-50 overflow-hidden flex items-center justify-center">
+            <img
+              src={blog.cover_image_url.startsWith('http') || blog.cover_image_url.startsWith('https') ? blog.cover_image_url : blog.cover_image_url.startsWith('/uploads/') ? `${getApiBaseUrl().replace('/api/v1', '')}${blog.cover_image_url}` : blog.cover_image_url}
+              alt={blog.title}
+              className="w-full h-full object-contain"
+            />
+          </div>
         </div>
       )}
 
