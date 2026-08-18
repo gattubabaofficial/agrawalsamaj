@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 const BACKEND_ORIGIN = (process.env.BACKEND_ORIGIN || "http://localhost:8000").replace(/\/$/, "");
 
+// Allow large file uploads (images/PDFs up to 20MB + overhead)
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 type RouteContext = { params: Promise<{ path?: string[] }> };
 
 export async function GET(req: NextRequest, ctx: RouteContext) {
@@ -38,10 +42,14 @@ async function proxyToBackend(
     }
   });
 
-  let body: string | undefined;
+  // Read body as raw bytes to preserve binary data (multipart file uploads)
+  let body: Buffer | undefined;
   if (method !== "GET" && method !== "HEAD") {
     try {
-      body = await req.text();
+      const arrayBuf = await req.arrayBuffer();
+      if (arrayBuf.byteLength > 0) {
+        body = Buffer.from(arrayBuf);
+      }
     } catch {}
   }
 
@@ -52,7 +60,7 @@ async function proxyToBackend(
       body: body || undefined,
     });
 
-    const resBody = await backendRes.text();
+    const resBody = await backendRes.arrayBuffer();
 
     const resHeaders = new Headers();
     backendRes.headers.forEach((val, key) => {
@@ -62,7 +70,7 @@ async function proxyToBackend(
     });
     resHeaders.set("Access-Control-Allow-Origin", "*");
 
-    return new NextResponse(resBody, {
+    return new NextResponse(Buffer.from(resBody), {
       status: backendRes.status,
       headers: resHeaders,
     });
@@ -74,3 +82,4 @@ async function proxyToBackend(
     );
   }
 }
+
