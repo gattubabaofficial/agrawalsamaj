@@ -328,6 +328,34 @@ export default function BlogPage() {
 
       <div className="max-w-6xl mx-auto px-4 py-12">
 
+        {/* Tag Filter Pills */}
+        {allTags.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 mb-8">
+            <Tag className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+            {allTags.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => handleTag(tag)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                  activeTag === tag
+                    ? "bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-200"
+                    : "bg-white text-zinc-600 border-zinc-200 hover:border-amber-300 hover:text-amber-600"
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+            {activeTag && (
+              <button
+                onClick={() => handleTag(activeTag)}
+                className="px-3 py-1.5 rounded-full text-xs font-medium text-rose-500 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition-all"
+              >
+                ✕ Clear
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Grid */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -422,7 +450,7 @@ export default function BlogPage() {
         {totalPages > 1 && (
           <div className="flex flex-wrap justify-center gap-2 mt-12">
             <button
-              onClick={() => { setPage(p => p - 1); fetchBlogs(page - 1); }}
+              onClick={() => { const p = page - 1; setPage(p); fetchBlogs(p); }}
               disabled={page === 1}
               className="px-4 py-2 rounded-xl border border-zinc-200 text-sm font-medium text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
@@ -438,7 +466,7 @@ export default function BlogPage() {
               </button>
             ))}
             <button
-              onClick={() => { setPage(p => p + 1); fetchBlogs(page + 1); }}
+              onClick={() => { const p = page + 1; setPage(p); fetchBlogs(p); }}
               disabled={page === totalPages}
               className="px-4 py-2 rounded-xl border border-zinc-200 text-sm font-medium text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >

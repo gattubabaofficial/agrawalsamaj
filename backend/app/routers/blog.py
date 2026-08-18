@@ -278,35 +278,6 @@ async def list_all_blogs_admin(
     return {"items": items, "total": total, "page": page, "per_page": per_page}
 
 
-@router.get("/{slug}")
-async def get_blog(
-    slug: str,
-    guest_id: Optional[str] = Query(None),
-    current_user: Optional[User] = Depends(get_optional_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Get a single blog by slug (public). Increments view counter."""
-    result = await db.execute(select(Blog).options(selectinload(Blog.author)).where(Blog.slug == slug))
-    blog = result.scalar_one_or_none()
-    if not blog:
-        raise HTTPException(status_code=404, detail="Blog not found")
-
-    # Allow admins to view drafts when reviewing
-    from app.dependencies import is_admin_level
-    is_admin = is_admin_level(current_user) if current_user else False
-    if blog.status != BlogStatus.PUBLISHED and not is_admin:
-        raise HTTPException(status_code=404, detail="Blog not found")
-
-    # Increment views
-    blog.views += 1
-    await db.commit()
-    await db.refresh(blog)
-
-    user_id = current_user.user_id if current_user else None
-    like_count, user_liked, comment_count = await get_blog_stats(db, blog.blog_id, user_id=user_id, guest_id=guest_id)
-    return blog_dict(blog, like_count, user_liked, comment_count)
-
-
 # ─── Blog Writing & Admin CRUD ───────────────────────────────────────────────────
 
 @router.post("/", status_code=201)
@@ -315,63 +286,69 @@ async def create_blog(
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_current_user),
 ):
-    """Require OTP verification on the author's phone number before publishing a blog."""
-    try:
+    """Create a blog post. Authenticated admin/volunteer users skip OTP; guests require OTP."""
+    from app.dependencies import is_admin_level
+
+    # Determine if OTP verification should be skipped (authenticated admin/volunteer users)
+    skip_otp = False
+    if current_user:
+        if is_admin_level(current_user) or current_user.role in (UserRole.VOLUNTEER, UserRole.MEMBER):
+            skip_otp = True
+
+    if not skip_otp:
+        # Guest / unauthenticated user must verify via OTP
         phone_to_verify = data.guest_phone or (current_user.mobile if current_user else None)
         if not phone_to_verify:
             raise HTTPException(status_code=400, detail="Phone number is required for OTP verification when writing a blog.")
         if not data.otp:
             raise HTTPException(status_code=400, detail="OTP code is required to publish a blog.")
-            
+
         from app.routers.membership import verify_otp_internal
         otp_valid = await verify_otp_internal(db, phone_to_verify, data.otp)
         if not otp_valid:
             raise HTTPException(status_code=400, detail="Invalid or expired OTP code for writing a blog.")
 
-        author_id = current_user.user_id if current_user else None
-        if not author_id:
-            # Guest must provide name, email, and phone
-            if not data.guest_name or not data.guest_name.strip():
-                raise HTTPException(status_code=400, detail="Name is required for guest authors")
-            if not data.guest_phone or not data.guest_phone.strip():
-                raise HTTPException(status_code=400, detail="Phone number is required for guest authors")
-            # Assign to the first admin user for the FK constraint
-            first_user = await db.scalar(select(User).order_by(User.created_at.asc()).limit(1))
-            author_id = first_user.user_id if first_user else None
+    author_id = current_user.user_id if current_user else None
+    if not author_id:
+        # Guest must provide name and phone
+        if not data.guest_name or not data.guest_name.strip():
+            raise HTTPException(status_code=400, detail="Name is required for guest authors")
+        if not data.guest_phone or not data.guest_phone.strip():
+            raise HTTPException(status_code=400, detail="Phone number is required for guest authors")
+        # Assign to the first admin user for the FK constraint
+        first_user = await db.scalar(select(User).order_by(User.created_at.asc()).limit(1))
+        author_id = first_user.user_id if first_user else None
 
-        base_slug = slugify(data.title)
-        slug = base_slug
-        # Ensure slug uniqueness
-        counter = 1
-        while await db.scalar(select(Blog).where(Blog.slug == slug)):
-            slug = f"{base_slug}-{counter}"
-            counter += 1
+    base_slug = slugify(data.title)
+    slug = base_slug
+    # Ensure slug uniqueness
+    counter = 1
+    while await db.scalar(select(Blog).where(Blog.slug == slug)):
+        slug = f"{base_slug}-{counter}"
+        counter += 1
 
-        blog = Blog(
-            author_id=author_id,
-            title=data.title,
-            slug=slug,
-            content=data.content,
-            cover_image_url=data.cover_image_url,
-            pdf_url=data.pdf_url,
-            tags=data.tags,
-            status=data.status,
-            guest_name=data.guest_name.strip() if data.guest_name else None,
-            guest_email=data.guest_email.strip() if data.guest_email else None,
-            guest_phone=data.guest_phone.strip() if data.guest_phone else None,
-        )
-        db.add(blog)
-        await db.commit()
-        await db.refresh(blog)
-        # Load author relationship for the response
-        result = await db.execute(
-            select(Blog).options(selectinload(Blog.author)).where(Blog.blog_id == blog.blog_id)
-        )
-        blog = result.scalar_one()
-        return blog_dict(blog)
-    except Exception as e:
-        import traceback
-        return {"debug_error": str(e), "traceback": traceback.format_exc()}
+    blog = Blog(
+        author_id=author_id,
+        title=data.title,
+        slug=slug,
+        content=data.content,
+        cover_image_url=data.cover_image_url,
+        pdf_url=data.pdf_url,
+        tags=data.tags,
+        status=data.status,
+        guest_name=data.guest_name.strip() if data.guest_name else None,
+        guest_email=data.guest_email.strip() if data.guest_email else None,
+        guest_phone=data.guest_phone.strip() if data.guest_phone else None,
+    )
+    db.add(blog)
+    await db.commit()
+    await db.refresh(blog)
+    # Load author relationship for the response
+    result = await db.execute(
+        select(Blog).options(selectinload(Blog.author)).where(Blog.blog_id == blog.blog_id)
+    )
+    blog = result.scalar_one()
+    return blog_dict(blog)
 
 
 @router.get("/debug/files")
@@ -424,6 +401,37 @@ async def get_blog_by_id(
         
     like_count, _, comment_count = await get_blog_stats(db, blog.blog_id)
     return blog_dict(blog, like_count, False, comment_count)
+
+
+# NOTE: /{slug} is placed AFTER all fixed-path GET routes (/admin/all, /debug/*, /id/*)
+# to prevent the wildcard {slug} from intercepting those requests.
+@router.get("/{slug}")
+async def get_blog(
+    slug: str,
+    guest_id: Optional[str] = Query(None),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get a single blog by slug (public). Increments view counter."""
+    result = await db.execute(select(Blog).options(selectinload(Blog.author)).where(Blog.slug == slug))
+    blog = result.scalar_one_or_none()
+    if not blog:
+        raise HTTPException(status_code=404, detail="Blog not found")
+
+    # Allow admins to view drafts when reviewing
+    from app.dependencies import is_admin_level
+    is_admin = is_admin_level(current_user) if current_user else False
+    if blog.status != BlogStatus.PUBLISHED and not is_admin:
+        raise HTTPException(status_code=404, detail="Blog not found")
+
+    # Increment views
+    blog.views += 1
+    await db.commit()
+    await db.refresh(blog)
+
+    user_id = current_user.user_id if current_user else None
+    like_count, user_liked, comment_count = await get_blog_stats(db, blog.blog_id, user_id=user_id, guest_id=guest_id)
+    return blog_dict(blog, like_count, user_liked, comment_count)
 
 
 @router.put("/{blog_id}")
