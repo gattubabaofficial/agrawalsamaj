@@ -176,17 +176,36 @@ async def upload_file(
             detail="File too large. Max 20 MB.",
         )
 
+    # Save to local filesystem
     with open(file_path, "wb") as f:
         f.write(contents)
 
-    from app.models.blog import UploadedFile
-    db_file = UploadedFile(
-        filename=unique_name,
-        mimetype=file.content_type or "application/octet-stream",
-        data=contents
-    )
-    db.add(db_file)
-    await db.commit()
+    # Store in DB for persistence (Render has ephemeral disk).
+    # Only store files up to 2MB as DB blobs to avoid Neon query timeouts.
+    try:
+        from app.models.blog import UploadedFile
+        if len(contents) <= 2 * 1024 * 1024:
+            db_file = UploadedFile(
+                filename=unique_name,
+                mimetype=file.content_type or "application/octet-stream",
+                data=contents
+            )
+        else:
+            # For large files, store metadata only (empty blob placeholder)
+            db_file = UploadedFile(
+                filename=unique_name,
+                mimetype=file.content_type or "application/octet-stream",
+                data=b""
+            )
+        db.add(db_file)
+        await db.commit()
+    except Exception as e:
+        # DB storage failed (e.g., timeout) — file is still on disk, continue
+        print(f"[Blog Upload] DB storage warning: {e}")
+        try:
+            await db.rollback()
+        except Exception:
+            pass
 
     file_url = f"/uploads/blogs/{unique_name}"
     return {"url": file_url, "filename": unique_name}

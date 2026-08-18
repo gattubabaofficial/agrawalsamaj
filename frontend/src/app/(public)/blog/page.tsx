@@ -139,22 +139,35 @@ export default function BlogPage() {
   const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 20 * 1024 * 1024) {
+      alert("Image too large. Maximum size is 20MB.");
+      return;
+    }
     setCoverUploading(true);
     try {
       const formData = new FormData();
       formData.append("file", file);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 45000);
       const res = await fetch(`${getApiBaseUrl()}/blog/upload`, {
         method: "POST",
         body: formData,
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
       if (res.ok) {
         const data = await res.json();
         setNewCover(data.url);
       } else {
-        alert("Failed to upload image.");
+        const errData = await res.json().catch(() => null);
+        alert(errData?.detail || "Failed to upload image. Please try a smaller file.");
       }
-    } catch {
-      alert("Failed to upload image.");
+    } catch (err: any) {
+      if (err?.name === "AbortError") {
+        alert("Upload timed out. Please try a smaller image (under 5MB works best).");
+      } else {
+        alert("Failed to upload image. Please check your connection and try again.");
+      }
     } finally {
       setCoverUploading(false);
     }
@@ -167,22 +180,35 @@ export default function BlogPage() {
       alert("Please select a valid PDF file.");
       return;
     }
+    if (file.size > 20 * 1024 * 1024) {
+      alert("PDF too large. Maximum size is 20MB.");
+      return;
+    }
     setPdfUploading(true);
     try {
       const formData = new FormData();
       formData.append("file", file);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 45000);
       const res = await fetch(`${getApiBaseUrl()}/blog/upload`, {
         method: "POST",
         body: formData,
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
       if (res.ok) {
         const data = await res.json();
         setNewPdf(data.url);
       } else {
-        alert("Failed to upload PDF.");
+        const errData = await res.json().catch(() => null);
+        alert(errData?.detail || "Failed to upload PDF. Please try a smaller file.");
       }
-    } catch {
-      alert("Failed to upload PDF.");
+    } catch (err: any) {
+      if (err?.name === "AbortError") {
+        alert("Upload timed out. Please try a smaller PDF.");
+      } else {
+        alert("Failed to upload PDF. Please check your connection and try again.");
+      }
     } finally {
       setPdfUploading(false);
     }

@@ -112,20 +112,22 @@ async def serve_upload_file(category: str, filename: str):
     from app.database import get_db_session
     from sqlalchemy import select
     
-    try:
-        async for db in get_db_session():
-            result = await db.execute(select(UploadedFile).where(UploadedFile.filename == filename))
-            db_file = result.scalars().first()
-            if db_file:
-                return Response(content=db_file.data, media_type=db_file.mimetype)
-    except Exception as e:
-        print(f"Error reading file from DB: {e}")
-            
+    # Try local filesystem first (faster than DB query)
     local_path = Path("uploads") / category / filename
     if local_path.exists():
         import mimetypes
         mimetype, _ = mimetypes.guess_type(str(local_path))
         return Response(content=local_path.read_bytes(), media_type=mimetype or "application/octet-stream")
+    
+    # Fall back to DB blob (for files persisted across Render deploys)
+    try:
+        async for db in get_db_session():
+            result = await db.execute(select(UploadedFile).where(UploadedFile.filename == filename))
+            db_file = result.scalars().first()
+            if db_file and db_file.data and len(db_file.data) > 0:
+                return Response(content=db_file.data, media_type=db_file.mimetype)
+    except Exception as e:
+        print(f"Error reading file from DB: {e}")
         
     from fastapi import HTTPException
     raise HTTPException(status_code=404, detail="File not found")
