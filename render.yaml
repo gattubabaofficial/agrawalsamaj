@@ -25,4 +25,4 @@ services:
     rootDir: frontend
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        value: https://agrawalsamaj-backend.onrender.com/api/v1
+        value: https://api.agrasamaj.in/api/v1
