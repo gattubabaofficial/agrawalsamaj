@@ -7,7 +7,8 @@ import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import {
   Heart, MessageCircle, Eye, Clock, Share2, ArrowLeft,
-  Tag, Send, Trash2, ChevronDown, CheckCheck, Copy, Shield, PenSquare, FileText
+  Tag, Send, Trash2, ChevronDown, CheckCheck, Copy, Shield, PenSquare, FileText,
+  X, ZoomIn, ExternalLink
 } from "lucide-react";
 import { getApiBaseUrl } from "@/utils/api";
 
@@ -49,15 +50,30 @@ interface Blog {
   updated_at: string;
 }
 
-function timeAgo(dateStr: string) {
-  if (!dateStr.endsWith('Z')) dateStr += 'Z';
-  const diff = Date.now() - new Date(dateStr).getTime();
+function timeAgo(dateStr?: string) {
+  if (!dateStr) return "Recently";
+  let d = new Date(dateStr);
+  if (isNaN(d.getTime()) && !dateStr.endsWith('Z')) {
+    d = new Date(dateStr + 'Z');
+  }
+  if (isNaN(d.getTime())) return "Recently";
+  const diff = Date.now() - d.getTime();
+  if (diff < 0) return "Just now";
   const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Just now";
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
   const days = Math.floor(hrs / 24);
-  return days < 30 ? `${days}d ago` : new Date(dateStr).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+  return days < 30 ? `${days}d ago` : d.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+}
+
+function formatImageUrl(url?: string | null) {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  const baseUrl = getApiBaseUrl().replace("/api/v1", "");
+  if (url.startsWith("/")) return `${baseUrl}${url}`;
+  return `${baseUrl}/${url}`;
 }
 
 function Avatar({ author, size = "md" }: { author: Author | null; size?: "sm" | "md" | "lg" }) {
@@ -91,8 +107,18 @@ export default function BlogReaderPage() {
   const [guestId, setGuestId] = useState<string>("");
   const [isAdmin, setIsAdmin] = useState(false);
 
+  const [activeImageModal, setActiveImageModal] = useState<{ url: string; alt?: string } | null>(null);
+
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setActiveImageModal(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -283,12 +309,19 @@ export default function BlogReaderPage() {
       {/* Cover Image */}
       {blog.cover_image_url && (
         <div className="max-w-5xl mx-auto px-4 mb-8">
-          <div className="w-full max-h-[480px] rounded-3xl shadow-md bg-zinc-50 overflow-hidden flex items-center justify-center">
+          <div
+            onClick={() => setActiveImageModal({ url: formatImageUrl(blog.cover_image_url), alt: blog.title })}
+            className="group relative w-full rounded-3xl shadow-lg bg-zinc-900/5 border border-zinc-200/80 overflow-hidden flex items-center justify-center cursor-pointer transition-all duration-300 hover:shadow-2xl hover:border-amber-400/50"
+          >
             <img
-              src={blog.cover_image_url.startsWith('http') || blog.cover_image_url.startsWith('https') ? blog.cover_image_url : blog.cover_image_url.startsWith('/uploads/') ? `${getApiBaseUrl().replace('/api/v1', '')}${blog.cover_image_url}` : blog.cover_image_url}
+              src={formatImageUrl(blog.cover_image_url)}
               alt={blog.title}
-              className="w-full h-full object-contain"
+              className="w-full h-auto max-h-[75vh] object-contain rounded-3xl group-hover:scale-[1.01] transition-transform duration-500"
             />
+            {/* Click to open indicator */}
+            <div className="absolute bottom-4 right-4 bg-zinc-900/80 backdrop-blur-md text-white text-xs font-semibold px-3.5 py-2 rounded-xl opacity-90 group-hover:opacity-100 group-hover:bg-amber-500 transition-all flex items-center gap-1.5 shadow-lg">
+              <ZoomIn className="w-4 h-4" /> Click to view full image
+            </div>
           </div>
         </div>
       )}
@@ -374,7 +407,31 @@ export default function BlogReaderPage() {
           prose-td:px-4 prose-td:py-2 prose-td:border prose-td:border-zinc-200
           prose-li:text-zinc-700 prose-li:my-1
           mb-12">
-          <ReactMarkdown>{blog.content}</ReactMarkdown>
+          <ReactMarkdown
+            components={{
+              img: ({ node, ...props }) => {
+                const fullSrc = formatImageUrl(typeof props.src === "string" ? props.src : null);
+                return (
+                  <span
+                    onClick={() => setActiveImageModal({ url: fullSrc, alt: props.alt })}
+                    className="block my-6 cursor-pointer group relative overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 shadow-sm hover:shadow-xl transition-all"
+                  >
+                    <img
+                      {...props}
+                      src={fullSrc}
+                      alt={props.alt || "Blog image"}
+                      className="w-full h-auto max-h-[75vh] object-contain rounded-2xl group-hover:scale-[1.01] transition-transform duration-300"
+                    />
+                    <span className="absolute bottom-3 right-3 bg-zinc-900/80 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none flex items-center gap-1.5 shadow-lg">
+                      <ZoomIn className="w-3.5 h-3.5" /> Click to enlarge
+                    </span>
+                  </span>
+                );
+              }
+            }}
+          >
+            {blog.content}
+          </ReactMarkdown>
         </div>
 
         {/* Like + Share bottom */}
@@ -462,6 +519,62 @@ export default function BlogReaderPage() {
           )}
         </section>
       </article>
+
+      {/* Fullscreen Lightbox Modal */}
+      {activeImageModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-between p-4 sm:p-6 animate-in fade-in duration-200"
+          onClick={() => setActiveImageModal(null)}
+        >
+          {/* Header */}
+          <div
+            className="w-full max-w-6xl flex items-center justify-between text-white py-2 px-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 min-w-0 pr-4">
+              <span className="text-sm font-semibold truncate text-zinc-300">
+                {activeImageModal.alt || blog.title}
+              </span>
+            </div>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <a
+                href={activeImageModal.url}
+                target="_blank"
+                rel="noreferrer"
+                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-amber-500 hover:text-white text-white text-xs font-bold transition-all flex items-center gap-1.5 border border-white/10 shadow-sm"
+                title="Open full image in new tab"
+              >
+                <ExternalLink className="w-3.5 h-3.5" /> Open Original
+              </a>
+              <button
+                type="button"
+                onClick={() => setActiveImageModal(null)}
+                className="p-2.5 rounded-xl bg-white/10 hover:bg-rose-600 text-white transition-all cursor-pointer border border-white/10 shadow-sm"
+                title="Close viewer (Esc)"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Image container */}
+          <div
+            className="relative max-w-6xl w-full max-h-[82vh] flex-1 flex items-center justify-center p-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={activeImageModal.url}
+              alt={activeImageModal.alt || "Full size image"}
+              className="max-w-full max-h-[80vh] w-auto h-auto object-contain rounded-2xl shadow-2xl border border-white/10"
+            />
+          </div>
+
+          {/* Footer note */}
+          <p className="text-zinc-400 text-xs py-2 text-center">
+            Click outside or press <kbd className="px-1.5 py-0.5 bg-zinc-800 rounded border border-zinc-700 text-zinc-300 font-mono">Esc</kbd> to close
+          </p>
+        </div>
+      )}
     </div>
   );
 }

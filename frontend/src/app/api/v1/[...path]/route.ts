@@ -57,7 +57,7 @@ async function proxyToBackend(
     const backendRes = await fetch(backendUrl, {
       method,
       headers: forwardHeaders,
-      body: body || undefined,
+      body: body ? new Uint8Array(body) : undefined,
     });
 
     const resBody = await backendRes.arrayBuffer();

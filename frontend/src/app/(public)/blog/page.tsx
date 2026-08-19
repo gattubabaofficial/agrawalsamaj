@@ -20,16 +20,22 @@ interface Blog {
   created_at: string;
 }
 
-function timeAgo(dateStr: string) {
-  if (!dateStr.endsWith('Z')) dateStr += 'Z';
-  const diff = Date.now() - new Date(dateStr).getTime();
+function timeAgo(dateStr?: string) {
+  if (!dateStr) return "Recently";
+  let d = new Date(dateStr);
+  if (isNaN(d.getTime()) && !dateStr.endsWith('Z')) {
+    d = new Date(dateStr + 'Z');
+  }
+  if (isNaN(d.getTime())) return "Recently";
+  const diff = Date.now() - d.getTime();
+  if (diff < 0) return "Just now";
   const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Just now";
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
   const days = Math.floor(hrs / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  return days < 30 ? `${days}d ago` : d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
 export default function BlogPage() {
