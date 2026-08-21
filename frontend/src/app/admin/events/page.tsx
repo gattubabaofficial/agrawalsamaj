@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { CalendarPlus, MapPin, Users, Trash2, Clock, Plus, X, AlertTriangle, ShieldAlert, List, ArrowLeft, Ticket, CheckCircle, Send, Search, Filter, Ban, RefreshCw, Upload, Image as ImageIcon } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
+import { mediaUrl } from "@/utils/media";
 import { formatDateDDMonthYYYY } from "@/utils/date";
 import { EditButton } from "@/components/ui/EditButton";
 
@@ -333,7 +334,7 @@ export default function AdminEventsPage() {
               <div>
                 <div className="relative h-44 bg-zinc-100">
                   {evt.banner_url ? (
-                    <img src={evt.banner_url} alt={evt.title} className="w-full h-full object-cover" />
+                    <img src={mediaUrl(evt.banner_url) || evt.banner_url} alt={evt.title} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-zinc-400 font-medium">No Banner Image</div>
                   )}
@@ -503,7 +504,7 @@ export default function AdminEventsPage() {
               <div className="flex items-center gap-3">
                 {formData.banner_url ? (
                   <div className="relative w-24 h-16 rounded-xl overflow-hidden border border-amber-300 shadow-sm shrink-0">
-                    <img src={formData.banner_url} alt="Banner Preview" className="w-full h-full object-cover" />
+                    <img src={mediaUrl(formData.banner_url) || formData.banner_url} alt="Banner Preview" className="w-full h-full object-cover" />
                   </div>
                 ) : (
                   <div className="w-24 h-16 rounded-xl bg-amber-100/60 border border-dashed border-amber-300 flex items-center justify-center text-amber-600 shrink-0">

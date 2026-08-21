@@ -6,6 +6,7 @@ import { Calendar, MapPin, Clock, Search, Info, Ticket } from "lucide-react";
 import { motion } from "framer-motion";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
+import { mediaUrl } from "@/utils/media";
 import { formatDateDDMonthYYYY } from "@/utils/date";
 
 // Mock data as fallback
@@ -141,7 +142,7 @@ export default function EventsPage() {
                 <div className="h-44 bg-zinc-100 relative overflow-hidden">
                   {evt.banner_url ? (
                     <img
-                      src={evt.banner_url.startsWith('http') || evt.banner_url.startsWith('https') ? evt.banner_url : `${getApiBaseUrl().replace('/api/v1', '')}${evt.banner_url}`}
+                      src={mediaUrl(evt.banner_url) || evt.banner_url}
                       alt={evt.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
