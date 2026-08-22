@@ -24,6 +24,10 @@ env/
 *.sqlite3
 *.db
 
+# Uploads
+uploads/
+backend/uploads/
+
 # Misc
 .DS_Store
 *.pem
