@@ -12,14 +12,14 @@ import { getApiBaseUrl } from "@/utils/api";
 import { EASE } from "@/components/ui/motion";
 
 const navItems = [
-  { name: "Home", href: "/", icon: Home, description: "Back to the welcome page" },
-  { name: "Bhavan", href: "/bhavan", icon: Building, description: "Book a stay at Agrasen Bhawan" },
-  { name: "About", href: "/about", icon: Info, description: "Who the Samaj is and what it does" },
-  { name: "History", href: "/history", icon: History, description: "The community's documented history" },
-  { name: "Directory", href: "/members", icon: Users, description: "Search the member directory" },
-  { name: "Events", href: "/events", icon: Calendar, description: "Upcoming events and passes" },
-  { name: "Blog", href: "/blog", icon: BookOpen, description: "Read or write a community post" },
-  { name: "Donate", href: "/donate", icon: Heart, description: "Support the Samaj's work" },
+  { name: "Home", href: "/", icon: Home },
+  { name: "Bhavan", href: "/bhavan", icon: Building },
+  { name: "About", href: "/about", icon: Info },
+  { name: "History", href: "/history", icon: History },
+  { name: "Directory", href: "/members", icon: Users },
+  { name: "Events", href: "/events", icon: Calendar },
+  { name: "Blog", href: "/blog", icon: BookOpen },
+  { name: "Donate", href: "/donate", icon: Heart },
 ];
 
 interface AuthUser {
@@ -133,7 +133,7 @@ export default function Navbar() {
       <div className="mx-auto max-w-[78rem] px-5 sm:px-8 lg:px-12">
         <div className="flex h-11 items-center justify-between gap-8">
           {/* Wordmark */}
-          <Link href="/" title="Return to the home page" className="group flex shrink-0 flex-col leading-none">
+          <Link href="/" className="group flex shrink-0 flex-col leading-none">
             <span className="display text-xl tracking-[-0.01em] text-ink sm:text-[1.375rem]">
               Agrawal Samaj Mansrovar Jaipur
             </span>
@@ -151,7 +151,6 @@ export default function Navbar() {
                   key={item.href}
                   href={item.href}
                   data-active={isActive}
-                  title={item.description}
                   className={`rule-grow pb-1 text-[0.6875rem] font-medium uppercase tracking-[0.2em] transition-colors duration-300 ${
                     isActive ? "text-ink" : "text-ink-3 hover:text-ink"
                   }`}
@@ -171,7 +170,6 @@ export default function Navbar() {
                 {isVolunteer && (
                   <Link
                     href="/admin/scan"
-                    title="Scan attendee QR passes at the door"
                     className="inline-flex items-center gap-2 border border-rule-strong px-4 py-2 text-[0.6875rem] font-medium uppercase tracking-[0.16em] text-ink transition-colors hover:border-ink"
                   >
                     <QrCode className="h-3.5 w-3.5" /> Scan
@@ -182,7 +180,6 @@ export default function Navbar() {
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                     aria-label="Account menu"
                     aria-expanded={userMenuOpen}
-                    title="Open your account menu"
                     className="flex h-9 w-9 items-center justify-center rounded-full border border-rule-strong text-[0.8125rem] font-medium text-ink transition-colors hover:border-vermilion hover:text-vermilion"
                   >
                     {authUser.initial}
@@ -206,7 +203,6 @@ export default function Navbar() {
                           <Link
                             href={getDashboardHref()}
                             onClick={() => setUserMenuOpen(false)}
-                            title={isVolunteer ? "Open the ticket scanner" : "Go to your dashboard"}
                             className="flex items-center gap-3 px-3 py-2.5 text-sm text-ink-2 transition-colors hover:bg-paper-2 hover:text-ink"
                           >
                             <LayoutDashboard className="h-4 w-4" /> {isVolunteer ? "Scan tickets" : "Dashboard"}
@@ -214,14 +210,12 @@ export default function Navbar() {
                           <Link
                             href={authUser.role === "admin" || authUser.role === "super_admin" || authUser.role === "volunteer" ? "/admin/profile" : "/dashboard/profile"}
                             onClick={() => setUserMenuOpen(false)}
-                            title="View and edit your profile"
                             className="flex items-center gap-3 px-3 py-2.5 text-sm text-ink-2 transition-colors hover:bg-paper-2 hover:text-ink"
                           >
                             <User className="h-4 w-4" /> My profile
                           </Link>
                           <button
                             onClick={handleLogout}
-                            title="Sign out of your account"
                             className="flex w-full items-center gap-3 border-t border-rule px-3 py-2.5 text-sm text-vermilion transition-colors hover:bg-paper-2"
                           >
                             <LogOut className="h-4 w-4" /> Sign out
@@ -241,7 +235,6 @@ export default function Navbar() {
               <Link
                 href={getDashboardHref()}
                 aria-label="Dashboard"
-                title="Go to your dashboard"
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-rule-strong text-[0.8125rem] font-medium text-ink"
               >
                 {authUser.initial}
@@ -250,7 +243,6 @@ export default function Navbar() {
             <button
               onClick={() => setIsOpen(true)}
               aria-label="Open menu"
-              title="Open navigation menu"
               className="p-2 text-ink"
             >
               <Menu className="h-6 w-6" />
@@ -271,7 +263,7 @@ export default function Navbar() {
           >
             <div className="flex items-center justify-between px-5 py-5 sm:px-8">
               <span className="deva text-sm text-vermilion">अग्रवाल समाज</span>
-              <button onClick={() => setIsOpen(false)} aria-label="Close menu" title="Close menu" className="p-2 text-ink">
+              <button onClick={() => setIsOpen(false)} aria-label="Close menu" className="p-2 text-ink">
                 <X className="h-6 w-6" />
               </button>
             </div>
@@ -287,7 +279,6 @@ export default function Navbar() {
                   <Link
                     href={item.href}
                     onClick={() => setIsOpen(false)}
-                    title={item.description}
                     className="flex items-baseline justify-between border-b border-rule py-4"
                   >
                     <span className={`display text-3xl ${pathname === item.href ? "text-vermilion" : "text-ink"}`}>
@@ -309,7 +300,6 @@ export default function Navbar() {
                     <Link
                       href={getDashboardHref()}
                       onClick={() => setIsOpen(false)}
-                      title={isVolunteer ? "Open the ticket scanner" : "Go to your dashboard"}
                       className="flex items-center justify-center gap-2 bg-vermilion px-6 py-3.5 text-[0.8125rem] font-medium uppercase tracking-[0.16em] text-paper"
                     >
                       {isVolunteer ? <QrCode className="h-4 w-4" /> : <LayoutDashboard className="h-4 w-4" />}
@@ -317,7 +307,6 @@ export default function Navbar() {
                     </Link>
                     <button
                       onClick={() => { handleLogout(); setIsOpen(false); }}
-                      title="Sign out of your account"
                       className="flex items-center justify-center gap-2 border border-rule-strong px-6 py-3.5 text-[0.8125rem] font-medium uppercase tracking-[0.16em] text-ink"
                     >
                       <LogOut className="h-4 w-4" /> Sign out
