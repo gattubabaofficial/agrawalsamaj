@@ -32,6 +32,7 @@ export default function ActionLink({
   className = "",
   strength = 0.22,
   onClick,
+  title,
 }: {
   href: string;
   children: ReactNode;
@@ -39,6 +40,7 @@ export default function ActionLink({
   className?: string;
   strength?: number;
   onClick?: () => void;
+  title?: string;
 }) {
   const reduce = useStillness();
   const ref = useRef<HTMLAnchorElement>(null);
@@ -65,6 +67,7 @@ export default function ActionLink({
     <MotionLink
       ref={ref}
       href={href}
+      title={title}
       onClick={onClick}
       onMouseMove={handleMove}
       onMouseLeave={reset}

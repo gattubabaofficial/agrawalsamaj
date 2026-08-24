@@ -68,6 +68,7 @@ export default function Gallery() {
             key={plate.src}
             type="button"
             onClick={() => setOpen(i)}
+            title={`View: ${plate.caption}`}
             initial={reduce ? undefined : { opacity: 0, clipPath: "inset(0 0 100% 0)" }}
             whileInView={reduce ? undefined : { opacity: 1, clipPath: "inset(0 0 0% 0)" }}
             viewport={{ once: true, margin: "-10% 0px" }}
@@ -108,6 +109,7 @@ export default function Gallery() {
               type="button"
               onClick={() => setOpen(null)}
               aria-label="Close"
+              title="Close"
               className="absolute right-5 top-5 p-2 text-paper/70 transition-colors hover:text-paper"
             >
               <X className="h-6 w-6" />
@@ -117,6 +119,7 @@ export default function Gallery() {
               type="button"
               onClick={(e) => { e.stopPropagation(); step(-1); }}
               aria-label="Previous photograph"
+              title="Previous photograph"
               className="absolute left-3 p-2 text-paper/70 transition-colors hover:text-paper sm:left-8"
             >
               <ChevronLeft className="h-7 w-7" />
@@ -126,6 +129,7 @@ export default function Gallery() {
               type="button"
               onClick={(e) => { e.stopPropagation(); step(1); }}
               aria-label="Next photograph"
+              title="Next photograph"
               className="absolute right-3 p-2 text-paper/70 transition-colors hover:text-paper sm:right-8"
             >
               <ChevronRight className="h-7 w-7" />

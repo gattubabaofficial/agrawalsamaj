@@ -6,29 +6,29 @@ const COLUMNS = [
   {
     heading: "The samaj",
     links: [
-      { label: "About us", href: "/about" },
-      { label: "Managing committee", href: "/about" },
-      { label: "Blog", href: "/blog" },
-      { label: "Member directory", href: "/members" },
+      { label: "About us", href: "/about", description: "Who the Samaj is and what it does" },
+      { label: "Managing committee", href: "/about", description: "Meet the office-bearers of the Samaj" },
+      { label: "Blog", href: "/blog", description: "Read or write a community post" },
+      { label: "Member directory", href: "/members", description: "Search the member directory" },
     ],
   },
   {
     heading: "Take part",
     links: [
-      { label: "Upcoming events", href: "/events" },
-      { label: "Donation schemes", href: "/donate" },
+      { label: "Upcoming events", href: "/events", description: "See upcoming events and passes" },
+      { label: "Donation schemes", href: "/donate", description: "Support the Samaj's work" },
     ],
   },
 
   {
     heading: "Samaj Network",
     links: [
-      { label: "Agrawal Matrimony (वैवाहिक)", href: "https://www.agrawalmatrimony.org" },
-      { label: "Agarwal 2 Agarwal Matrimony", href: "https://www.agarwal2agarwal.org" },
-      { label: "Akhil Bhartiya Agrawal Sammelan", href: "https://abasofficial.com" },
-      { label: "Agroha Dham (अग्रोहा धाम)", href: "https://www.agrohadham.org" },
-      { label: "Agrasen Foundation", href: "https://www.agrasenfoundation.org" },
-      { label: "Agrawal Business Guild", href: "https://www.agrawalbusiness.org" },
+      { label: "Agrawal Matrimony (वैवाहिक)", href: "https://www.agrawalmatrimony.org", description: "Visit the Agrawal Matrimony website" },
+      { label: "Agarwal 2 Agarwal Matrimony", href: "https://www.agarwal2agarwal.org", description: "Visit the Agarwal 2 Agarwal Matrimony website" },
+      { label: "Akhil Bhartiya Agrawal Sammelan", href: "https://abasofficial.com", description: "Visit the Akhil Bhartiya Agrawal Sammelan website" },
+      { label: "Agroha Dham (अग्रोहा धाम)", href: "https://www.agrohadham.org", description: "Visit the Agroha Dham website" },
+      { label: "Agrasen Foundation", href: "https://www.agrasenfoundation.org", description: "Visit the Agrasen Foundation website" },
+      { label: "Agrawal Business Guild", href: "https://www.agrawalbusiness.org", description: "Visit the Agrawal Business Guild website" },
     ],
   },
 ];
@@ -37,16 +37,19 @@ const SOCIALS = [
   {
     label: "Facebook",
     href: "#",
+    description: "Follow the Samaj on Facebook",
     path: "M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z",
   },
   {
     label: "Instagram",
     href: "#",
+    description: "Follow the Samaj on Instagram",
     path: "M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37zM17.5 6.5h.01M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5z",
   },
   {
     label: "YouTube",
     href: "#",
+    description: "Watch the Samaj's channel on YouTube",
     path: "M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17zM9.7 15l4.8-3-4.8-3v6z",
   },
 ];
@@ -71,6 +74,7 @@ export default function Footer() {
                   key={social.label}
                   href={social.href}
                   aria-label={social.label}
+                  title={social.description}
                   className="flex h-9 w-9 items-center justify-center border border-rule text-ink-3 transition-colors duration-300 hover:border-vermilion hover:text-vermilion"
                 >
                   <svg
@@ -98,6 +102,7 @@ export default function Footer() {
                   <li key={link.label}>
                     <Link
                       href={link.href}
+                      title={link.description}
                       className="text-sm text-ink-2 transition-colors duration-300 hover:text-vermilion"
                     >
                       {link.label}
@@ -120,7 +125,7 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-2.5">
                 <Phone className="h-4 w-4 shrink-0 text-vermilion" />
-                <a href="tel:+911412345678" className="transition-colors hover:text-vermilion">
+                <a href="tel:+911412345678" title="Call the Samaj office" className="transition-colors hover:text-vermilion">
                   +91 141 234 5678
                 </a>
               </li>
@@ -128,6 +133,7 @@ export default function Footer() {
                 <Mail className="h-4 w-4 shrink-0 text-vermilion" />
                 <a
                   href="mailto:contact@agrawalsamajjaipur.org"
+                  title="Email the Samaj office"
                   className="break-words transition-colors hover:text-vermilion"
                 >
                   contact@agrawalsamajjaipur.org
@@ -144,10 +150,10 @@ export default function Footer() {
             © {new Date().getFullYear()} Agrawal Samaj Mansrovar Jaipur
           </p>
           <div className="flex gap-6">
-            <Link href="#" className="eyebrow !tracking-[0.18em] transition-colors hover:text-vermilion">
+            <Link href="#" title="Read our privacy policy" className="eyebrow !tracking-[0.18em] transition-colors hover:text-vermilion">
               Privacy
             </Link>
-            <Link href="#" className="eyebrow !tracking-[0.18em] transition-colors hover:text-vermilion">
+            <Link href="#" title="Read our terms of use" className="eyebrow !tracking-[0.18em] transition-colors hover:text-vermilion">
               Terms
             </Link>
           </div>

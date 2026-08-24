@@ -41,6 +41,7 @@ export default function Join() {
               href={directionsUrl}
               target="_blank"
               rel="noopener noreferrer"
+              title="Open directions to Agrasen Bhawan in Google Maps"
               className="eyebrow !tracking-[0.18em] mt-8 inline-block border-b border-ink pb-1 text-ink transition-colors hover:border-vermilion hover:text-vermilion"
             >
               Get directions on Google Maps

@@ -62,26 +62,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isManagementOpen, setIsManagementOpen] = useState(pathname.startsWith("/admin") || pathname.startsWith("/dashboard"));
 
   const generalItems = [
-    { name: "My Profile", href: "/dashboard/profile", icon: User },
-    { name: "My Family", href: "/dashboard/family", icon: Users },
-    { name: "Samaj Directory", href: "/dashboard/members", icon: Contact },
-    { name: "My Events", href: "/dashboard/events", icon: Calendar },
-    { name: "My Receipts", href: "/dashboard/receipts", icon: BookOpen },
-    { name: "Donations", href: "/dashboard/donations", icon: Heart },
-    { name: "Chat", href: "/dashboard/chat", icon: MessageCircle },
-    { name: "My Blogs", href: "/dashboard/blog", icon: BookOpen },
+    { name: "My Profile", href: "/dashboard/profile", icon: User, description: "View and edit your profile" },
+    { name: "My Family", href: "/dashboard/family", icon: Users, description: "Manage your family members" },
+    { name: "Samaj Directory", href: "/dashboard/members", icon: Contact, description: "Search the member directory" },
+    { name: "My Events", href: "/dashboard/events", icon: Calendar, description: "View events and your passes" },
+    { name: "My Receipts", href: "/dashboard/receipts", icon: BookOpen, description: "View your payment receipts" },
+    { name: "Donations", href: "/dashboard/donations", icon: Heart, description: "View your donation history" },
+    { name: "Chat", href: "/dashboard/chat", icon: MessageCircle, description: "Message other members" },
+    { name: "My Blogs", href: "/dashboard/blog", icon: BookOpen, description: "Write and manage your blog posts" },
   ];
 
   const managementItems = [
-    { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard, perm: "any" },
-    { name: "Directory Requests", href: "/admin/requests", icon: UserPlus, perm: "manage_members" },
-    { name: "Manage Directory", href: "/admin/members", icon: Contact, perm: "manage_members" },
-    { name: "Events Management", href: "/admin/events", icon: Calendar, perm: "manage_events" },
-    { name: "Pass Verification", href: "/admin/scan", icon: QrCode, perm: "scan_passes" },
-    { name: "Donations Management", href: "/admin/donations", icon: Heart, perm: "manage_donations" },
-    { name: "Receipts", href: "/admin/receipts", icon: BookOpen, perm: "manage_bhavan" },
-    { name: "Blog Management", href: "/admin/blog", icon: BookOpen, perm: "manage_blogs" },
-    { name: "Settings", href: "/admin/settings", icon: Settings, perm: "manage_settings" },
+    { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard, perm: "any", description: "Overview of the Samaj's activity" },
+    { name: "Directory Requests", href: "/admin/requests", icon: UserPlus, perm: "manage_members", description: "Review pending member directory requests" },
+    { name: "Manage Directory", href: "/admin/members", icon: Contact, perm: "manage_members", description: "Edit and manage the member directory" },
+    { name: "Events Management", href: "/admin/events", icon: Calendar, perm: "manage_events", description: "Create and manage Samaj events" },
+    { name: "Pass Verification", href: "/admin/scan", icon: QrCode, perm: "scan_passes", description: "Scan attendee QR passes at the door" },
+    { name: "Donations Management", href: "/admin/donations", icon: Heart, perm: "manage_donations", description: "Track and manage donations" },
+    { name: "Receipts", href: "/admin/receipts", icon: BookOpen, perm: "manage_bhavan", description: "View and issue payment receipts" },
+    { name: "Blog Management", href: "/admin/blog", icon: BookOpen, perm: "manage_blogs", description: "Write and manage blog posts" },
+    { name: "Settings", href: "/admin/settings", icon: Settings, perm: "manage_settings", description: "Configure admin portal settings" },
   ];
 
   const allowedManagementItems = managementItems.filter(item => {
@@ -117,13 +117,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className={`h-16 flex items-center justify-between px-6 border-b ${
             role === "ADMIN" ? "border-zinc-800" : "border-zinc-200"
           }`}>
-            <Link href="/" className="text-xl font-bold text-gradient-vivid">
+            <Link href="/" title="Return to the home page" className="text-xl font-bold text-gradient-vivid">
               Agrawal Samaj Mansrovar Jaipur
             </Link>
             <button
               onClick={() => setIsMobileNavOpen(false)}
               className={`p-1.5 rounded-lg md:hidden ${role === "ADMIN" ? "text-zinc-400 hover:bg-zinc-800 hover:text-white" : "text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800"}`}
               aria-label="Close menu"
+              title="Close menu"
             >
               <X className="w-5 h-5" />
             </button>
@@ -135,6 +136,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div>
                 <button
                   onClick={() => setIsManagementOpen(!isManagementOpen)}
+                  title="Show management tools"
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${
                     role === "ADMIN" ? "text-zinc-300 hover:bg-zinc-800 hover:text-white" : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900"
                   }`}
@@ -159,6 +161,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <Link
                           key={item.name}
                           href={item.href}
+                          title={item.description}
                           className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
                             isActive
                               ? "bg-amber-500/10 text-amber-500 font-semibold"
@@ -185,6 +188,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Link
                   key={item.name}
                   href={item.href}
+                  title={item.description}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:translate-x-0.5 ${
                     isActive
                       ? role === "ADMIN"
@@ -212,6 +216,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             onClick={() => setIsMobileNavOpen(true)}
             className="p-2.5 text-zinc-500 hover:text-zinc-800 rounded-lg hover:bg-zinc-100 transition-colors md:hidden"
             aria-label="Open menu"
+            title="Open navigation menu"
           >
             <Menu className="w-5 h-5" />
           </button>
