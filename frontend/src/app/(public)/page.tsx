@@ -4,6 +4,7 @@ import Ledger from "@/components/home/Ledger";
 import Gallery from "@/components/home/Gallery";
 import Testament from "@/components/home/Testament";
 import Join from "@/components/home/Join";
+import Waymarks from "@/components/home/Waymarks";
 
 export default function HomePage() {
   return (
@@ -17,6 +18,7 @@ export default function HomePage() {
       <Gallery />
       <Testament />
       <Join />
+      <Waymarks />
     </div>
   );
 }
