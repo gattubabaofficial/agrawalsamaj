@@ -69,6 +69,9 @@ export default function Waymarks() {
                   <p className="mt-2 text-[0.8125rem] leading-relaxed text-ink-2">
                     {item.description}
                   </p>
+                  <p className="deva mt-2 text-[0.8125rem] font-medium text-vermilion">
+                    इसके लिए यहाँ दबाओ
+                  </p>
                 </div>
 
                 <span className="relative mt-auto inline-block w-fit bg-[linear-gradient(var(--color-vermilion),var(--color-vermilion))] bg-[length:0%_1px] bg-[position:0_100%] bg-no-repeat pb-0.5 text-[0.6875rem] font-medium uppercase tracking-[0.2em] text-ink-3 transition-[background-size,color] duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:bg-[length:100%_1px] group-hover:text-vermilion">
