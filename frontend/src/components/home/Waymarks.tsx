@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Eyebrow, Rule, Section } from "@/components/ui/primitives";
 import { Reveal } from "@/components/ui/motion";
 
@@ -48,8 +49,14 @@ export default function Waymarks() {
               <tbody>
                 {NAV_GUIDE.map((item) => (
                   <tr key={item.href} className="border-b border-rule">
-                    <th scope="row" className="deva w-40 py-4 pr-4 align-top text-base font-normal text-ink">
-                      {item.name}
+                    <th scope="row" className="w-40 py-4 pr-4 align-top font-normal">
+                      <Link
+                        href={item.href}
+                        title={item.description}
+                        className="rule-grow deva inline-block pb-0.5 text-base text-ink transition-colors hover:text-vermilion"
+                      >
+                        {item.name}
+                      </Link>
                     </th>
                     <td className="py-4 align-top text-[0.9375rem] leading-relaxed text-ink-2">
                       {item.description}
