@@ -245,8 +245,23 @@ async def get_membership_requests(
             "user": {
                 "id": str(user.user_id),
                 "name": f"{user.first_name} {user.surname}",
+                "first_name": user.first_name,
+                "surname": user.surname,
+                "father_name": user.father_name,
+                "parent_relation": user.parent_relation,
                 "email": user.email,
-                "mobile": user.mobile
+                "mobile": user.mobile,
+                "profession": user.profession,
+                "native_place": user.native_place,
+                "bio": user.bio,
+                "address": user.address,
+                "profile_photo": user.profile_photo,
+                "mobile_private": user.mobile_private,
+                "email_private": user.email_private,
+                "address_private": user.address_private,
+                "profession_private": user.profession_private,
+                "native_place_private": user.native_place_private,
+                "bio_private": user.bio_private,
             }
         })
 
