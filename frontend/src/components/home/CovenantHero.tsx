@@ -161,9 +161,9 @@ export default function CovenantHero() {
 
             <Reveal delay={0.46}>
               <div className="mt-7 flex flex-wrap items-center justify-center gap-3 sm:mt-9 sm:gap-4 max-w-2xl mx-auto">
-                <ActionLink href="/bhavan">Bhavan Booking</ActionLink>
-                <ActionLink href="/members" variant="outline">Directory</ActionLink>
-                <ActionLink href="/events" variant="outline">Events</ActionLink>
+                <ActionLink href="/bhavan" title="Book a stay at Agrasen Bhawan">Bhavan Booking</ActionLink>
+                <ActionLink href="/members" variant="outline" title="Search the member directory">Directory</ActionLink>
+                <ActionLink href="/events" variant="outline" title="See upcoming events and passes">Events</ActionLink>
               </div>
             </Reveal>
           </div>

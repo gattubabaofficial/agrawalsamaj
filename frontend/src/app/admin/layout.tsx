@@ -103,30 +103,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   const managementItems = [
-    ...((isSuperAdmin || isAdmin || permissions.length > 0) ? [{ name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard }] : []),
-    ...(isSuperAdmin ? [{ name: "Admin Management", href: "/admin/admins", icon: Shield }] : []),
+    ...((isSuperAdmin || isAdmin || permissions.length > 0) ? [{ name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard, description: "Overview of the Samaj's activity" }] : []),
+    ...(isSuperAdmin ? [{ name: "Admin Management", href: "/admin/admins", icon: Shield, description: "Add, edit, or remove admin accounts" }] : []),
     ...((isSuperAdmin || isAdmin || hasPermission("manage_members")) ? [
-      { name: "Directory Requests", href: "/admin/requests", icon: UserPlus },
-      { name: "Manage Directory", href: "/admin/members", icon: Contact },
+      { name: "Directory Requests", href: "/admin/requests", icon: UserPlus, description: "Review pending member directory requests" },
+      { name: "Manage Directory", href: "/admin/members", icon: Contact, description: "Edit and manage the member directory" },
     ] : []),
     ...((isSuperAdmin || isAdmin || hasPermission("manage_events")) ? [
-      { name: "Events Management", href: "/admin/events", icon: Calendar },
+      { name: "Events Management", href: "/admin/events", icon: Calendar, description: "Create and manage Samaj events" },
     ] : []),
     ...((isSuperAdmin || isAdmin || isVolunteer || hasPermission("scan_passes")) ? [
-      { name: "Pass Verification", href: "/admin/scan", icon: QrCode },
+      { name: "Pass Verification", href: "/admin/scan", icon: QrCode, description: "Scan attendee QR passes at the door" },
     ] : []),
     ...((isSuperAdmin || isAdmin || hasPermission("manage_donations")) ? [
-      { name: "Donations Management", href: "/admin/donations", icon: Heart },
+      { name: "Donations Management", href: "/admin/donations", icon: Heart, description: "Track and manage donations" },
     ] : []),
     ...((isSuperAdmin || isAdmin || hasPermission("manage_bhavan")) ? [
-      { name: "Bhavan Booking", href: "/admin/bhavan", icon: Home },
-      { name: "Receipts", href: "/admin/receipts", icon: BookOpen },
+      { name: "Bhavan Booking", href: "/admin/bhavan", icon: Home, description: "Manage Agrasen Bhawan bookings" },
+      { name: "Receipts", href: "/admin/receipts", icon: BookOpen, description: "View and issue payment receipts" },
     ] : []),
     ...((isSuperAdmin || isAdmin || hasPermission("manage_blogs")) ? [
-      { name: "Blog Management", href: "/admin/blog", icon: BookOpen },
+      { name: "Blog Management", href: "/admin/blog", icon: BookOpen, description: "Write and manage blog posts" },
     ] : []),
     ...((isSuperAdmin || isAdmin || hasPermission("manage_settings")) ? [
-      { name: "Settings", href: "/admin/settings", icon: Settings },
+      { name: "Settings", href: "/admin/settings", icon: Settings, description: "Configure admin portal settings" },
     ] : [])
   ];
 
@@ -153,13 +153,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className={`fixed inset-y-0 left-0 z-40 w-72 -translate-x-full transition-transform duration-200 ${isMobileNavOpen ? "translate-x-0" : ""} md:translate-x-0 md:static md:w-64 flex-shrink-0 flex flex-col justify-between overflow-y-auto md:sticky md:top-0 md:h-screen border-r border-zinc-800 bg-zinc-900 text-white scrollbar-hide`}>
         <div>
           <div className="h-16 flex items-center justify-between px-6 border-b border-zinc-800">
-            <Link href="/" className="text-xl font-bold text-gradient-vivid">
+            <Link href="/" title="Return to the home page" className="text-xl font-bold text-gradient-vivid">
               Agrawal Samaj Jaipur
             </Link>
             <button
               onClick={() => setIsMobileNavOpen(false)}
               className="p-1.5 rounded-lg md:hidden text-zinc-400 hover:bg-zinc-800 hover:text-white"
               aria-label="Close menu"
+              title="Close menu"
             >
               <X className="w-5 h-5" />
             </button>
@@ -172,6 +173,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <Link
                   key={item.name}
                   href={item.href}
+                  title={item.description}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:translate-x-0.5 ${
                     isActive
                       ? "bg-gradient-to-r from-amber-500/20 to-rose-500/20 text-amber-400 font-semibold shadow-[0_0_12px_rgba(245,158,11,0.25)]"
@@ -195,6 +197,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             onClick={() => setIsMobileNavOpen(true)}
             className="p-2.5 text-zinc-500 hover:text-zinc-800 rounded-lg hover:bg-zinc-100 transition-colors md:hidden"
             aria-label="Open menu"
+            title="Open navigation menu"
           >
             <Menu className="w-5 h-5" />
           </button>

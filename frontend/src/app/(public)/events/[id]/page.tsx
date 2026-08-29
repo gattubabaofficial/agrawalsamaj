@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { Calendar, MapPin, Clock, ArrowLeft, Ticket, CheckCircle, ShieldAlert, X } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
-import { mediaUrl } from "@/utils/media";
 import { formatDateDDMonthYYYY } from "@/utils/date";
 import Link from "next/link";
 import PaymentGateway from "@/components/PaymentGateway";
@@ -345,7 +344,7 @@ export default function EventDetailsPage() {
               {event.banner_url && (
                 <div className="w-full h-40 bg-zinc-100 relative">
                   <img
-                    src={mediaUrl(event.banner_url) || event.banner_url}
+                    src={event.banner_url.startsWith('http') || event.banner_url.startsWith('https') ? event.banner_url : `${getApiBaseUrl().replace('/api/v1', '')}${event.banner_url}`}
                     alt={event.title}
                     className="w-full h-full object-cover"
                   />
@@ -666,7 +665,7 @@ export default function EventDetailsPage() {
               {event.banner_url && (
                 <div className="w-full h-64 md:h-80 bg-zinc-100 relative">
                   <img
-                    src={mediaUrl(event.banner_url) || event.banner_url}
+                    src={event.banner_url.startsWith('http') || event.banner_url.startsWith('https') ? event.banner_url : `${getApiBaseUrl().replace('/api/v1', '')}${event.banner_url}`}
                     alt={event.title}
                     className="w-full h-full object-cover"
                   />

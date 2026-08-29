@@ -360,11 +360,11 @@ export default function AdminEventsPage() {
               </div>
               
               <div className="p-5 pt-0 border-t border-zinc-100 mt-4 flex items-center justify-between gap-2 bg-zinc-50/50">
-                <button onClick={() => handleOpenEventBookings(evt.event_id)} className="px-3 py-2 border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-xs font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer">
+                <button onClick={() => handleOpenEventBookings(evt.event_id)} title="View bookings for this event" className="px-3 py-2 border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-xs font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer">
                   <Users className="w-3.5 h-3.5 text-amber-600" /> View Bookings
                 </button>
                 <div className="flex items-center gap-1.5">
-                  <EditButton onClick={() => handleOpenEdit(evt)} size="sm" />
+                  <EditButton onClick={() => handleOpenEdit(evt)} size="sm" title="Edit this event" />
                   <button onClick={() => handleDelete(evt.event_id)} className="p-2 text-zinc-500 hover:text-red-600 rounded-lg hover:bg-zinc-100 cursor-pointer" title="Delete event">
                     <Trash2 className="w-4 h-4" />
                   </button>

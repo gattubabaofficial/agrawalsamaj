@@ -1,9 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import List, Optional
 from datetime import datetime
-from pathlib import Path
 import uuid
 from pydantic import BaseModel, Field
 
@@ -127,48 +126,6 @@ class PaymentVerifyRequest(BaseModel):
     razorpay_signature: Optional[str] = None
 
 # Routes
-@router.post("/upload")
-async def upload_event_image(
-    file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    if not is_admin_level(current_user):
-        raise HTTPException(status_code=403, detail="Only admins can upload event images")
-    
-    ALLOWED_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg"}
-    ext = Path(file.filename or "").suffix.lower()
-    if ext not in ALLOWED_EXT:
-        raise HTTPException(status_code=400, detail="Invalid file format. Allowed: JPG, PNG, WEBP, GIF, SVG.")
-    
-    events_dir = Path("uploads/events")
-    events_dir.mkdir(parents=True, exist_ok=True)
-    
-    unique_name = f"{uuid.uuid4().hex}{ext}"
-    file_path = events_dir / unique_name
-    
-    contents = await file.read()
-    if len(contents) > 20 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="File too large. Max 20 MB.")
-        
-    with open(file_path, "wb") as f:
-        f.write(contents)
-        
-    try:
-        from app.models.blog import UploadedFile
-        db_file = UploadedFile(
-            filename=unique_name,
-            mimetype=file.content_type or "application/octet-stream",
-            data=contents
-        )
-        db.add(db_file)
-        await db.commit()
-    except Exception as e:
-        print(f"Warning saving uploaded event image to DB: {e}")
-        
-    return {"url": f"/uploads/events/{unique_name}", "filename": unique_name}
-
-
 @router.post("", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
 async def create_event(
     event_data: EventCreate,
