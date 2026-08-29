@@ -21,7 +21,7 @@ from app.dependencies import get_db
 from app.models.bhavan import (
     BhavanAccommodationType, BhavanAmenity, BhavanEnquiry,
     BhavanEnquiryAccommodation, BhavanEnquiryAmenity, BhavanPurpose,
-    BhavanSettings, BhavanTermsVersion, EnquirySource, EnquiryStatus,
+    BhavanSettings, BhavanTermsVersion, BhavanVoucher, EnquirySource, EnquiryStatus,
 )
 from app.services.bhavan_otp import (
     request_bhavan_otp, validate_enquiry_token, verify_bhavan_otp,
@@ -60,6 +60,7 @@ class PublicAmenityResponse(BaseModel):
     image_path: Optional[str] = None
     price: Decimal
     pricing_type: str
+    is_compulsory: bool = False
     sort_order: int
     model_config = ConfigDict(from_attributes=True)
 
@@ -71,10 +72,23 @@ class PublicPurposeResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PublicVoucherResponse(BaseModel):
+    id: uuid.UUID
+    code: str
+    title: str
+    description: Optional[str] = None
+    discount_type: str
+    discount_value: Decimal
+    min_booking_amount: Optional[Decimal] = None
+    max_discount_amount: Optional[Decimal] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
 class PublicConfigResponse(BaseModel):
     accommodation_types: List[PublicAccommodationTypeResponse]
     amenities: List[PublicAmenityResponse]
     purposes: List[PublicPurposeResponse]
+    vouchers: List[PublicVoucherResponse] = []
     min_nights: int
     contact_phone: Optional[str] = None
     intro_text: Optional[str] = None
@@ -98,6 +112,8 @@ class QuoteRequest(BaseModel):
     amenities: List[QuoteAmenityRequestItem] = []
     purpose_id: Optional[uuid.UUID] = None
     guests_total: int = Field(default=1, ge=1)
+    voucher_code: Optional[str] = None
+    voucher_id: Optional[uuid.UUID] = None
 
 
 class PublicAccommodationLine(BaseModel):
@@ -126,12 +142,15 @@ class PublicQuoteResponse(BaseModel):
     days: int
     accommodations: List[PublicAccommodationLine]
     amenities: List[PublicAmenityLine]
+    subtotal: Optional[Decimal] = None
+    voucher_discount: Optional[Decimal] = None
+    applied_voucher: Optional[str] = None
     estimated_total: Decimal
     blockers: List[str]
     public_message: Optional[str] = None
     allowed_purpose_ids: Optional[List[str]] = None
     blocked_type_ids: Optional[List[str]] = None
-    effective_type_prices: Optional[dict] = None  # type_id -> effective per-night price
+    effective_type_prices: Optional[dict] = None
 
 
 class OTPRequestPayload(BaseModel):
@@ -161,6 +180,8 @@ class EnquirySubmitRequest(BaseModel):
     message: Optional[str] = None
     accommodations: List[QuoteRequestItem] = []
     amenities: List[QuoteAmenityRequestItem] = []
+    voucher_code: Optional[str] = None
+    voucher_id: Optional[uuid.UUID] = None
     terms_accepted: bool
 
 
@@ -179,7 +200,6 @@ async def get_public_config(db: AsyncSession = Depends(get_db)):
         .options(selectinload(BhavanAccommodationType.images))
         .where(
             BhavanAccommodationType.is_active == True,
-            BhavanAccommodationType.allow_standalone_booking == True,
         )
         .order_by(BhavanAccommodationType.sort_order)
     )
@@ -189,7 +209,6 @@ async def get_public_config(db: AsyncSession = Depends(get_db)):
         select(BhavanAmenity)
         .where(
             BhavanAmenity.is_active == True,
-            BhavanAmenity.allow_standalone_booking == True,
         )
         .order_by(BhavanAmenity.sort_order)
     )
@@ -202,12 +221,20 @@ async def get_public_config(db: AsyncSession = Depends(get_db)):
     )
     purposes = res_purposes.scalars().all()
 
+    res_vouchers = await db.execute(
+        select(BhavanVoucher)
+        .where(BhavanVoucher.is_active == True)
+        .order_by(BhavanVoucher.sort_order.asc(), BhavanVoucher.title.asc())
+    )
+    vouchers = res_vouchers.scalars().all()
+
     settings = await get_or_create_settings(db)
 
     return PublicConfigResponse(
         accommodation_types=types,
         amenities=amenities,
         purposes=purposes,
+        vouchers=vouchers,
         min_nights=settings.default_min_nights,
         contact_phone=settings.contact_phone,
         intro_text=settings.intro_text,
@@ -225,6 +252,8 @@ async def get_public_quote(req: QuoteRequest, db: AsyncSession = Depends(get_db)
         requested_amenities=[{"amenity_id": str(item.amenity_id), "quantity": item.quantity} for item in req.amenities],
         purpose_id=req.purpose_id,
         guests_total=req.guests_total,
+        voucher_code=req.voucher_code,
+        voucher_id=req.voucher_id,
     )
 
     acc_lines = [
@@ -259,6 +288,9 @@ async def get_public_quote(req: QuoteRequest, db: AsyncSession = Depends(get_db)
         days=res.days,
         accommodations=acc_lines,
         amenities=amen_lines,
+        subtotal=res.subtotal,
+        voucher_discount=res.voucher_discount,
+        applied_voucher=res.applied_voucher,
         estimated_total=res.estimated_total,
         blockers=res.blockers,
         public_message=res.public_message,
@@ -328,6 +360,8 @@ async def submit_enquiry(
         requested_amenities=[{"amenity_id": str(item.amenity_id), "quantity": item.quantity} for item in req.amenities],
         purpose_id=req.purpose_id,
         guests_total=req.guests_total,
+        voucher_code=req.voucher_code,
+        voucher_id=req.voucher_id,
     )
 
     if quote_res.blockers:

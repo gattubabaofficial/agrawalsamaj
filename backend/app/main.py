@@ -78,6 +78,7 @@ async def on_startup():
         "ALTER TABLE event_passes ADD COLUMN cancelled_at TIMESTAMP",
         "ALTER TABLE event_passes ADD COLUMN cancel_reason VARCHAR(500)",
         "ALTER TABLE event_passes ADD COLUMN refund_amount NUMERIC(10, 2)",
+        "ALTER TABLE bhavan_amenities ADD COLUMN IF NOT EXISTS is_compulsory BOOLEAN DEFAULT FALSE",
         "ALTER TABLE event_passes ADD COLUMN refund_status VARCHAR(30) DEFAULT 'not_applicable'",
         "ALTER TABLE donations ADD COLUMN purpose_of_donation VARCHAR(500)",
         "ALTER TABLE phone_otp_requests ADD COLUMN purpose VARCHAR(40) DEFAULT 'generic'",
@@ -85,6 +86,7 @@ async def on_startup():
         "ALTER TABLE bhavan_accommodation_types ADD COLUMN allow_standalone_booking BOOLEAN DEFAULT TRUE",
         "ALTER TABLE bhavan_amenities ADD COLUMN allow_standalone_booking BOOLEAN DEFAULT TRUE",
         "ALTER TABLE bhavan_rule_profiles ADD COLUMN is_public_visible BOOLEAN DEFAULT TRUE",
+        "UPDATE bhavan_rule_assignments a SET config_snapshot = p.config FROM bhavan_rule_profiles p WHERE a.profile_id = p.id AND (a.config_snapshot IS NULL OR a.config_snapshot = '{}'::json)",
     ):
         try:
             async with engine.begin() as conn:

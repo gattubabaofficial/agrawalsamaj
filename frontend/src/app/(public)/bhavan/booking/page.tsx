@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Calendar, Check, ShieldCheck, AlertCircle, ArrowRight, ArrowLeft,
-  Users, Building, Sparkles, Send, CheckCircle2, RefreshCw
+  Users, Building, Sparkles, Send, CheckCircle2, RefreshCw,
+  Tag, Gift, Percent
 } from "lucide-react";
 import { getApiBaseUrl, safeFetch } from "@/utils/api";
 
@@ -30,6 +31,17 @@ interface Purpose {
   name: string;
 }
 
+interface Voucher {
+  id: string;
+  code: string;
+  title: string;
+  description?: string;
+  discount_type: string; // "percentage" | "flat"
+  discount_value: number;
+  min_booking_amount?: number | null;
+  max_discount_amount?: number | null;
+}
+
 interface QuoteResponse {
   check_in: string;
   check_out: string;
@@ -37,6 +49,9 @@ interface QuoteResponse {
   days: number;
   accommodations: { type_id: string; type_name: string; quantity: number; unit_price: number; line_total: number }[];
   amenities: { amenity_id: string; amenity_name: string; quantity: number; line_total: number; multiplier_description: string }[];
+  subtotal?: number;
+  voucher_discount?: number;
+  applied_voucher?: string;
   estimated_total: number;
   blockers: string[];
   public_message?: string;
@@ -56,7 +71,40 @@ export default function BhavanBookingPage() {
   const [types, setTypes] = useState<AccommodationType[]>([]);
   const [amenities, setAmenities] = useState<Amenity[]>([]);
   const [purposes, setPurposes] = useState<Purpose[]>([]);
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [selectedVoucherId, setSelectedVoucherId] = useState<string | null>(null);
+  const [selectedVoucherCode, setSelectedVoucherCode] = useState<string | null>(null);
+  const [customVoucherInput, setCustomVoucherInput] = useState<string>("");
   const [minNights, setMinNights] = useState<number>(1);
+
+  const handleApplyVoucher = (v: Voucher) => {
+    if (selectedVoucherId === v.id || selectedVoucherCode === v.code) {
+      setSelectedVoucherId(null);
+      setSelectedVoucherCode(null);
+    } else {
+      setSelectedVoucherId(v.id);
+      setSelectedVoucherCode(v.code);
+    }
+  };
+
+  const handleApplyCustomCode = () => {
+    if (!customVoucherInput.trim()) return;
+    const code = customVoucherInput.trim().toUpperCase();
+    const matched = vouchers.find((v) => v.code.toUpperCase() === code);
+    if (matched) {
+      setSelectedVoucherId(matched.id);
+      setSelectedVoucherCode(matched.code);
+    } else {
+      setSelectedVoucherId(null);
+      setSelectedVoucherCode(code);
+    }
+  };
+
+  const handleClearVoucher = () => {
+    setSelectedVoucherId(null);
+    setSelectedVoucherCode(null);
+    setCustomVoucherInput("");
+  };
 
   // Form selections
   const [checkIn, setCheckIn] = useState<string>("");
@@ -111,12 +159,12 @@ export default function BhavanBookingPage() {
     fetchConfig();
   }, []);
 
-  // Recalculate quote whenever dates, selections, or purpose change
+  // Recalculate quote whenever dates, selections, purpose, or voucher change
   useEffect(() => {
     if (checkIn && checkOut && checkOut > checkIn) {
       fetchQuote();
     }
-  }, [checkIn, checkOut, purposeId, selectedTypes, selectedAmenities, guestsTotal]);
+  }, [checkIn, checkOut, purposeId, selectedTypes, selectedAmenities, guestsTotal, selectedVoucherId, selectedVoucherCode]);
 
   // Cooldown timer effect
   useEffect(() => {
@@ -136,6 +184,7 @@ export default function BhavanBookingPage() {
         const data = await res.json();
         setTypes(data.accommodation_types || []);
         setAmenities(data.amenities || []);
+        setVouchers(data.vouchers || []);
         const loadedPurposes = data.purposes || [];
         setPurposes(loadedPurposes);
         setMinNights(data.min_nights || 1);
@@ -176,6 +225,8 @@ export default function BhavanBookingPage() {
           accommodations: accList,
           amenities: amenList,
           guests_total: guestsTotal,
+          voucher_code: selectedVoucherCode,
+          voucher_id: selectedVoucherId,
         }),
       });
 
@@ -294,6 +345,8 @@ export default function BhavanBookingPage() {
           special_requirements: specialReqs,
           accommodations: accList,
           amenities: amenList,
+          voucher_code: selectedVoucherCode,
+          voucher_id: selectedVoucherId,
           terms_accepted: true,
         }),
       });
@@ -401,118 +454,20 @@ export default function BhavanBookingPage() {
                   </div>
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider">
-                      Purpose of Booking *
-                    </label>
-                    {quote?.allowed_purpose_ids && quote.allowed_purpose_ids.length > 0 && (
-                      <span className="text-[10px] font-bold uppercase text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                        {quote.allowed_purpose_ids.length} Event Type(s) Allowed
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Purpose Pills Selector */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-                    {(purposes.length > 0 ? purposes : [
-                      { id: "7bca0502-c5dc-4f24-bea9-eb246adb5fd2", name: "Wedding" },
-                      { id: "48a13d41-67ff-4c9b-885b-522ff3c7187d", name: "Family Function" },
-                      { id: "f8cc1510-a4b4-4e97-9bca-222af51a5179", name: "Religious Event" },
-                      { id: "5801328d-2081-4c57-b08d-23e242938225", name: "Community Event" },
-                      { id: "8872aab4-c8cc-424f-ad22-08466c227fc7", name: "Social Event" },
-                      { id: "ddaca602-a3c3-4ebf-bb09-04ee02607dec", name: "Anniversary" },
-                      { id: "52191e7d-e3e5-4e36-93a7-41dfe25433b4", name: "Camp" },
-                      { id: "d3191a4d-fd91-479f-bd82-3176b41ad936", name: "Other" }
-                    ]).map((p) => {
-                      const isSelected = purposeId === p.id;
-                      const isAllowed = !quote?.allowed_purpose_ids || quote.allowed_purpose_ids.length === 0 || quote.allowed_purpose_ids.includes(p.id);
-
-                      return (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => {
-                            if (isAllowed) setPurposeId(p.id);
-                          }}
-                          disabled={!isAllowed}
-                          className={`p-3 rounded-xl border text-xs font-bold transition-all text-left flex items-center justify-between ${
-                            !isAllowed
-                              ? "border-rose-900/40 bg-rose-950/20 text-rose-400/60 cursor-not-allowed opacity-50"
-                              : isSelected
-                              ? "border-amber-500 bg-amber-500/10 text-amber-400 shadow-sm"
-                              : "border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white"
-                          }`}
-                        >
-                          <span className="truncate">{p.name}</span>
-                          {isSelected && isAllowed && <Check className="w-3.5 h-3.5 shrink-0 text-amber-400" />}
-                          {!isAllowed && <span className="text-[9px] font-extrabold text-rose-500 uppercase">Blocked</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Purpose Dropdown */}
-                  <select
-                    value={purposeId}
-                    onChange={(e) => setPurposeId(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white focus:border-amber-500 focus:outline-none text-xs"
-                  >
-                    {(purposes.length > 0 ? purposes : [
-                      { id: "7bca0502-c5dc-4f24-bea9-eb246adb5fd2", name: "Wedding" },
-                      { id: "48a13d41-67ff-4c9b-885b-522ff3c7187d", name: "Family Function" },
-                      { id: "f8cc1510-a4b4-4e97-9bca-222af51a5179", name: "Religious Event" },
-                      { id: "5801328d-2081-4c57-b08d-23e242938225", name: "Community Event" },
-                      { id: "8872aab4-c8cc-424f-ad22-08466c227fc7", name: "Social Event" },
-                      { id: "ddaca602-a3c3-4ebf-bb09-04ee02607dec", name: "Anniversary" },
-                      { id: "52191e7d-e3e5-4e36-93a7-41dfe25433b4", name: "Camp" },
-                      { id: "d3191a4d-fd91-479f-bd82-3176b41ad936", name: "Other" }
-                    ]).map((p) => {
-                      const isAllowed = !quote?.allowed_purpose_ids || quote.allowed_purpose_ids.length === 0 || quote.allowed_purpose_ids.includes(p.id);
-                      return (
-                        <option key={p.id} value={p.id} disabled={!isAllowed}>
-                          {p.name} {!isAllowed ? "(Blocked on selected dates)" : ""}
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
-
-                {/* Warning Alert Banner — only shown for purpose restrictions at Step 1 */}
-                {(() => {
-                  const isCurrentPurposeBlocked = quote?.allowed_purpose_ids && purposeId && !quote.allowed_purpose_ids.includes(purposeId);
-                  // Only surface purpose-related blockers at Step 1 (units/guests/stock are Step 2 concerns)
-                  const purposeBlocker = quote?.blockers?.find(b => b.includes("type of event is not available"));
-                  const isBlocked = isCurrentPurposeBlocked || !!purposeBlocker;
-                  if (!isBlocked) return null;
-                  return (
-                    <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs space-y-1">
-                      <div className="flex items-center gap-2 font-bold text-rose-400">
-                        <AlertCircle className="w-4 h-4 shrink-0" />
-                        <span>Event Type Not Available on Selected Dates</span>
-                      </div>
-                      <p className="text-zinc-300 pl-6 leading-relaxed">
-                        {purposeBlocker ?? "The selected event type is not allowed on these dates. Please choose an available event type to proceed."}
-                      </p>
-                    </div>
-                  );
-                })()}
-
+                {/* Next Step Action */}
                 <div className="pt-4 flex justify-end">
                   {(() => {
-                    const isCurrentPurposeBlocked = quote?.allowed_purpose_ids && purposeId && !quote.allowed_purpose_ids.includes(purposeId);
-                    // Only purpose blockers prevent advancing from Step 1; room/unit issues are resolved in Step 2
-                    const hasPurposeBlocker = quote?.blockers?.some(b => b.includes("type of event is not available"));
-                    const canAdvance = checkIn && checkOut && checkOut > checkIn && !isCurrentPurposeBlocked && !hasPurposeBlocker && !quoteLoading;
+                    const isClosed = quote?.blockers?.some((b) => b.includes("closed") || b.includes("maintenance"));
+                    const canAdvance = checkIn && checkOut && checkOut > checkIn && !isClosed && !quoteLoading;
 
                     return (
                       <button
                         disabled={!canAdvance}
                         onClick={() => setStep(2)}
-                        className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-3 font-bold text-white hover:bg-amber-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-3 font-bold text-white hover:bg-amber-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                       >
                         {quoteLoading ? (
-                          <>Checking Rules...</>
+                          <>Checking Availability...</>
                         ) : (
                           <>Select Rooms <ArrowRight className="w-4 h-4" /></>
                         )}
@@ -532,6 +487,65 @@ export default function BhavanBookingPage() {
                   <h2 className="text-2xl font-bold text-white mb-1">Step 2: Choose Accommodation</h2>
                   <p className="text-sm text-zinc-400">Select the number of rooms or dormitories required</p>
                 </div>
+
+                {/* 1-Click Offers Banner in Step 2 */}
+                {vouchers && vouchers.length > 0 && (
+                  <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-4 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                        <Gift className="w-4 h-4 text-emerald-400" />
+                        <span>Special Offers & Vouchers Available (Click to Apply)</span>
+                      </div>
+                      {selectedVoucherCode && (
+                        <button
+                          type="button"
+                          onClick={handleClearVoucher}
+                          className="text-[11px] font-semibold text-rose-400 hover:underline cursor-pointer"
+                        >
+                          Remove Voucher ✕
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {vouchers.map((v) => {
+                        const isSelected = selectedVoucherId === v.id || selectedVoucherCode === v.code;
+                        return (
+                          <button
+                            key={v.id}
+                            type="button"
+                            onClick={() => handleApplyVoucher(v)}
+                            className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between text-xs ${
+                              isSelected
+                                ? "border-emerald-400 bg-emerald-900/50 text-white shadow-sm ring-1 ring-emerald-500"
+                                : "border-zinc-800 bg-zinc-900/80 hover:border-emerald-500/40 text-zinc-300"
+                            }`}
+                          >
+                            <div className="min-w-0 pr-2">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono font-extrabold text-[10px] bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-500/40 text-emerald-400">
+                                  {v.code}
+                                </span>
+                                <span className="font-bold text-xs truncate text-white">{v.title}</span>
+                              </div>
+                              <span className="text-[10px] text-emerald-400 font-semibold block mt-0.5">
+                                Special Discount on Rooms
+                              </span>
+                            </div>
+                            {isSelected ? (
+                              <span className="text-[9px] font-extrabold text-emerald-300 bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-400 shrink-0">
+                                APPLIED ✓
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-semibold text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-full shrink-0">
+                                Apply
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {(() => {
                   const blockedIds = new Set(quote?.blocked_type_ids || []);
@@ -898,8 +912,76 @@ export default function BhavanBookingPage() {
               <div className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-bold text-white mb-1">Step 6: Review & Terms Acceptance</h2>
-                  <p className="text-sm text-zinc-400">Read Terms & Conditions and submit your enquiry</p>
+                  <p className="text-sm text-zinc-400">Select any applicable vouchers, review summary and submit your enquiry</p>
                 </div>
+
+                {/* 1-Click Offers & Vouchers Selection */}
+                {vouchers && vouchers.length > 0 && (
+                  <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-5 space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-bold text-emerald-400">
+                      <Gift className="w-4 h-4 text-emerald-400" />
+                      <span>Available Vouchers & Special Offers (Click to Apply)</span>
+                    </div>
+                    <p className="text-xs text-zinc-400">
+                      Click any offer below to instantly apply discount to your booking bill. No code typing required!
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      {vouchers.map((v) => {
+                        const isSelected = selectedVoucherId === v.id;
+                        return (
+                          <button
+                            key={v.id}
+                            type="button"
+                            onClick={() => {
+                              if (isSelected) {
+                                setSelectedVoucherId(null);
+                                setSelectedVoucherCode(null);
+                              } else {
+                                setSelectedVoucherId(v.id);
+                                setSelectedVoucherCode(v.code);
+                              }
+                            }}
+                            className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer relative flex items-start gap-3 ${
+                              isSelected
+                                ? "border-emerald-400 bg-emerald-900/40 text-white shadow-lg ring-2 ring-emerald-500/50"
+                                : "border-zinc-800 bg-zinc-900/80 hover:border-emerald-500/40 hover:bg-zinc-900 text-zinc-300"
+                            }`}
+                          >
+                            <div className={`p-2 rounded-lg ${isSelected ? "bg-emerald-500 text-white" : "bg-zinc-800 text-emerald-400"}`}>
+                              <Percent className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1 min-w-0 pr-8">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-mono font-extrabold text-xs text-emerald-300 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-500/40">
+                                  {v.code}
+                                </span>
+                                <span className="font-extrabold text-xs text-emerald-400">
+                                  Special Offer
+                                </span>
+                              </div>
+                              <h4 className="text-xs font-bold text-white mt-1.5 truncate">{v.title}</h4>
+                              {v.description && (
+                                <p className="text-[11px] text-zinc-400 line-clamp-1 mt-0.5">{v.description}</p>
+                              )}
+                              {v.min_booking_amount && (
+                                <p className="text-[10px] text-zinc-500 mt-1">Min. Subtotal: ₹{v.min_booking_amount}</p>
+                              )}
+                            </div>
+                            {isSelected ? (
+                              <span className="absolute top-3 right-3 text-[10px] font-extrabold text-emerald-300 bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-400">
+                                APPLIED ✓
+                              </span>
+                            ) : (
+                              <span className="absolute top-3 right-3 text-[10px] font-semibold text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">
+                                Click to Apply
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 space-y-4 text-sm text-zinc-300">
                   <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
@@ -910,8 +992,24 @@ export default function BhavanBookingPage() {
                     <span className="text-zinc-500">Stay Period:</span>
                     <span className="font-semibold text-white">{checkIn} to {checkOut} ({quote?.nights || 0} nights)</span>
                   </div>
+
+                  {quote?.voucher_discount && quote.voucher_discount > 0 ? (
+                    <>
+                      <div className="flex items-center justify-between border-b border-zinc-900 pb-2 text-xs text-zinc-400">
+                        <span>Subtotal:</span>
+                        <span className="font-mono">₹{quote.subtotal || quote.estimated_total}</span>
+                      </div>
+                      <div className="flex items-center justify-between border-b border-zinc-900 pb-2 text-xs font-bold text-emerald-400">
+                        <span className="flex items-center gap-1">
+                          <Tag className="w-3.5 h-3.5" /> Voucher Discount ({quote.applied_voucher}):
+                        </span>
+                        <span className="font-mono text-emerald-400">-₹{quote.voucher_discount}</span>
+                      </div>
+                    </>
+                  ) : null}
+
                   <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
-                    <span className="text-zinc-500">Estimated Total:</span>
+                    <span className="text-zinc-500">Estimated Total Payable:</span>
                     <span className="font-bold text-amber-400 text-lg">₹{quote?.estimated_total || 0}</span>
                   </div>
 
@@ -1018,6 +1116,99 @@ export default function BhavanBookingPage() {
                       ))
                     )}
                   </div>
+
+                  {/* 1-Click Voucher / Special Offers Widget in Sidebar */}
+                  <div className="border-t border-zinc-900 pt-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-400 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                        <Gift className="w-3.5 h-3.5 text-emerald-400" /> Apply Voucher / Offer
+                      </span>
+                      {selectedVoucherCode && (
+                        <button
+                          type="button"
+                          onClick={handleClearVoucher}
+                          className="text-[10px] text-rose-400 hover:underline font-semibold cursor-pointer"
+                        >
+                          Remove ✕
+                        </button>
+                      )}
+                    </div>
+
+                    {/* 1-Click Available Voucher Chips */}
+                    {vouchers.length > 0 && (
+                      <div className="space-y-1.5 pt-0.5">
+                        {vouchers.map((v) => {
+                          const isSelected = selectedVoucherId === v.id || selectedVoucherCode === v.code;
+                          return (
+                            <button
+                              key={v.id}
+                              type="button"
+                              onClick={() => handleApplyVoucher(v)}
+                              className={`w-full p-2 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between text-xs ${
+                                isSelected
+                                  ? "border-emerald-500 bg-emerald-950/60 text-emerald-300 ring-1 ring-emerald-500"
+                                  : "border-zinc-800 bg-zinc-900/70 hover:border-emerald-500/50 hover:bg-zinc-900 text-zinc-300"
+                              }`}
+                            >
+                              <div className="min-w-0 pr-2">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="font-mono font-extrabold text-[10px] bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-500/40 text-emerald-400">
+                                    {v.code}
+                                  </span>
+                                  <span className="font-bold text-[11px] truncate text-white">{v.title}</span>
+                                </div>
+                                <span className="text-[10px] text-emerald-400 block mt-0.5">
+                                  Special Discount on Rooms
+                                </span>
+                              </div>
+                              {isSelected ? (
+                                <span className="text-[9px] font-extrabold text-emerald-300 bg-emerald-900/80 px-2 py-0.5 rounded-full border border-emerald-400 shrink-0">
+                                  APPLIED ✓
+                                </span>
+                              ) : (
+                                <span className="text-[9px] font-semibold text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-full shrink-0">
+                                  Apply
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Manual Promo Code Input */}
+                    <div className="flex items-center gap-1.5 pt-1">
+                      <input
+                        type="text"
+                        value={customVoucherInput}
+                        onChange={(e) => setCustomVoucherInput(e.target.value.toUpperCase())}
+                        placeholder="Enter Voucher Code..."
+                        className="flex-1 px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs font-mono text-white uppercase focus:border-emerald-500 focus:outline-none placeholder:text-zinc-600"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyCustomCode}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+
+                  {quote.voucher_discount && quote.voucher_discount > 0 ? (
+                    <div className="border-t border-zinc-900 pt-3 space-y-1.5">
+                      <div className="flex justify-between text-zinc-400">
+                        <span>Subtotal</span>
+                        <span className="font-mono">₹{quote.subtotal || quote.estimated_total}</span>
+                      </div>
+                      <div className="flex justify-between text-emerald-400 font-bold bg-emerald-950/40 p-2 rounded-lg border border-emerald-500/30">
+                        <span className="flex items-center gap-1">
+                          <Tag className="w-3 h-3" /> Offer ({quote.applied_voucher})
+                        </span>
+                        <span className="font-mono">-₹{quote.voucher_discount}</span>
+                      </div>
+                    </div>
+                  ) : null}
 
                   <div className="border-t border-zinc-800 pt-4 flex items-center justify-between">
                     <span className="text-sm font-bold text-white">Estimated Amount</span>

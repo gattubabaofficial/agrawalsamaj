@@ -127,9 +127,9 @@ export default function AdminBhavanDashboard() {
           <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
             <Settings className="w-6 h-6" />
           </div>
-          <h3 className="text-lg font-bold text-zinc-900 mb-1">Rule Engine & Profiles</h3>
-          <p className="text-xs text-zinc-500 mb-4">Define reusable rule profiles (Wedding, Maintenance, Social) and multi-date sets.</p>
-          <span className="text-xs font-bold text-rose-600 inline-flex items-center gap-1">Configure Rules <ArrowRight className="w-4 h-4" /></span>
+          <h3 className="text-lg font-bold text-zinc-900 mb-1">Rules & 1-Click Vouchers</h3>
+          <p className="text-xs text-zinc-500 mb-4">Define Wedding Peak and Maintenance rules with direct dates, plus 1-click checkout vouchers.</p>
+          <span className="text-xs font-bold text-rose-600 inline-flex items-center gap-1">Configure Rules & Vouchers <ArrowRight className="w-4 h-4" /></span>
         </Link>
 
         <Link href="/admin/bhavan/accommodation" className="group rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-purple-500 hover:shadow-md transition-all">

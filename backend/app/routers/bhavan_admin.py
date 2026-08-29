@@ -25,7 +25,7 @@ from app.models.bhavan import (
     BhavanEnquiryAccommodation, BhavanEnquiryAmenity, BhavanEnquiryNote,
     BhavanPurpose, BhavanRuleAssignment, BhavanRuleAssignmentDate,
     BhavanRuleProfile, BhavanSettings, BhavanTermsVersion, BhavanUnit,
-    EnquirySource, EnquiryStatus, RuleCategory, RuleStatus, UnitStatus,
+    BhavanVoucher, EnquirySource, EnquiryStatus, RuleCategory, RuleStatus, UnitStatus,
 )
 from app.models.user import User, UserRole
 from app.services.bhavan_rules import (
@@ -108,6 +108,7 @@ class AccommodationTypeCreate(BaseModel):
     is_active: bool = True
     allow_standalone_booking: bool = True
     composition_json: Optional[dict] = None
+    total_units: Optional[int] = None
 
 
 class UnitCreate(BaseModel):
@@ -142,6 +143,7 @@ class AmenityCreate(BaseModel):
     allow_over_request: bool = False
     is_active: bool = True
     allow_standalone_booking: bool = True
+    is_compulsory: bool = False
     sort_order: int = 0
 
 
@@ -163,26 +165,58 @@ class SettingsUpdate(BaseModel):
     required_fields: Optional[dict] = None
 
 
-class RuleProfileCreate(BaseModel):
-    name: str
-    category: RuleCategory = RuleCategory.CUSTOM
+class VoucherCreate(BaseModel):
+    code: str
+    title: str
     description: Optional[str] = None
-    config: dict = {}
-    is_template: bool = False
-    is_public_visible: bool = True
+    discount_type: str = "percentage"
+    discount_value: Decimal
+    min_booking_amount: Optional[Decimal] = None
+    max_discount_amount: Optional[Decimal] = None
+    valid_from: Optional[date] = None
+    valid_until: Optional[date] = None
+    is_active: bool = True
+    sort_order: int = 0
 
 
-class RuleProfileUpdate(BaseModel):
-    name: Optional[str] = None
-    category: Optional[RuleCategory] = None
+class VoucherUpdate(BaseModel):
+    code: Optional[str] = None
+    title: Optional[str] = None
     description: Optional[str] = None
-    config: Optional[dict] = None
-    is_public_visible: Optional[bool] = None
+    discount_type: Optional[str] = None
+    discount_value: Optional[Decimal] = None
+    min_booking_amount: Optional[Decimal] = None
+    max_discount_amount: Optional[Decimal] = None
+    valid_from: Optional[date] = None
+    valid_until: Optional[date] = None
+    is_active: Optional[bool] = None
+    sort_order: Optional[int] = None
 
 
 class DateRangeItem(BaseModel):
     start: date
     end: date
+
+
+class RuleProfileCreate(BaseModel):
+    name: str
+    category: str = "wedding"
+    description: Optional[str] = None
+    config: dict = {}
+    is_template: bool = False
+    is_public_visible: bool = True
+    dates: Optional[List[date]] = None
+    date_ranges: Optional[List[DateRangeItem]] = None
+
+
+class RuleProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    config: Optional[dict] = None
+    is_public_visible: Optional[bool] = None
+    dates: Optional[List[date]] = None
+    date_ranges: Optional[List[DateRangeItem]] = None
 
 
 class RuleAssignmentCreate(BaseModel):
@@ -302,10 +336,27 @@ async def create_accommodation_type(
     )
     db.add(acc)
     await db.flush()
+
+    num_units = payload.total_units if (payload.total_units is not None and payload.total_units > 0) else 1
+    for i in range(1, num_units + 1):
+        unit = BhavanUnit(
+            accommodation_type_id=acc.id,
+            label=f"Room {i:02d}" if num_units < 100 else f"Room {i}",
+            capacity=acc.capacity_per_unit,
+            status=UnitStatus.AVAILABLE,
+        )
+        db.add(unit)
+
     await record_audit(db, admin, "CREATE", "bhavan_accommodation_types", acc.id, new_value=payload.dict())
     await db.commit()
-    await db.refresh(acc)
-    return acc
+
+    # Re-fetch with units loaded
+    res_reload = await db.execute(
+        select(BhavanAccommodationType)
+        .options(selectinload(BhavanAccommodationType.units), selectinload(BhavanAccommodationType.images))
+        .where(BhavanAccommodationType.id == acc.id)
+    )
+    return res_reload.scalar_one()
 
 
 @router.put("/accommodation-types/{type_id}")
@@ -315,19 +366,56 @@ async def update_accommodation_type(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_bhavan_admin),
 ):
-    res = await db.execute(select(BhavanAccommodationType).where(BhavanAccommodationType.id == type_id))
+    res = await db.execute(
+        select(BhavanAccommodationType)
+        .options(selectinload(BhavanAccommodationType.units))
+        .where(BhavanAccommodationType.id == type_id)
+    )
     acc = res.scalar_one_or_none()
     if not acc:
         raise HTTPException(status_code=404, detail="Accommodation type not found")
 
     old_val = {"name": acc.name, "base_price": str(acc.base_price_per_night)}
-    for k, v in payload.dict().items():
+    for k, v in payload.dict(exclude={"total_units"}).items():
         setattr(acc, k, v)
+
+    if payload.total_units is not None and payload.total_units >= 0:
+        target_count = payload.total_units
+        existing_units = list(acc.units or [])
+        current_count = len(existing_units)
+
+        if target_count > current_count:
+            diff = target_count - current_count
+            existing_labels = {u.label for u in existing_units}
+            created_count = 0
+            idx = 1
+            while created_count < diff:
+                label = f"Room {idx:02d}" if target_count < 100 else f"Room {idx}"
+                if label not in existing_labels:
+                    unit = BhavanUnit(
+                        accommodation_type_id=acc.id,
+                        label=label,
+                        capacity=acc.capacity_per_unit,
+                        status=UnitStatus.AVAILABLE,
+                    )
+                    db.add(unit)
+                    existing_labels.add(label)
+                    created_count += 1
+                idx += 1
+        elif target_count < current_count:
+            units_to_remove = existing_units[target_count:]
+            for u in units_to_remove:
+                await db.delete(u)
 
     await record_audit(db, admin, "UPDATE", "bhavan_accommodation_types", acc.id, old_value=old_val, new_value=payload.dict())
     await db.commit()
-    await db.refresh(acc)
-    return acc
+
+    res_reload = await db.execute(
+        select(BhavanAccommodationType)
+        .options(selectinload(BhavanAccommodationType.units), selectinload(BhavanAccommodationType.images))
+        .where(BhavanAccommodationType.id == acc.id)
+    )
+    return res_reload.scalar_one()
 
 
 @router.post("/units")
@@ -472,6 +560,7 @@ async def create_amenity(
         allow_over_request=payload.allow_over_request,
         is_active=payload.is_active,
         allow_standalone_booking=payload.allow_standalone_booking,
+        is_compulsory=payload.is_compulsory,
         sort_order=payload.sort_order,
     )
     db.add(amenity)
@@ -480,6 +569,45 @@ async def create_amenity(
     await db.commit()
     await db.refresh(amenity)
     return amenity
+
+
+@router.put("/amenities/{amenity_id}")
+async def update_amenity(
+    amenity_id: uuid.UUID,
+    payload: AmenityCreate,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_bhavan_admin),
+):
+    res = await db.execute(select(BhavanAmenity).where(BhavanAmenity.id == amenity_id))
+    amenity = res.scalar_one_or_none()
+    if not amenity:
+        raise HTTPException(status_code=404, detail="Amenity not found")
+
+    old_val = {"name": amenity.name, "price": str(amenity.price)}
+    for k, v in payload.dict().items():
+        setattr(amenity, k, v)
+
+    await record_audit(db, admin, "UPDATE", "bhavan_amenities", amenity.id, old_value=old_val, new_value=payload.dict())
+    await db.commit()
+    await db.refresh(amenity)
+    return amenity
+
+
+@router.delete("/amenities/{amenity_id}")
+async def delete_amenity(
+    amenity_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_bhavan_admin),
+):
+    res = await db.execute(select(BhavanAmenity).where(BhavanAmenity.id == amenity_id))
+    amenity = res.scalar_one_or_none()
+    if not amenity:
+        raise HTTPException(status_code=404, detail="Amenity not found")
+
+    await record_audit(db, admin, "DELETE", "bhavan_amenities", amenity.id, old_value={"name": amenity.name})
+    await db.delete(amenity)
+    await db.commit()
+    return {"message": "Amenity deleted successfully"}
 
 
 @router.get("/purposes")
@@ -535,6 +663,96 @@ async def update_settings(
     return settings
 
 
+# ─── Vouchers & Promo Codes ───────────────────────────────────────────────────
+
+@router.get("/vouchers")
+async def list_admin_vouchers(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_bhavan_admin),
+):
+    res = await db.execute(select(BhavanVoucher).order_by(BhavanVoucher.title.asc()))
+    return res.scalars().all()
+
+
+@router.post("/vouchers")
+async def create_admin_voucher(
+    payload: VoucherCreate,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_bhavan_admin),
+):
+    code_clean = payload.code.strip().upper()
+    res = await db.execute(select(BhavanVoucher).where(BhavanVoucher.code == code_clean))
+    if res.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail=f"Voucher code '{code_clean}' already exists.")
+
+    voucher = BhavanVoucher(
+        code=code_clean,
+        title=payload.title.strip(),
+        description=payload.description.strip() if payload.description else None,
+        discount_type=payload.discount_type,
+        discount_value=payload.discount_value,
+        min_booking_amount=payload.min_booking_amount,
+        max_discount_amount=payload.max_discount_amount,
+        valid_from=payload.valid_from,
+        valid_until=payload.valid_until,
+        is_active=payload.is_active,
+        sort_order=payload.sort_order,
+    )
+    db.add(voucher)
+    await db.flush()
+    await record_audit(db, admin, "CREATE", "bhavan_vouchers", voucher.id, new_value=payload.dict())
+    await db.commit()
+    await db.refresh(voucher)
+    return voucher
+
+
+@router.put("/vouchers/{voucher_id}")
+async def update_admin_voucher(
+    voucher_id: uuid.UUID,
+    payload: VoucherCreate,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_bhavan_admin),
+):
+    res = await db.execute(select(BhavanVoucher).where(BhavanVoucher.id == voucher_id))
+    voucher = res.scalar_one_or_none()
+    if not voucher:
+        raise HTTPException(status_code=404, detail="Voucher not found")
+
+    code_clean = payload.code.strip().upper()
+    res_dup = await db.execute(select(BhavanVoucher).where(BhavanVoucher.code == code_clean, BhavanVoucher.id != voucher_id))
+    if res_dup.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail=f"Voucher code '{code_clean}' is already in use.")
+
+    old_val = {"code": voucher.code, "title": voucher.title}
+    for k, v in payload.dict().items():
+        if k == "code":
+            setattr(voucher, k, code_clean)
+        else:
+            setattr(voucher, k, v)
+
+    await record_audit(db, admin, "UPDATE", "bhavan_vouchers", voucher.id, old_value=old_val, new_value=payload.dict())
+    await db.commit()
+    await db.refresh(voucher)
+    return voucher
+
+
+@router.delete("/vouchers/{voucher_id}")
+async def delete_admin_voucher(
+    voucher_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_bhavan_admin),
+):
+    res = await db.execute(select(BhavanVoucher).where(BhavanVoucher.id == voucher_id))
+    voucher = res.scalar_one_or_none()
+    if not voucher:
+        raise HTTPException(status_code=404, detail="Voucher not found")
+
+    await record_audit(db, admin, "DELETE", "bhavan_vouchers", voucher.id, old_value={"code": voucher.code})
+    await db.delete(voucher)
+    await db.commit()
+    return {"message": "Voucher deleted successfully"}
+
+
 # ─── Rule Engine & Precedence ─────────────────────────────────────────────────
 
 @router.get("/rule-profiles")
@@ -543,7 +761,39 @@ async def list_rule_profiles(
     admin: User = Depends(get_bhavan_admin),
 ):
     res = await db.execute(select(BhavanRuleProfile).order_by(BhavanRuleProfile.created_at.desc()))
-    return res.scalars().all()
+    profiles = res.scalars().all()
+
+    res_assigns = await db.execute(
+        select(BhavanRuleAssignment)
+        .options(selectinload(BhavanRuleAssignment.dates))
+        .where(BhavanRuleAssignment.is_active == True)
+    )
+    assigns = res_assigns.scalars().all()
+    assign_map: dict = {}
+    for a in assigns:
+        assign_map.setdefault(a.profile_id, []).append(a)
+
+    result = []
+    for p in profiles:
+        p_dict = {
+            "id": p.id,
+            "name": p.name,
+            "category": p.category.value if hasattr(p.category, "value") else str(p.category),
+            "description": p.description,
+            "config": p.config,
+            "status": p.status.value if hasattr(p.status, "value") else str(p.status),
+            "is_template": p.is_template,
+            "is_public_visible": p.is_public_visible,
+            "created_at": p.created_at,
+            "updated_at": p.updated_at,
+            "assigned_dates": sorted(list({
+                d.date.isoformat()
+                for a in assign_map.get(p.id, [])
+                for d in a.dates
+            })) if p.id in assign_map else [],
+        }
+        result.append(p_dict)
+    return result
 
 
 @router.post("/rule-profiles")
@@ -564,6 +814,30 @@ async def create_rule_profile(
     )
     db.add(profile)
     await db.flush()
+
+    resolved_dates = set()
+    if payload.dates:
+        resolved_dates.update(payload.dates)
+    if payload.date_ranges:
+        for r in payload.date_ranges:
+            curr = r.start
+            while curr <= r.end:
+                resolved_dates.add(curr)
+                curr += timedelta(days=1)
+
+    if resolved_dates:
+        assignment = BhavanRuleAssignment(
+            profile_id=profile.id,
+            label=profile.name,
+            config_snapshot=profile.config or {},
+            is_active=True,
+            created_by=admin.user_id,
+        )
+        db.add(assignment)
+        await db.flush()
+        for d in sorted(resolved_dates):
+            db.add(BhavanRuleAssignmentDate(assignment_id=assignment.id, date=d))
+
     await record_audit(db, admin, "CREATE", "bhavan_rule_profiles", profile.id, new_value=payload.dict())
     await db.commit()
     await db.refresh(profile)
@@ -583,11 +857,46 @@ async def update_rule_profile(
         raise HTTPException(status_code=404, detail="Rule profile not found")
 
     old_val = {"name": profile.name, "category": str(profile.category)}
-    for k, v in payload.dict(exclude_unset=True).items():
+    for k, v in payload.dict(exclude_unset=True, exclude={"dates", "date_ranges"}).items():
         setattr(profile, k, v)
 
     profile.updated_by = getattr(admin, "user_id", None)
     profile.updated_at = datetime.utcnow()
+
+    # Always update existing assignments' config_snapshot and label to match updated profile
+    res_all_a = await db.execute(select(BhavanRuleAssignment).where(BhavanRuleAssignment.profile_id == profile.id))
+    for a in res_all_a.scalars().all():
+        a.label = profile.name
+        a.config_snapshot = profile.config or {}
+
+    # Update dates if explicitly supplied
+    if payload.dates is not None or payload.date_ranges is not None:
+        resolved_dates = set()
+        if payload.dates:
+            resolved_dates.update(payload.dates)
+        if payload.date_ranges:
+            for r in payload.date_ranges:
+                curr = r.start
+                while curr <= r.end:
+                    resolved_dates.add(curr)
+                    curr += timedelta(days=1)
+
+        res_a = await db.execute(select(BhavanRuleAssignment).where(BhavanRuleAssignment.profile_id == profile.id))
+        assignment = res_a.scalar_one_or_none()
+        if not assignment:
+            assignment = BhavanRuleAssignment(
+                profile_id=profile.id,
+                label=profile.name,
+                config_snapshot=profile.config or {},
+                is_active=True,
+                created_by=admin.user_id,
+            )
+            db.add(assignment)
+            await db.flush()
+
+        await db.execute(delete(BhavanRuleAssignmentDate).where(BhavanRuleAssignmentDate.assignment_id == assignment.id))
+        for d in sorted(resolved_dates):
+            db.add(BhavanRuleAssignmentDate(assignment_id=assignment.id, date=d))
 
     await record_audit(db, admin, "UPDATE", "bhavan_rule_profiles", profile.id, old_value=old_val, new_value=payload.dict(exclude_unset=True))
     await db.commit()
@@ -729,6 +1038,7 @@ async def get_effective_calendar(
     stmt_dates = (
         select(BhavanRuleAssignmentDate.date, BhavanRuleAssignment)
         .join(BhavanRuleAssignment, BhavanRuleAssignmentDate.assignment_id == BhavanRuleAssignment.id)
+        .options(selectinload(BhavanRuleAssignment.profile))
         .where(
             BhavanRuleAssignmentDate.date >= start_date,
             BhavanRuleAssignmentDate.date <= end_date,
@@ -742,11 +1052,13 @@ async def get_effective_calendar(
     for d, assignment in date_rows:
         if d not in assignments_by_date:
             assignments_by_date[d] = []
+        profile_cfg = getattr(assignment.profile, "config", {}) if getattr(assignment, "profile", None) else {}
+        cfg = assignment.config_snapshot if (assignment.config_snapshot and assignment.config_snapshot != {}) else profile_cfg
         assignments_by_date[d].append({
             "id": str(assignment.id),
             "applied_at": assignment.applied_at.isoformat() if assignment.applied_at else "",
             "is_active": assignment.is_active,
-            "config": assignment.config_snapshot or {},
+            "config": cfg or {},
         })
         assignment_map[str(assignment.id)] = {
             "id": str(assignment.id),

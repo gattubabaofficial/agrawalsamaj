@@ -16,8 +16,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.bhavan import (
-    AmenityPricingType, BhavanAccommodationType, BhavanAmenity,
-    BhavanRuleAssignment, BhavanRuleAssignmentDate, BhavanSettings,
+    AccommodationKind, AmenityPricingType, BhavanAccommodationType,
+    BhavanAmenity, BhavanRuleAssignment, BhavanRuleAssignmentDate,
+    BhavanSettings, BhavanVoucher,
 )
 from app.services.bhavan_availability import (
     get_accommodation_capacities, get_committed_accommodations,
@@ -60,6 +61,10 @@ class QuoteResult:
     estimated_total: Decimal
     blockers: List[str]
     public_message: Optional[str]
+    subtotal: Decimal = Decimal("0.00")
+    voucher_discount: Decimal = Decimal("0.00")
+    applied_voucher: Optional[str] = None
+    voucher_id: Optional[uuid.UUID] = None
     allowed_purpose_ids: Optional[List[str]] = None
     blocked_type_ids: Optional[List[str]] = None
     effective_type_prices: Optional[dict] = None  # type_id str -> Decimal price per night
@@ -111,6 +116,8 @@ async def calculate_quote(
     requested_amenities: List[Dict[str, Any]],        # [{"amenity_id": UUID, "quantity": int}]
     purpose_id: Optional[uuid.UUID] = None,
     guests_total: int = 1,
+    voucher_code: Optional[str] = None,
+    voucher_id: Optional[uuid.UUID] = None,
 ) -> QuoteResult:
     nights = (check_out - check_in).days
     days = nights + 1 if nights > 0 else 0
@@ -187,12 +194,14 @@ async def calculate_quote(
         if d not in assignments_by_date:
             assignments_by_date[d] = []
         is_pub = getattr(assignment.profile, "is_public_visible", True) if getattr(assignment, "profile", None) else True
+        profile_cfg = getattr(assignment.profile, "config", {}) if getattr(assignment, "profile", None) else {}
+        cfg = assignment.config_snapshot if (assignment.config_snapshot and assignment.config_snapshot != {}) else profile_cfg
         assignments_by_date[d].append({
             "id": str(assignment.id),
             "applied_at": assignment.applied_at.isoformat() if assignment.applied_at else "",
             "is_active": assignment.is_active,
             "is_public_visible": is_pub,
-            "config": assignment.config_snapshot or {},
+            "config": cfg or {},
         })
 
     # 2b. Fetch active Rule Profiles with NO assigned dates (Global Default Rules for ALL dates)
@@ -376,11 +385,24 @@ async def calculate_quote(
         blockers.append(to_public_message("GUESTS_EXCEEDED", str(total_guest_capacity)))
 
     # 7. Amenity Quote Lines
-    amenity_quote_lines: List[AmenityQuoteLine] = []
+    # Build a map of requested amenities and automatically include compulsory amenities
+    req_amenity_dict: Dict[uuid.UUID, int] = {}
     for req in requested_amenities:
-        aid = uuid.UUID(str(req["amenity_id"]))
-        qty = int(req["quantity"])
+        try:
+            aid = uuid.UUID(str(req["amenity_id"]))
+            qty = int(req.get("quantity", 1))
+            if qty > 0:
+                req_amenity_dict[aid] = qty
+        except (ValueError, KeyError):
+            continue
 
+    # Automatically add active compulsory amenities if not explicitly provided
+    for aid, amenity in amenity_map.items():
+        if getattr(amenity, "is_compulsory", False) and aid not in req_amenity_dict:
+            req_amenity_dict[aid] = 1
+
+    amenity_quote_lines: List[AmenityQuoteLine] = []
+    for aid, qty in req_amenity_dict.items():
         if aid not in amenity_map:
             continue
 
@@ -428,6 +450,63 @@ async def calculate_quote(
         ))
         estimated_total += line_total
 
+    acc_subtotal = sum(line.line_total for line in acc_quote_lines)
+    amenity_subtotal = sum(line.line_total for line in amenity_quote_lines)
+    subtotal = acc_subtotal + amenity_subtotal
+    voucher_discount = Decimal("0.00")
+    applied_voucher_code = None
+    applied_voucher_id = None
+
+    target_voucher = None
+    if voucher_id or voucher_code:
+        stmt_v = select(BhavanVoucher).where(BhavanVoucher.is_active == True)
+        if voucher_id:
+            stmt_v = stmt_v.where(BhavanVoucher.id == voucher_id)
+        elif voucher_code:
+            stmt_v = stmt_v.where(BhavanVoucher.code == voucher_code.strip().upper())
+
+        if isinstance(db, AsyncSession):
+            target_voucher = (await db.execute(stmt_v)).scalar_one_or_none()
+        else:
+            target_voucher = db.execute(stmt_v).scalar_one_or_none()
+
+    if target_voucher:
+        # Check if target_voucher is blocked by any active rule config on these stay dates
+        is_blocked_by_rule = False
+        target_v_id_str = str(target_voucher.id)
+        target_v_code = target_voucher.code.strip().upper()
+
+        for d_assignments in assignments_by_date.values():
+            for a in d_assignments:
+                cfg = a.get("config") or {}
+                blocked_list = cfg.get("blocked_vouchers") or []
+                blocked_normalized = [str(x).strip().upper() for x in blocked_list]
+                if target_v_id_str.upper() in blocked_normalized or target_v_code in blocked_normalized:
+                    is_blocked_by_rule = True
+                    break
+            if is_blocked_by_rule:
+                break
+
+        if is_blocked_by_rule:
+            blockers.append(f"Voucher '{target_voucher.code}' cannot be applied during the selected peak/event dates.")
+        elif target_voucher.min_booking_amount and subtotal < target_voucher.min_booking_amount:
+            blockers.append(f"Voucher '{target_voucher.code}' requires a minimum booking subtotal of ₹{target_voucher.min_booking_amount}")
+        elif acc_subtotal <= Decimal("0.00"):
+            blockers.append(f"Voucher '{target_voucher.code}' applies only on accommodation/room bookings.")
+        else:
+            # Discount strictly applies to accommodation/room charges only
+            if target_voucher.discount_type == "percentage":
+                disc = (acc_subtotal * target_voucher.discount_value) / Decimal("100.00")
+                if target_voucher.max_discount_amount and disc > target_voucher.max_discount_amount:
+                    disc = target_voucher.max_discount_amount
+                voucher_discount = disc.quantize(Decimal("0.01"))
+            else:
+                voucher_discount = min(target_voucher.discount_value, acc_subtotal).quantize(Decimal("0.01"))
+
+            estimated_total = max(Decimal("0.00"), (acc_subtotal - voucher_discount) + amenity_subtotal)
+            applied_voucher_code = target_voucher.code
+            applied_voucher_id = target_voucher.id
+
     rules_snapshot = {
         str(ds.date): [str(aid) for aid in ds.source_assignment_ids]
         for ds in day_states
@@ -438,6 +517,9 @@ async def calculate_quote(
         "check_out": check_out.isoformat(),
         "nights": nights,
         "days": days,
+        "subtotal": str(subtotal),
+        "voucher_discount": str(voucher_discount),
+        "applied_voucher": applied_voucher_code,
         "estimated_total": str(estimated_total),
         "accommodations": [
             {
@@ -471,6 +553,10 @@ async def calculate_quote(
         accommodations=acc_quote_lines,
         amenities=amenity_quote_lines,
         estimated_total=estimated_total,
+        subtotal=subtotal,
+        voucher_discount=voucher_discount,
+        applied_voucher=applied_voucher_code,
+        voucher_id=applied_voucher_id,
         blockers=list(dict.fromkeys(blockers)),
         public_message=public_message,
         allowed_purpose_ids=allowed_purpose_list,

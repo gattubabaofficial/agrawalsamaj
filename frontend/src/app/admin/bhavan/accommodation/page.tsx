@@ -1,33 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
-  Building, Plus, Upload, Layers, ArrowLeft, Trash2, RefreshCw, AlertCircle,
-  Eye, Edit3, CheckCircle2, Wrench, XCircle, X, ShieldAlert, Lock
+  Building, Plus, ArrowLeft, Trash2, RefreshCw, AlertCircle,
+  Eye, Edit3, X, Search, Users, DollarSign, Layers, Loader2,
+  CheckCircle2, Wrench, XCircle
 } from "lucide-react";
 import { getApiBaseUrl, safeFetch } from "@/utils/api";
-
-interface ComponentItem {
-  type_id: string;
-  quantity: number;
-}
 
 interface UnitItem {
   id: string;
   label: string;
-  status: "available" | "maintenance" | "inactive" | string;
+  status: string;
   notes?: string | null;
 }
 
 interface AccommodationType {
   id: string;
   name: string;
-  kind: string;
+  kind?: string;
+  description?: string | null;
   capacity_per_unit: number;
   base_price_per_night: number;
-  allow_standalone_booking?: boolean;
-  composition_json?: { components?: ComponentItem[] } | null;
   units: UnitItem[];
 }
 
@@ -35,32 +30,25 @@ export default function AdminAccommodationPage() {
   const [types, setTypes] = useState<AccommodationType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // View Modal state
+  // View Details Modal state
   const [viewingType, setViewingType] = useState<AccommodationType | null>(null);
 
   // Edit / Create Modal state
   const [showTypeModal, setShowTypeModal] = useState(false);
   const [editingType, setEditingType] = useState<AccommodationType | null>(null);
   const [name, setName] = useState("");
-  const [kind, setKind] = useState("room");
-  const [capacity, setCapacity] = useState(2);
-  const [basePrice, setBasePrice] = useState(1500);
-  const [allowStandaloneBooking, setAllowStandaloneBooking] = useState(true);
-
-  // Composite package composition state
-  const [isComposite, setIsComposite] = useState(false);
-  const [components, setComponents] = useState<ComponentItem[]>([]);
+  const [description, setDescription] = useState("");
+  const [capacity, setCapacity] = useState<number | string>(2);
+  const [rate, setRate] = useState<number | string>(1500);
+  const [unitQuantity, setUnitQuantity] = useState<number | string>(1);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Delete Confirmation Modal state
   const [deletingType, setDeletingType] = useState<AccommodationType | null>(null);
-
-  // Bulk units modal
-  const [showBulkModal, setShowBulkModal] = useState(false);
-  const [selectedTypeId, setSelectedTypeId] = useState("");
-  const [bulkPrefix, setBulkPrefix] = useState("Room ");
-  const [bulkStart, setBulkStart] = useState(101);
-  const [bulkCount, setBulkCount] = useState(10);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchTypes();
@@ -79,78 +67,96 @@ export default function AdminAccommodationPage() {
       if (res.ok) {
         const data = await res.json();
         setTypes(data);
-        if (viewingType) {
-          const updatedViewing = data.find((t: AccommodationType) => t.id === viewingType.id);
-          if (updatedViewing) setViewingType(updatedViewing);
-        }
       } else {
         setError("Failed to load inventory from server.");
       }
     } catch (err: any) {
       console.error("Fetch types error:", err);
-      setError("Network or browser extension error connecting to server.");
+      setError("Network or connection error connecting to server.");
     } finally {
       setLoading(false);
     }
   };
 
+  // Alphabetical sort & filter by search query
+  const sortedAndFilteredTypes = useMemo(() => {
+    return [...types]
+      .filter((t) => {
+        if (!searchQuery.trim()) return true;
+        const q = searchQuery.toLowerCase();
+        return (
+          t.name.toLowerCase().includes(q) ||
+          (t.description && t.description.toLowerCase().includes(q))
+        );
+      })
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  }, [types, searchQuery]);
+
   const handleOpenAddModal = () => {
     setEditingType(null);
     setName("");
-    setKind("room");
+    setDescription("");
     setCapacity(2);
-    setBasePrice(1500);
-    setAllowStandaloneBooking(true);
-    setIsComposite(false);
-    setComponents([]);
+    setRate(1500);
+    setUnitQuantity(1);
+    setSaveError(null);
+    setIsSaving(false);
     setShowTypeModal(true);
   };
 
   const handleOpenEditModal = (t: AccommodationType) => {
+    setViewingType(null);
     setEditingType(t);
     setName(t.name);
-    setKind(t.kind);
+    setDescription(t.description || "");
     setCapacity(t.capacity_per_unit);
-    setBasePrice(t.base_price_per_night);
-    setAllowStandaloneBooking(t.allow_standalone_booking !== false);
-    const hasComponents = !!(t.composition_json?.components && t.composition_json.components.length > 0);
-    setIsComposite(hasComponents);
-    setComponents(hasComponents ? t.composition_json!.components! : []);
+    setRate(t.base_price_per_night);
+    setUnitQuantity(t.units?.length || 1);
+    setSaveError(null);
+    setIsSaving(false);
     setShowTypeModal(true);
   };
 
-  const handleAddComponentRow = () => {
-    const defaultTypeId = types.length > 0 ? types[0].id : "";
-    setComponents([...components, { type_id: defaultTypeId, quantity: 1 }]);
-  };
-
-  const handleRemoveComponentRow = (idx: number) => {
-    setComponents(components.filter((_, i) => i !== idx));
-  };
-
-  const handleUpdateComponent = (idx: number, field: "type_id" | "quantity", val: any) => {
-    const updated = [...components];
-    updated[idx] = { ...updated[idx], [field]: val };
-    setComponents(updated);
-  };
-
   const handleSaveType = async () => {
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      setSaveError("Accommodation Name is required.");
+      return;
+    }
+
+    const parsedRate = typeof rate === "string" ? parseFloat(rate) : rate;
+    if (isNaN(parsedRate) || parsedRate < 0) {
+      setSaveError("Please enter a valid rate (₹).");
+      return;
+    }
+
+    const parsedUnits = typeof unitQuantity === "string" ? parseInt(unitQuantity) : unitQuantity;
+    if (isNaN(parsedUnits) || parsedUnits < 1) {
+      setSaveError("Please enter at least 1 unit.");
+      return;
+    }
+
+    const parsedCapacity = typeof capacity === "string" ? parseInt(capacity) : capacity;
+    if (isNaN(parsedCapacity) || parsedCapacity < 1) {
+      setSaveError("Please enter a valid guest capacity (at least 1).");
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError(null);
+
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    const compositionPayload = isComposite && components.length > 0
-      ? { components: components.filter(c => c.type_id && c.quantity > 0) }
-      : null;
-
     const payload = {
-      name,
-      kind,
-      capacity_per_unit: capacity,
-      base_price_per_night: basePrice,
-      allow_standalone_booking: allowStandaloneBooking,
-      composition_json: compositionPayload,
+      name: name.trim(),
+      kind: editingType?.kind || "room",
+      description: description.trim() || null,
+      capacity_per_unit: parsedCapacity,
+      base_price_per_night: parsedRate,
+      allow_standalone_booking: true,
+      composition_json: null,
+      total_units: parsedUnits,
     };
 
     try {
@@ -169,12 +175,18 @@ export default function AdminAccommodationPage() {
         setShowTypeModal(false);
         setEditingType(null);
         setName("");
-        setIsComposite(false);
-        setComponents([]);
-        fetchTypes();
+        setDescription("");
+        setSaveError(null);
+        await fetchTypes();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setSaveError(errData.detail || "Failed to save accommodation record.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Save type error:", err);
+      setSaveError("Network error occurred while saving. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -185,6 +197,7 @@ export default function AdminAccommodationPage() {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
+    setIsDeleting(true);
     try {
       const res = await safeFetch(`${getApiBaseUrl()}/admin/bhavan/accommodation-types/${targetId}`, {
         method: "DELETE",
@@ -193,98 +206,22 @@ export default function AdminAccommodationPage() {
       if (res.ok) {
         setTypes(prev => prev.filter(t => t.id !== targetId));
         setDeletingType(null);
-        if (viewingType?.id === targetId) setViewingType(null);
         fetchTypes();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.detail || "Failed to deactivate accommodation.");
       }
     } catch (err) {
       console.error("Delete type error:", err);
-    }
-  };
-
-  const handleBulkCreateUnits = async () => {
-    if (!selectedTypeId) return;
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-
-    try {
-      const res = await safeFetch(`${getApiBaseUrl()}/admin/bhavan/units/bulk-create`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          accommodation_type_id: selectedTypeId,
-          prefix: bulkPrefix,
-          start_number: bulkStart,
-          count: bulkCount,
-        }),
-      });
-      if (res.ok) {
-        setShowBulkModal(false);
-        fetchTypes();
-      }
-    } catch (err) {
-      console.error("Bulk create units error:", err);
-    }
-  };
-
-  const handleToggleUnitStatus = async (unit: UnitItem) => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-
-    const nextStatus = unit.status === "available"
-      ? "maintenance"
-      : unit.status === "maintenance"
-      ? "inactive"
-      : "available";
-
-    try {
-      const res = await safeFetch(`${getApiBaseUrl()}/admin/bhavan/units/${unit.id}`, {
-        method: "PUT",
-        headers,
-        body: JSON.stringify({ status: nextStatus }),
-      });
-      if (res.ok) {
-        fetchTypes();
-      }
-    } catch (err) {
-      console.error("Toggle unit status error:", err);
-    }
-  };
-
-  const handleDeleteUnit = async (unitId: string) => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-
-    try {
-      const res = await safeFetch(`${getApiBaseUrl()}/admin/bhavan/units/${unitId}`, {
-        method: "DELETE",
-        headers,
-      });
-      if (res.ok) {
-        fetchTypes();
-      }
-    } catch (err) {
-      console.error("Delete unit error:", err);
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "available":
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-pointer hover:bg-emerald-100"><CheckCircle2 className="w-3 h-3" /> Available</span>;
-      case "maintenance":
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 cursor-pointer hover:bg-amber-100"><Wrench className="w-3 h-3" /> Maintenance</span>;
-      case "inactive":
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 cursor-pointer hover:bg-rose-100"><XCircle className="w-3 h-3" /> Inactive</span>;
-      default:
-        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-100 text-zinc-700">{status}</span>;
+      alert("Network error occurred while deactivating.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   return (
     <div className="space-y-6" suppressHydrationWarning>
+      {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <Link
@@ -294,22 +231,44 @@ export default function AdminAccommodationPage() {
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Bhavan Overview
           </Link>
           <h1 className="text-2xl font-bold text-zinc-900">Accommodation Inventory</h1>
-          <p className="text-xs text-zinc-500">Configure rooms, dormitories, composite packages, standalone booking rules, and physical units</p>
+          <p className="text-xs text-zinc-500">Manage rooms, rates, quantity, and guest capacities in alphabetical order</p>
         </div>
         <div className="flex gap-3">
           <button
             onClick={handleOpenAddModal}
-            className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-amber-400"
+            className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-amber-400 transition-colors cursor-pointer"
           >
-            <Plus className="w-4 h-4" /> Add Type / Package
+            <Plus className="w-4 h-4" /> Add Accommodation
           </button>
         </div>
       </div>
 
+      {/* Search Filter & Count */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-zinc-200 shadow-sm">
+        <div className="relative w-full sm:w-80">
+          <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search accommodation by name..."
+            className="w-full pl-9 pr-3 py-2 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:border-amber-500 bg-zinc-50/50"
+          />
+        </div>
+        <div className="flex items-center gap-2 text-xs font-semibold text-zinc-500 self-end sm:self-auto">
+          <span>Total Records: <strong className="text-zinc-900">{sortedAndFilteredTypes.length}</strong></span>
+          <span>•</span>
+          <span>Total Units: <strong className="text-zinc-900">{sortedAndFilteredTypes.reduce((acc, t) => acc + (t.units?.length || 0), 0)}</strong></span>
+        </div>
+      </div>
+
+      {/* Loading / Error States */}
       {loading ? (
-        <div className="p-8 text-center text-xs text-zinc-400 bg-white rounded-xl border border-zinc-200">Loading inventory...</div>
+        <div className="p-12 text-center text-xs text-zinc-400 bg-white rounded-2xl border border-zinc-200 shadow-sm">
+          Loading accommodation inventory...
+        </div>
       ) : error ? (
-        <div className="p-8 text-center bg-white rounded-xl border border-rose-200 space-y-3">
+        <div className="p-8 text-center bg-white rounded-2xl border border-rose-200 space-y-3 shadow-sm">
           <AlertCircle className="w-8 h-8 text-rose-500 mx-auto" />
           <p className="text-xs font-bold text-zinc-800">{error}</p>
           <p className="text-[11px] text-zinc-400">If you are using a browser extension (e.g. AdBlock/VPN), ensure it permits local backend calls.</p>
@@ -320,321 +279,304 @@ export default function AdminAccommodationPage() {
             <RefreshCw className="w-3.5 h-3.5" /> Retry Fetching
           </button>
         </div>
+      ) : sortedAndFilteredTypes.length === 0 ? (
+        <div className="p-12 text-center bg-white rounded-2xl border border-zinc-200 shadow-sm space-y-3">
+          <Building className="w-10 h-10 text-zinc-300 mx-auto" />
+          <p className="text-sm font-bold text-zinc-700">No accommodation found</p>
+          <p className="text-xs text-zinc-400">
+            {searchQuery ? "Try searching with a different keyword" : "Click 'Add Accommodation' above to create your first entry"}
+          </p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {types.map((t) => (
-            <div key={t.id} className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-600 px-2 py-0.5 rounded border border-amber-100">{t.kind}</span>
-                    {t.composition_json?.components && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider bg-purple-50 text-purple-600 px-2 py-0.5 rounded border border-purple-100">Composite Package</span>
-                    )}
-                    {t.allow_standalone_booking === false ? (
-                      <span className="text-[10px] font-bold uppercase tracking-wider bg-rose-50 text-rose-700 px-2 py-0.5 rounded border border-rose-200 flex items-center gap-1">
-                        <Lock className="w-3 h-3" /> Unit / Package Only
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
-                        Standalone Bookable
-                      </span>
-                    )}
-                  </div>
+        /* TABLE VIEW */
+        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-zinc-50/80 border-b border-zinc-200 text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
+                  <th className="py-3.5 px-4 w-12 text-center">#</th>
+                  <th className="py-3.5 px-4">Accommodation Name & Description</th>
+                  <th className="py-3.5 px-4">Rate (₹ / Night)</th>
+                  <th className="py-3.5 px-4">Total Units / Quantity</th>
+                  <th className="py-3.5 px-4">Guest Capacity</th>
+                  <th className="py-3.5 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 text-xs">
+                {sortedAndFilteredTypes.map((t, index) => (
+                  <tr
+                    key={t.id}
+                    className="hover:bg-amber-50/30 transition-colors group"
+                  >
+                    {/* Index */}
+                    <td className="py-4 px-4 text-center font-mono text-zinc-400 font-medium">
+                      {index + 1}
+                    </td>
 
-                  {/* Card Actions: View, Edit, Delete */}
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => setViewingType(t)}
-                      title="View Details"
-                      className="p-1.5 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleOpenEditModal(t)}
-                      title="Edit Accommodation Type"
-                      className="p-1.5 text-zinc-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setDeletingType(t)}
-                      title="Delete Accommodation Type"
-                      className="p-1.5 text-zinc-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                <h3 className="text-xl font-bold text-zinc-900">{t.name}</h3>
-                <p className="text-xs text-zinc-500 mt-1">Capacity: {t.capacity_per_unit} guests per unit</p>
-                <p className="text-lg font-bold text-amber-600 mt-2">₹{t.base_price_per_night} <span className="text-xs font-normal text-zinc-400">base price / night</span></p>
-
-                {t.composition_json?.components && t.composition_json.components.length > 0 && (
-                  <div className="mt-3 p-3 rounded-lg border border-purple-100 bg-purple-50/40 text-xs">
-                    <p className="font-bold text-purple-900 text-[10px] uppercase mb-1">Composite Components Included:</p>
-                    <div className="space-y-1">
-                      {t.composition_json.components.map((c, idx) => {
-                        const compType = types.find(x => x.id === c.type_id);
-                        return (
-                          <p key={idx} className="text-purple-700 font-medium">
-                            • {c.quantity}x {compType?.name || "Sub-room"}
+                    {/* Name & Description */}
+                    <td className="py-4 px-4">
+                      <div className="space-y-0.5">
+                        <span className="font-bold text-zinc-900 text-sm group-hover:text-amber-700 transition-colors">
+                          {t.name}
+                        </span>
+                        {t.description ? (
+                          <p className="text-xs text-zinc-500 line-clamp-1 max-w-md">
+                            {t.description}
                           </p>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                        ) : (
+                          <p className="text-xs text-zinc-300 italic">No description provided</p>
+                        )}
+                      </div>
+                    </td>
 
-                <div className="mt-4 pt-4 border-t border-zinc-100">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs font-bold text-zinc-700">Physical Units ({t.units?.length || 0}):</p>
-                    <button
-                      onClick={() => { setSelectedTypeId(t.id); setShowBulkModal(true); }}
-                      className="text-[11px] text-blue-600 font-bold hover:underline inline-flex items-center gap-1"
-                    >
-                      <Plus className="w-3 h-3" /> Add Units
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {t.units && t.units.length > 0 ? (
-                      t.units.map((u) => (
-                        <div
-                          key={u.id}
-                          className="flex items-center gap-1 px-2 py-1 rounded bg-zinc-50 border border-zinc-200 font-mono text-[11px]"
+                    {/* Rate */}
+                    <td className="py-4 px-4">
+                      <span className="font-extrabold text-amber-600 text-sm">
+                        ₹{t.base_price_per_night}
+                      </span>
+                      <span className="text-[10px] text-zinc-400 block">per night</span>
+                    </td>
+
+                    {/* Total Units / Quantity */}
+                    <td className="py-4 px-4">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                        <Layers className="w-3.5 h-3.5" />
+                        {t.units?.length || 0} Units
+                      </span>
+                    </td>
+
+                    {/* Capacity */}
+                    <td className="py-4 px-4">
+                      <span className="inline-flex items-center gap-1 text-zinc-700 font-medium">
+                        <Users className="w-3.5 h-3.5 text-zinc-400" />
+                        {t.capacity_per_unit} Guests / Unit
+                      </span>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="py-4 px-4 text-right">
+                      <div className="inline-flex items-center gap-1.5">
+                        <button
+                          onClick={() => setViewingType(t)}
+                          title="View Details"
+                          className="p-1.5 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
                         >
-                          <span className="font-semibold text-zinc-800">{u.label}</span>
-                          <button
-                            onClick={() => handleToggleUnitStatus(u)}
-                            title="Click to toggle status (Available -> Maintenance -> Inactive)"
-                          >
-                            {getStatusBadge(u.status)}
-                          </button>
-                        </div>
-                      ))
-                    ) : (
-                      <span className="text-xs text-zinc-400 italic">No physical units registered.</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenEditModal(t)}
+                          title="Edit Accommodation"
+                          className="p-1.5 text-zinc-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeletingType(t)}
+                          title="Delete Accommodation"
+                          className="p-1.5 text-zinc-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
-      {/* MODAL: View Accommodation Type Details */}
+      {/* MODAL: View Details */}
       {viewingType && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-600 px-2 py-0.5 rounded border border-amber-100">{viewingType.kind}</span>
-                {viewingType.composition_json?.components && (
-                  <span className="text-[10px] font-bold uppercase tracking-wider bg-purple-50 text-purple-600 px-2 py-0.5 rounded border border-purple-100">Composite Package</span>
-                )}
-                {viewingType.allow_standalone_booking === false ? (
-                  <span className="text-[10px] font-bold uppercase tracking-wider bg-rose-50 text-rose-700 px-2 py-0.5 rounded border border-rose-200 flex items-center gap-1">
-                    <Lock className="w-3 h-3" /> Unit / Package Only
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
-                    Standalone Bookable
-                  </span>
-                )}
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg border border-blue-200">
+                  {viewingType.units?.length || 0} Units Registered
+                </span>
               </div>
-              <button onClick={() => setViewingType(null)} className="p-1 text-zinc-400 hover:text-zinc-700 rounded-lg">
+              <button
+                onClick={() => setViewingType(null)}
+                className="text-zinc-400 hover:text-zinc-700 cursor-pointer"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div>
               <h2 className="text-2xl font-bold text-zinc-900">{viewingType.name}</h2>
-              <div className="grid grid-cols-2 gap-4 mt-3 p-3 bg-zinc-50 rounded-xl border border-zinc-100 text-xs">
-                <div>
-                  <span className="text-zinc-400 block font-medium">Guest Capacity</span>
-                  <span className="font-bold text-zinc-800 text-sm">{viewingType.capacity_per_unit} Persons / Unit</span>
+              {viewingType.description ? (
+                <div className="mt-2.5 p-3.5 bg-zinc-50 rounded-xl border border-zinc-100">
+                  <span className="text-[10px] font-bold text-zinc-400 block uppercase tracking-wider mb-1">Description</span>
+                  <p className="text-xs text-zinc-700 leading-relaxed whitespace-pre-wrap">{viewingType.description}</p>
                 </div>
-                <div>
-                  <span className="text-zinc-400 block font-medium">Base Price per Night</span>
-                  <span className="font-bold text-amber-600 text-sm">₹{viewingType.base_price_per_night}</span>
+              ) : (
+                <p className="text-xs text-zinc-400 mt-1 italic">No description provided</p>
+              )}
+
+              <div className="grid grid-cols-3 gap-3 mt-4">
+                <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-100">
+                  <span className="text-[10px] font-bold text-zinc-500 block uppercase">Rate / Night</span>
+                  <span className="text-base font-extrabold text-amber-600">₹{viewingType.base_price_per_night}</span>
+                </div>
+                <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-100">
+                  <span className="text-[10px] font-bold text-zinc-500 block uppercase">Total Units</span>
+                  <span className="text-base font-extrabold text-blue-700">{viewingType.units?.length || 0} Units</span>
+                </div>
+                <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-100">
+                  <span className="text-[10px] font-bold text-zinc-500 block uppercase">Capacity</span>
+                  <span className="text-base font-extrabold text-zinc-800">{viewingType.capacity_per_unit} Guests</span>
                 </div>
               </div>
             </div>
 
-            {viewingType.composition_json?.components && viewingType.composition_json.components.length > 0 && (
-              <div className="p-4 rounded-xl border border-purple-100 bg-purple-50/50 space-y-2">
-                <h4 className="text-xs font-bold text-purple-900 uppercase">Package Includes Sub-Rooms:</h4>
-                <div className="space-y-1 text-xs">
-                  {viewingType.composition_json.components.map((c, idx) => {
-                    const compType = types.find(x => x.id === c.type_id);
-                    return (
-                      <div key={idx} className="flex justify-between items-center bg-white p-2 rounded border border-purple-100">
-                        <span className="font-bold text-purple-900">{compType?.name || "Sub-room"}</span>
-                        <span className="font-mono text-purple-600 font-bold">Qty: {c.quantity}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
+            {/* Units list */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-xs font-bold text-zinc-800 uppercase">Registered Physical Unit Numbers ({viewingType.units?.length || 0}):</h4>
-                <button
-                  onClick={() => { setSelectedTypeId(viewingType.id); setShowBulkModal(true); }}
-                  className="text-xs text-blue-600 font-bold hover:underline inline-flex items-center gap-1"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Bulk Add Units
-                </button>
-              </div>
-
+              <h4 className="text-xs font-bold text-zinc-700 uppercase tracking-wider mb-2">
+                Registered Room Units ({viewingType.units?.length || 0}):
+              </h4>
               {viewingType.units && viewingType.units.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
                   {viewingType.units.map((u) => (
-                    <div key={u.id} className="flex items-center justify-between p-2 rounded-lg bg-zinc-50 border border-zinc-200 text-xs">
+                    <div
+                      key={u.id}
+                      className="flex items-center justify-between p-2 rounded-lg bg-zinc-50 border border-zinc-200 text-xs"
+                    >
                       <span className="font-mono font-bold text-zinc-800">{u.label}</span>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => handleToggleUnitStatus(u)} title="Click to change status">
-                          {getStatusBadge(u.status)}
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUnit(u.id)}
-                          title="Delete Unit"
-                          className="text-zinc-400 hover:text-rose-600 p-1 rounded hover:bg-rose-50"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                      <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                        {u.status}
+                      </span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-zinc-400 italic p-4 bg-zinc-50 rounded-xl text-center">No physical unit numbers registered yet.</p>
+                <p className="text-xs text-zinc-400 italic">No room units registered.</p>
               )}
             </div>
 
-            <div className="flex justify-between items-center pt-3 border-t border-zinc-100">
+            <div className="flex justify-end gap-2 pt-3 border-t border-zinc-100">
               <button
-                onClick={() => { setViewingType(null); setDeletingType(viewingType); }}
-                className="px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 font-bold rounded-lg border border-rose-200 flex items-center gap-1"
+                onClick={() => setViewingType(null)}
+                className="px-4 py-2 border border-zinc-200 rounded-lg text-xs font-semibold hover:bg-zinc-50 cursor-pointer"
               >
-                <Trash2 className="w-3.5 h-3.5" /> Delete Accommodation
+                Close
               </button>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => { const t = viewingType; setViewingType(null); handleOpenEditModal(t); }}
-                  className="px-4 py-2 bg-amber-500 text-white font-bold rounded-lg text-xs hover:bg-amber-400 flex items-center gap-1"
-                >
-                  <Edit3 className="w-3.5 h-3.5" /> Edit Accommodation
-                </button>
-              </div>
+              <button
+                onClick={() => handleOpenEditModal(viewingType)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-white font-bold rounded-lg text-xs hover:bg-amber-400 transition-colors shadow-sm cursor-pointer"
+              >
+                <Edit3 className="w-3.5 h-3.5" /> Edit Accommodation
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL: Add / Edit Type / Package */}
+      {/* MODAL: Add / Edit Type */}
       {showTypeModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-bold text-zinc-900">
-              {editingType ? "Edit Accommodation Type / Package" : "Add Accommodation Type / Composite Package"}
-            </h3>
-            <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Name *</label>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Hall, Kitchen, AC Room or Package A" className="w-full px-3 py-2 border rounded-lg text-sm" />
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+              <h3 className="text-lg font-bold text-zinc-900">
+                {editingType ? "Edit Accommodation" : "Add Accommodation"}
+              </h3>
+              <button
+                onClick={() => { setShowTypeModal(false); setEditingType(null); }}
+                className="text-zinc-400 hover:text-zinc-700 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
+
+            {saveError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{saveError}</span>
+              </div>
+            )}
+
             <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Kind</label>
-              <select value={kind} onChange={(e) => setKind(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm">
-                <option value="room">Room</option>
-                <option value="dormitory">Dormitory</option>
-              </select>
+              <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Accommodation Name *</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. AC Deluxe Room, Hall, Suite"
+                className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-amber-500"
+              />
             </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Description</label>
+              <textarea
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Enter description, facilities, features, bed type, etc."
+                className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm resize-none focus:outline-none focus:border-amber-500"
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Capacity</label>
-                <input type="number" value={capacity} onChange={(e) => setCapacity(parseInt(e.target.value) || 1)} className="w-full px-3 py-2 border rounded-lg text-sm" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Base Price / Night</label>
-                <input type="number" value={basePrice} onChange={(e) => setBasePrice(parseFloat(e.target.value) || 0)} className="w-full px-3 py-2 border rounded-lg text-sm" />
-              </div>
-            </div>
-
-            {/* Standalone Booking Toggle */}
-            <div className="pt-2 border-t border-zinc-100">
-              <label className="flex items-start gap-2.5 cursor-pointer bg-zinc-50 p-3 rounded-xl border border-zinc-200">
+              <div className="flex flex-col justify-end">
+                <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1.5 truncate">
+                  Rate (₹ / Night) *
+                </label>
                 <input
-                  type="checkbox"
-                  checked={allowStandaloneBooking}
-                  onChange={(e) => setAllowStandaloneBooking(e.target.checked)}
-                  className="w-4 h-4 text-amber-600 rounded mt-0.5"
+                  type="number"
+                  value={rate}
+                  onChange={(e) => setRate(e.target.value)}
+                  placeholder="e.g. 1500"
+                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm font-bold text-amber-600 focus:outline-none focus:border-amber-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
-                <div>
-                  <span className="text-xs font-bold text-zinc-900 block">Allow Standalone Booking (Bookable separately on public form)</span>
-                  <span className="text-[11px] text-zinc-500 leading-tight block mt-0.5">
-                    Uncheck for items (like Hall or Kitchen) that should NOT be booked separately by users and can only be booked inside a package/unit.
-                  </span>
-                </div>
-              </label>
-            </div>
-
-            {/* Composite Package Checkbox */}
-            <div className="pt-1">
-              <label className="flex items-center gap-2 cursor-pointer">
+              </div>
+              <div className="flex flex-col justify-end">
+                <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1.5 truncate">
+                  Total Units *
+                </label>
                 <input
-                  type="checkbox"
-                  checked={isComposite}
-                  onChange={(e) => setIsComposite(e.target.checked)}
-                  className="w-4 h-4 text-amber-600 rounded"
+                  type="number"
+                  value={unitQuantity}
+                  onChange={(e) => setUnitQuantity(e.target.value)}
+                  placeholder="e.g. 10"
+                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm font-bold text-zinc-800 focus:outline-none focus:border-amber-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
-                <span className="text-xs font-bold text-zinc-800">This is a Composite Package (Contains multiple sub-rooms)</span>
-              </label>
-
-              {isComposite && (
-                <div className="mt-3 space-y-2 bg-purple-50/50 p-3 rounded-xl border border-purple-100">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-purple-900">Included Room Components</span>
-                    <button onClick={handleAddComponentRow} className="text-xs text-purple-600 font-bold hover:underline inline-flex items-center gap-1">
-                      <Plus className="w-3 h-3" /> Add Component
-                    </button>
-                  </div>
-
-                  {components.map((comp, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <select
-                        value={comp.type_id}
-                        onChange={(e) => handleUpdateComponent(idx, "type_id", e.target.value)}
-                        className="flex-1 px-2 py-1 border rounded text-xs bg-white"
-                      >
-                        {types.map((t) => (
-                          <option key={t.id} value={t.id}>{t.name}</option>
-                        ))}
-                      </select>
-                      <input
-                        type="number"
-                        min="1"
-                        value={comp.quantity}
-                        onChange={(e) => handleUpdateComponent(idx, "quantity", parseInt(e.target.value) || 1)}
-                        className="w-16 px-2 py-1 border rounded text-xs bg-white"
-                      />
-                      <button onClick={() => handleRemoveComponentRow(idx)} className="text-rose-500 hover:bg-rose-50 p-1 rounded">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
-              <button onClick={() => { setShowTypeModal(false); setEditingType(null); }} className="px-4 py-2 border rounded-lg text-xs font-semibold">Cancel</button>
-              <button onClick={handleSaveType} className="px-4 py-2 bg-amber-500 text-white font-bold rounded-lg text-xs hover:bg-amber-400">Save Changes</button>
+            <div>
+              <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1.5">
+                Guest Capacity (Persons / Unit) *
+              </label>
+              <input
+                type="number"
+                value={capacity}
+                onChange={(e) => setCapacity(e.target.value)}
+                placeholder="e.g. 2"
+                className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-amber-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-zinc-100">
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={() => { setShowTypeModal(false); setEditingType(null); }}
+                className="px-4 py-2 border border-zinc-200 rounded-lg text-xs font-semibold hover:bg-zinc-50 cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={handleSaveType}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-white font-bold rounded-lg text-xs hover:bg-amber-400 transition-colors shadow-sm cursor-pointer disabled:opacity-60"
+              >
+                {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                {isSaving ? "Saving..." : "Save Changes"}
+              </button>
             </div>
           </div>
         </div>
@@ -643,45 +585,32 @@ export default function AdminAccommodationPage() {
       {/* MODAL: Delete Confirmation */}
       {deletingType && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm space-y-4 text-center">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm space-y-4 text-center shadow-xl">
             <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-zinc-900">Deactivate Accommodation?</h3>
-              <p className="text-xs text-zinc-500 mt-1">Are you sure you want to deactivate <span className="font-bold text-zinc-800">"{deletingType.name}"</span>? It will no longer appear in new enquiries.</p>
+              <p className="text-xs text-zinc-500 mt-1">
+                Are you sure you want to deactivate <strong className="text-zinc-800">"{deletingType.name}"</strong>?
+              </p>
             </div>
             <div className="flex justify-center gap-3 pt-2">
-              <button onClick={() => setDeletingType(null)} className="px-4 py-2 border rounded-lg text-xs font-semibold">Cancel</button>
-              <button onClick={handleDeleteType} className="px-4 py-2 bg-rose-600 text-white font-bold rounded-lg text-xs hover:bg-rose-500">Deactivate</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: Bulk Add Units */}
-      {showBulkModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4">
-            <h3 className="text-lg font-bold text-zinc-900">Bulk Create Physical Units</h3>
-            <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Label Prefix</label>
-              <input type="text" value={bulkPrefix} onChange={(e) => setBulkPrefix(e.target.value)} placeholder="e.g. Room " className="w-full px-3 py-2 border rounded-lg text-sm" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Start Number</label>
-                <input type="number" value={bulkStart} onChange={(e) => setBulkStart(parseInt(e.target.value) || 1)} className="w-full px-3 py-2 border rounded-lg text-sm" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Count</label>
-                <input type="number" value={bulkCount} onChange={(e) => setBulkCount(parseInt(e.target.value) || 1)} className="w-full px-3 py-2 border rounded-lg text-sm" />
-              </div>
-            </div>
-            <p className="text-xs text-zinc-500">Will generate units: {bulkPrefix}{bulkStart} to {bulkPrefix}{bulkStart + bulkCount - 1}</p>
-            <div className="flex justify-end gap-2 pt-2">
-              <button onClick={() => setShowBulkModal(false)} className="px-4 py-2 border rounded-lg text-xs font-semibold">Cancel</button>
-              <button onClick={handleBulkCreateUnits} className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg text-xs hover:bg-blue-500">Generate Units</button>
+              <button
+                disabled={isDeleting}
+                onClick={() => setDeletingType(null)}
+                className="px-4 py-2 border border-zinc-200 rounded-lg text-xs font-semibold hover:bg-zinc-50 cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={isDeleting}
+                onClick={handleDeleteType}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-600 text-white font-bold rounded-lg text-xs hover:bg-rose-500 transition-colors shadow-sm cursor-pointer disabled:opacity-60"
+              >
+                {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                {isDeleting ? "Deactivating..." : "Deactivate"}
+              </button>
             </div>
           </div>
         </div>

@@ -10,7 +10,8 @@ runs entirely on in-memory SQLite.
 """
 
 import uuid
-from datetime import date as date_type, datetime
+from datetime import date, datetime
+date_type = date
 from decimal import Decimal
 from enum import Enum as PyEnum
 from typing import List, Optional
@@ -47,6 +48,7 @@ class AmenityPricingType(str, PyEnum):
 
 
 class RuleCategory(str, PyEnum):
+    WEDDING = "wedding"
     EVENT = "event"
     PRICING = "pricing"
     DISCOUNT = "discount"
@@ -171,6 +173,7 @@ class BhavanAmenity(Base, TimestampMixin):
     allow_over_request: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     allow_standalone_booking: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_compulsory: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="false")
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
 
@@ -179,6 +182,23 @@ class BhavanPurpose(Base, TimestampMixin):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+
+class BhavanVoucher(Base, TimestampMixin):
+    __tablename__ = "bhavan_vouchers"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    discount_type: Mapped[str] = mapped_column(String(20), default="percentage", nullable=False)
+    discount_value: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    min_booking_amount: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
+    max_discount_amount: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
+    valid_from: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    valid_until: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
