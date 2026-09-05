@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { getApiBaseUrl } from "@/utils/api";
+import { getApiBaseUrl, safeFetch, formatErrorMessage } from "@/utils/api";
 import { Loader2, Download, Receipt as ReceiptIcon } from "lucide-react";
 
 interface Receipt {
@@ -31,11 +30,19 @@ export default function ReceiptsPage() {
   useEffect(() => {
     (async () => {
       try {
+        const token = localStorage.getItem("token");
+        const headers: Record<string, string> = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
         const url = `${getApiBaseUrl()}/receipts${filter ? `?receipt_type=${filter}` : ""}`;
-        const res = await axios.get(url, { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } });
-        setReceipts(res.data);
+        const res = await safeFetch(url, { headers });
+        const data = await res.json();
+        if (res.ok) {
+          setReceipts(Array.isArray(data) ? data : []);
+        } else {
+          setError(formatErrorMessage(data?.detail, "Failed to load receipts"));
+        }
       } catch (e: any) {
-        setError(e.response?.data?.detail || "Failed to load receipts");
+        setError(formatErrorMessage(e, "Failed to load receipts"));
       } finally {
         setLoading(false);
       }
@@ -84,7 +91,7 @@ export default function ReceiptsPage() {
                   <td className="px-4 py-3 font-mono text-xs">{r.receipt_number}</td>
                   <td className="px-4 py-3">{r.payer_name}</td>
                   <td className="px-4 py-3">
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${r.receipt_type === "booking" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${r.receipt_type?.toLowerCase() === "booking" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>
                       {r.receipt_type}
                     </span>
                     {r.is_offline && <span className="ml-1 text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">offline</span>}

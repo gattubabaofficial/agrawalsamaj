@@ -162,7 +162,7 @@ async def list_events(
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_current_user),
 ):
-    result = await db.execute(select(Event).order_by(Event.start_datetime))
+    result = await db.execute(select(Event).order_by(Event.start_datetime.desc(), Event.created_at.desc()))
     events = result.scalars().all()
     if _can_view_members_only(current_user):
         return events

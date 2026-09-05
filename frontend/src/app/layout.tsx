@@ -54,6 +54,8 @@ export const metadata: Metadata = {
     "The community portal for Agrawal Samaj Mansrovar Jaipur. Book the Bhavan, register for gatherings, find a household in the directory, and support the welfare schemes.",
 };
 
+import ScrollToTop from "@/components/layout/ScrollToTop";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -68,6 +70,7 @@ export default function RootLayout({
       className={`${inter.variable} ${lora.variable} ${notoDevanagari.variable} ${notoSerifDevanagari.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-paper text-ink" suppressHydrationWarning>
+        <ScrollToTop />
         {/* Standard practice: let keyboard and screen-reader users jump the
             navigation. Visible only once focused. */}
         <a

@@ -40,7 +40,7 @@ export const getWsApiBaseUrl = (): string => {
  * Since all /api/v1/* requests are handled server-side by Next.js,
  * browser extensions cannot intercept or block them.
  */
-export const safeFetch = (
+export const safeFetch = async (
   input: RequestInfo | URL,
   init?: RequestInit
 ): Promise<Response> => {
@@ -55,5 +55,57 @@ export const safeFetch = (
       } catch {}
     }
   }
-  return fetch(input, init);
+  const res = await fetch(input, init);
+
+  // Bulletproof json() wrapper: catches non-JSON text responses (e.g. 500 "Internal Server Error")
+  const originalText = res.text.bind(res);
+  res.json = async () => {
+    try {
+      const text = await originalText();
+      if (!text || !text.trim()) return {};
+      try {
+        return JSON.parse(text);
+      } catch {
+        return { detail: text.trim(), error: text.trim() };
+      }
+    } catch {
+      return { detail: `Server error (${res.status})` };
+    }
+  };
+
+  return res;
 };
+
+/**
+ * Safely extracts a string error message from API responses or exceptions.
+ * Prevents Pydantic validation error objects ({type, loc, msg, input, ctx})
+ * from being directly passed into React JSX children, which causes React runtime errors.
+ */
+export const formatErrorMessage = (detail: any, fallback = "An error occurred"): string => {
+  if (!detail) return fallback;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((item) => {
+        if (typeof item === "string") return item;
+        if (item && typeof item === "object") {
+          return item.msg || item.message || (item.loc ? `${item.loc.join(".")}: ${item.msg}` : null);
+        }
+        return String(item);
+      })
+      .filter(Boolean);
+    return messages.length > 0 ? messages.join(", ") : fallback;
+  }
+  if (typeof detail === "object") {
+    if (detail.msg) return String(detail.msg);
+    if (detail.message) return String(detail.message);
+    if (detail.detail) return formatErrorMessage(detail.detail, fallback);
+    try {
+      return JSON.stringify(detail);
+    } catch {
+      return fallback;
+    }
+  }
+  return String(detail);
+};
+

@@ -84,7 +84,16 @@ export default function AdminEventsPage() {
       const res = await axios.get(`${getApiBaseUrl()}/events`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
-      setEvents(res.data);
+      if (Array.isArray(res.data)) {
+        const sorted = [...res.data].sort((a, b) => {
+          const timeA = new Date(a.start_datetime || a.created_at || 0).getTime();
+          const timeB = new Date(b.start_datetime || b.created_at || 0).getTime();
+          return timeB - timeA;
+        });
+        setEvents(sorted);
+      } else {
+        setEvents(res.data);
+      }
     } catch (error) {
       console.error("Failed to fetch events", error);
     }

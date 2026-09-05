@@ -22,7 +22,7 @@ from app.models.bhavan import (
 )
 from app.services.bhavan_availability import (
     get_accommodation_capacities, get_committed_accommodations,
-    get_committed_amenities,
+    get_committed_amenities, get_effective_available_accommodations,
 )
 from app.services.bhavan_rules import (
     BaseAccommodationType, BaseAmenity, RuleConditions, resolve_date_range,
@@ -68,6 +68,7 @@ class QuoteResult:
     allowed_purpose_ids: Optional[List[str]] = None
     blocked_type_ids: Optional[List[str]] = None
     effective_type_prices: Optional[dict] = None  # type_id str -> Decimal price per night
+    available_units: Optional[Dict[str, Optional[int]]] = None
     rules_snapshot: dict = None
     quote_snapshot: dict = None
 
@@ -319,6 +320,8 @@ async def calculate_quote(
     unit_capacities = await get_accommodation_capacities(db)
     committed_acc = await get_committed_accommodations(db, check_in, check_out)
     committed_amen = await get_committed_amenities(db, check_in, check_out)
+    effective_avail_acc = await get_effective_available_accommodations(db, check_in, check_out)
+    available_units_dict: Dict[str, Optional[int]] = {str(tid): count for tid, count in effective_avail_acc.items()}
 
     total_guest_capacity = 0
 
@@ -562,6 +565,7 @@ async def calculate_quote(
         allowed_purpose_ids=allowed_purpose_list,
         blocked_type_ids=blocked_type_ids if blocked_type_ids else None,
         effective_type_prices=effective_type_prices if effective_type_prices else None,
+        available_units=available_units_dict,
         rules_snapshot=rules_snapshot,
         quote_snapshot=quote_snapshot,
     )

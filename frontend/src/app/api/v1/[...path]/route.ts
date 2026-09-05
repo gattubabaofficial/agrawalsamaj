@@ -70,6 +70,15 @@ async function proxyToBackend(
     });
     resHeaders.set("Access-Control-Allow-Origin", "*");
 
+    const contentType = backendRes.headers.get("content-type") || "";
+    if (!backendRes.ok && !contentType.includes("application/json")) {
+      const text = new TextDecoder().decode(resBody);
+      return NextResponse.json(
+        { detail: text.trim() || `Server error (${backendRes.status})`, status: backendRes.status },
+        { status: backendRes.status, headers: { "Access-Control-Allow-Origin": "*" } }
+      );
+    }
+
     return new NextResponse(Buffer.from(resBody), {
       status: backendRes.status,
       headers: resHeaders,

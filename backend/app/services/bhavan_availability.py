@@ -121,9 +121,9 @@ async def get_committed_accommodations(
 
 async def get_effective_available_accommodations(
     db: Union[AsyncSession, Session], check_in: date, check_out: date
-) -> Dict[uuid.UUID, int]:
+) -> Dict[uuid.UUID, Optional[int]]:
     """Calculates max bookable units per accommodation type for the stay duration,
-    correctly handling composite unit bounds.
+    correctly handling composite unit bounds. None indicates unconstrained/unlimited.
     """
     capacities = await get_accommodation_capacities(db)
     committed = await get_committed_accommodations(db, check_in, check_out)
@@ -139,7 +139,7 @@ async def get_effective_available_accommodations(
         base_net[tid] = max(0, cap - max_comm)
 
     # 2. Composite net availability
-    effective_avail: Dict[uuid.UUID, int] = {}
+    effective_avail: Dict[uuid.UUID, Optional[int]] = {}
     for tid, acc_type in types_map.items():
         if acc_type.composition_json and "components" in acc_type.composition_json:
             # Package max units constrained by component capacities
@@ -148,14 +148,15 @@ async def get_effective_available_accommodations(
                 try:
                     comp_uuid = uuid.UUID(str(comp["type_id"]))
                     comp_qty = int(comp.get("quantity", 1))
-                    comp_net = base_net.get(comp_uuid, 0)
-                    possible = comp_net // comp_qty if comp_qty > 0 else 0
-                    max_pkg = min(max_pkg, possible)
+                    comp_net = base_net.get(comp_uuid)
+                    if comp_net is not None:
+                        possible = comp_net // comp_qty if comp_qty > 0 else 0
+                        max_pkg = min(max_pkg, possible)
                 except (ValueError, KeyError):
                     pass
-            effective_avail[tid] = max_pkg if max_pkg != 999999 else base_net.get(tid, 0)
+            effective_avail[tid] = max_pkg if max_pkg != 999999 else base_net.get(tid)
         else:
-            effective_avail[tid] = base_net.get(tid, 0)
+            effective_avail[tid] = base_net.get(tid) if tid in capacities else None
 
     return effective_avail
 

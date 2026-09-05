@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Calendar, MapPin, Clock, ArrowLeft, Ticket, CheckCircle, ShieldAlert, X } from "lucide-react";
-import axios from "axios";
-import { getApiBaseUrl } from "@/utils/api";
+import { getApiBaseUrl, safeFetch, formatErrorMessage } from "@/utils/api";
 import { formatDateDDMonthYYYY } from "@/utils/date";
 import Link from "next/link";
 import PaymentGateway from "@/components/PaymentGateway";
+import { mockEvents } from "@/data/mockEvents";
 
 export default function EventDetailsPage() {
   const params = useParams();
@@ -57,12 +57,20 @@ export default function EventDetailsPage() {
   const maxPassAllowed = 4;
 
   useEffect(() => {
-    // Pre-fetch directory members for instant search dropdown
-    axios.get(`${getApiBaseUrl()}/membership/members`).then((res) => {
-      if (Array.isArray(res.data)) {
-        setAllMembersList(res.data);
-      }
-    }).catch((err) => console.error("Could not fetch member list for dropdown", err));
+    // Pre-fetch directory members for instant search dropdown — only if logged in
+    const token = localStorage.getItem("token");
+    if (token) {
+      safeFetch(`${getApiBaseUrl()}/membership/members`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).then(async (res) => {
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) setAllMembersList(data);
+        }
+      }).catch(() => {
+        // Silently ignore — search dropdown simply won't be pre-populated
+      });
+    }
   }, []);
 
   const handleMemberSearch = (query: string) => {
@@ -160,18 +168,20 @@ export default function EventDetailsPage() {
     const token = localStorage.getItem("token");
     if (token) {
       setIsLoggedIn(true);
-      axios.get(`${getApiBaseUrl()}/auth/me`, {
+      safeFetch(`${getApiBaseUrl()}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
-      }).then((res) => {
-        const u = res.data;
-        if (u) {
-          const name = [u.first_name, u.surname].filter(Boolean).join(" ");
-          setGuestName(name || u.full_name || u.name || "");
-          setGuestPhone(u.mobile || u.phone || u.whatsapp || "");
-          setGuestEmail(u.email || "");
+      }).then(async (res) => {
+        if (res.ok) {
+          const u = await res.json();
+          if (u) {
+            const name = [u.first_name, u.surname].filter(Boolean).join(" ");
+            setGuestName(name || u.full_name || u.name || "");
+            setGuestPhone(u.mobile || u.phone || u.whatsapp || "");
+            setGuestEmail(u.email || "");
+          }
         }
-      }).catch((err) => {
-        console.error("Could not fetch member profile for prefill", err);
+      }).catch(() => {
+        // Silently ignore prefill failure
       });
     }
 
@@ -184,14 +194,27 @@ export default function EventDetailsPage() {
 
     const fetchEvent = async () => {
       try {
-        const res = await axios.get(`${getApiBaseUrl()}/events/${eventId}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        });
-        setEvent(res.data);
-      } catch (err: any) {
-        // A members-only event 404s for non-members on purpose — it should
-        // read the same as "doesn't exist", not reveal that it's gated.
-        setError("Event not found or failed to load");
+        const headers: Record<string, string> = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        const res = await safeFetch(`${getApiBaseUrl()}/events/${eventId}`, { headers });
+        if (res.ok) {
+          setEvent(await res.json());
+        } else {
+          // Check if it is a mock event fallback
+          const fallback = mockEvents.find((m) => m.event_id === eventId);
+          if (fallback) {
+            setEvent(fallback);
+          } else {
+            setError("Event not found or failed to load");
+          }
+        }
+      } catch {
+        const fallback = mockEvents.find((m) => m.event_id === eventId);
+        if (fallback) {
+          setEvent(fallback);
+        } else {
+          setError("Event not found or failed to load");
+        }
       } finally {
         setLoading(false);
       }
@@ -204,20 +227,26 @@ export default function EventDetailsPage() {
     setVoucherChecking(true);
     setVoucherError("");
     try {
-      const res = await axios.post(`${getApiBaseUrl()}/vouchers/validate`, {
-        code: voucherCode.trim(),
-        amount: totalAmount,
-        scope: "event",
+      const res = await safeFetch(`${getApiBaseUrl()}/vouchers/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: voucherCode.trim(), amount: totalAmount, scope: "event" }),
       });
-      setAppliedVoucher({
-        code: res.data.code,
-        discountAmount: res.data.discount_amount,
-        finalAmount: res.data.final_amount,
-        forAmount: totalAmount,
-      });
-    } catch (err: any) {
+      const data = await res.json();
+      if (res.ok) {
+        setAppliedVoucher({
+          code: data.code,
+          discountAmount: data.discount_amount,
+          finalAmount: data.final_amount,
+          forAmount: totalAmount,
+        });
+      } else {
+        setAppliedVoucher(null);
+        setVoucherError(formatErrorMessage(data.detail, "Invalid voucher code."));
+      }
+    } catch {
       setAppliedVoucher(null);
-      setVoucherError(err.response?.data?.detail || "Invalid voucher code.");
+      setVoucherError("Could not validate voucher. Please try again.");
     } finally {
       setVoucherChecking(false);
     }
@@ -236,7 +265,12 @@ export default function EventDetailsPage() {
 
     try {
       const token = localStorage.getItem("token");
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
 
       const attendeesList = attendeeType === "member" 
         ? selectedAttendees.map(att => ({
@@ -265,10 +299,31 @@ export default function EventDetailsPage() {
         payload.voucher_code = appliedVoucher.code;
       }
 
-      const res = await axios.post(`${getApiBaseUrl()}/events/${eventId}/register`, payload, { headers });
-      
-      const { payment_status, payment_mode, registration_id } = res.data;
-      
+      const isMockEvent = mockEvents.some((m) => m.event_id === eventId);
+      if (isMockEvent) {
+        if (event.pricing_type === "paid" && paymentMode === "pay_online") {
+          setPendingRegistrationId("mock-reg-" + Date.now());
+          setShowPaymentGateway(true);
+        } else if (paymentMode === "pay_at_venue") {
+          setSuccessStatus("pending_venue");
+        } else {
+          setSuccessStatus("verified");
+        }
+        setIsSubmitting(false);
+        return;
+      }
+
+      const res = await safeFetch(`${getApiBaseUrl()}/events/${eventId}/register`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(formatErrorMessage(data.detail, "Registration failed"));
+        return;
+      }
+      const { payment_status, payment_mode, registration_id } = data;
       if (payment_mode === "pay_online" && payment_status !== "verified") {
         setPendingRegistrationId(registration_id);
         setShowPaymentGateway(true);
@@ -277,8 +332,8 @@ export default function EventDetailsPage() {
       } else {
         setSuccessStatus("verified");
       }
-    } catch (err: any) {
-      setError(err.response?.data?.detail || "Registration failed");
+    } catch {
+      setError("Registration failed. Please check your connection and try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -316,10 +371,6 @@ export default function EventDetailsPage() {
   return (
     <div className="py-20 px-4 sm:px-6 lg:px-8 bg-zinc-50 min-h-screen">
       <div className="max-w-4xl mx-auto space-y-8">
-        <Link href="/events" className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-500 hover:text-amber-600 transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Back to Events
-        </Link>
-
         {successStatus !== "none" ? (
           <div className="bg-white rounded-3xl border border-zinc-200 shadow-sm p-8 md:p-12 text-center space-y-6">
             <div className="mx-auto w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
@@ -743,6 +794,12 @@ export default function EventDetailsPage() {
             </div>
           </div>
         )}
+
+        <div className="pt-4 flex justify-center">
+          <Link href="/events" className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white border border-zinc-200 text-sm font-semibold text-zinc-600 hover:text-amber-600 hover:border-amber-300 shadow-sm transition-all">
+            <ArrowLeft className="w-4 h-4" /> Back to Events
+          </Link>
+        </div>
       </div>
 
       {showPaymentGateway && (

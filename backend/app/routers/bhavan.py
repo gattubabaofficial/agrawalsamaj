@@ -9,7 +9,7 @@ Data privacy guarantee: Zero leakage of internal rule names, priorities, or admi
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Header, status
 from pydantic import BaseModel, ConfigDict, Field
@@ -23,6 +23,7 @@ from app.models.bhavan import (
     BhavanEnquiryAccommodation, BhavanEnquiryAmenity, BhavanPurpose,
     BhavanSettings, BhavanTermsVersion, BhavanVoucher, EnquirySource, EnquiryStatus,
 )
+from app.services.bhavan_availability import get_accommodation_capacities
 from app.services.bhavan_otp import (
     request_bhavan_otp, validate_enquiry_token, verify_bhavan_otp,
 )
@@ -49,6 +50,7 @@ class PublicAccommodationTypeResponse(BaseModel):
     capacity_per_unit: int
     base_price_per_night: Decimal
     sort_order: int
+    total_units: Optional[int] = None
     images: List[PublicImageResponse] = []
     model_config = ConfigDict(from_attributes=True)
 
@@ -60,6 +62,8 @@ class PublicAmenityResponse(BaseModel):
     image_path: Optional[str] = None
     price: Decimal
     pricing_type: str
+    available_quantity: Optional[int] = None
+    allow_over_request: bool = False
     is_compulsory: bool = False
     sort_order: int
     model_config = ConfigDict(from_attributes=True)
@@ -151,6 +155,7 @@ class PublicQuoteResponse(BaseModel):
     allowed_purpose_ids: Optional[List[str]] = None
     blocked_type_ids: Optional[List[str]] = None
     effective_type_prices: Optional[dict] = None
+    available_units: Optional[Dict[str, Optional[int]]] = None
 
 
 class OTPRequestPayload(BaseModel):
@@ -228,6 +233,10 @@ async def get_public_config(db: AsyncSession = Depends(get_db)):
     )
     vouchers = res_vouchers.scalars().all()
 
+    capacities = await get_accommodation_capacities(db)
+    for t in types:
+        t.total_units = capacities.get(t.id)
+
     settings = await get_or_create_settings(db)
 
     return PublicConfigResponse(
@@ -297,6 +306,7 @@ async def get_public_quote(req: QuoteRequest, db: AsyncSession = Depends(get_db)
         allowed_purpose_ids=getattr(res, "allowed_purpose_ids", None),
         blocked_type_ids=getattr(res, "blocked_type_ids", None),
         effective_type_prices=getattr(res, "effective_type_prices", None),
+        available_units=getattr(res, "available_units", None),
     )
 
 

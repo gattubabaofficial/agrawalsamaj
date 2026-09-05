@@ -22,13 +22,14 @@ import {
   X,
   QrCode,
   CalendarRange,
-  Ticket
+  Ticket,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const contentRef = useRef<HTMLDivElement>(null);
   const [isClient, setIsClient] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [permissions, setPermissions] = useState<string[]>([]);
@@ -36,6 +37,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     setIsMobileNavOpen(false);
+    if (contentRef.current) {
+      contentRef.current.scrollTop = 0;
+      contentRef.current.scrollLeft = 0;
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [pathname]);
 
   useEffect(() => {
@@ -242,7 +248,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-auto p-6">
+        <div ref={contentRef} className="flex-1 overflow-auto p-6">
           {children}
         </div>
       </main>

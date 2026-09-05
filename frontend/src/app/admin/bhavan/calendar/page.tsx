@@ -56,12 +56,6 @@ export default function AdminCalendarPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <Link
-            href="/admin/bhavan"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:underline mb-2"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to Bhavan Overview
-          </Link>
           <h1 className="text-2xl font-bold text-zinc-900">Availability Calendar</h1>
           <p className="text-xs text-zinc-500">Effective rule resolution & layer stack inspector per date</p>
         </div>
@@ -183,6 +177,16 @@ export default function AdminCalendarPage() {
           )}
         </div>
 
+      </div>
+
+      {/* Bottom Navigation & Actions Bar */}
+      <div className="pt-4 border-t border-zinc-200 flex items-center justify-between bg-white p-4 rounded-2xl border border-zinc-200 shadow-sm">
+        <Link
+          href="/admin/bhavan"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-300 bg-white hover:bg-zinc-50 text-xs font-bold text-zinc-700 shadow-sm transition-all"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to Bhavan Overview
+        </Link>
       </div>
     </div>
   );

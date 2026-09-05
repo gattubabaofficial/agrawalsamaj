@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { getApiBaseUrl } from "@/utils/api";
+import { getApiBaseUrl, safeFetch, formatErrorMessage } from "@/utils/api";
 import { Loader2, Shield, IndianRupee, CheckCircle2, Home, Calendar } from "lucide-react";
 
 interface AdminStats {
@@ -25,12 +24,18 @@ export default function MyPerformancePage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await axios.get(`${getApiBaseUrl()}/admin/me/stats`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        });
-        setStats(res.data);
+        const token = localStorage.getItem("token");
+        const headers: Record<string, string> = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        const res = await safeFetch(`${getApiBaseUrl()}/admin/me/stats`, { headers });
+        const data = await res.json();
+        if (res.ok) {
+          setStats(data);
+        } else {
+          setError(formatErrorMessage(data?.detail, "Failed to load your performance stats"));
+        }
       } catch (e: any) {
-        setError(e.response?.data?.detail || "Failed to load your performance stats");
+        setError(formatErrorMessage(e, "Failed to load your performance stats"));
       } finally {
         setLoading(false);
       }

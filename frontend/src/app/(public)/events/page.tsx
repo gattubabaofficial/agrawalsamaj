@@ -4,56 +4,15 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Calendar, MapPin, Clock, Search, Info, Ticket } from "lucide-react";
 import { motion } from "framer-motion";
-import axios from "axios";
-import { getApiBaseUrl } from "@/utils/api";
+import { getApiBaseUrl, safeFetch } from "@/utils/api";
 import { mediaUrl } from "@/utils/media";
 import { formatDateDDMonthYYYY } from "@/utils/date";
 
-// Mock data as fallback
-const mockEvents = [
-  {
-    event_id: "06eb74adc8744fca9fd6b812ecf84596",
-    title: "Maharaja Agrasen Jayanti Mahotsav 2026",
-    description: "Annual grand celebration of Maharaja Agrasen Jayanti with cultural programs, awards, and food.",
-    banner_url: "",
-    venue: "Agrasen Bhawan Main Hall",
-    category: "cultural",
-    start_datetime: "2026-10-15T10:00:00Z",
-    pass_price: 150,
-    status: "upcoming",
-    visibility: "open_to_all",
-    timeline: []
-  },
-  {
-    event_id: "0fbbe5b2addf48cdbc5bb8e8f2b49c8e",
-    title: "Shri Krishna Janmashtami Pooja",
-    description: "Divine pooja, bhajans, and kids Jhanki competition followed by Maha Prasad.",
-    banner_url: "",
-    venue: "Bhavan Temple Ground",
-    category: "religious",
-    start_datetime: "2026-08-28T18:00:00Z",
-    pass_price: 0,
-    status: "upcoming",
-    visibility: "open_to_all",
-    timeline: []
-  },
-  {
-    event_id: "85ab391e784f421eb7687db150b0dce6",
-    title: "Free Eye Check-up & Medical Camp",
-    description: "Free eye checkup, blood pressure, sugar testing & consultation for all samaj members.",
-    banner_url: "",
-    venue: "Samaj Medical Center",
-    category: "social",
-    start_datetime: "2026-11-05T08:00:00Z",
-    pass_price: 0,
-    status: "upcoming",
-    visibility: "open_to_all",
-    timeline: []
-  }
-];
+import { mockEvents } from "@/data/mockEvents";
 
 export default function EventsPage() {
   const [events, setEvents] = useState<any[]>(mockEvents);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
 
@@ -61,18 +20,36 @@ export default function EventsPage() {
     fetchEvents();
   }, []);
 
+  const sortEventsDesc = (list: any[]) => {
+    return [...list].sort((a, b) => {
+      const timeA = new Date(a.start_datetime || a.created_at || 0).getTime();
+      const timeB = new Date(b.start_datetime || b.created_at || 0).getTime();
+      return timeB - timeA;
+    });
+  };
+
   const fetchEvents = async () => {
+    setLoading(true);
     try {
-      const res = await axios.get(`${getApiBaseUrl()}/events`);
-      if (res.data && res.data.length > 0) {
-        setEvents(res.data);
+      const res = await safeFetch(`${getApiBaseUrl()}/events`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setEvents(sortEventsDesc(data));
+        } else {
+          setEvents(sortEventsDesc(mockEvents));
+        }
+      } else {
+        setEvents(sortEventsDesc(mockEvents));
       }
-    } catch (error) {
-      console.error("Failed to fetch events from API, falling back to mock events.", error);
+    } catch {
+      setEvents(sortEventsDesc(mockEvents));
+    } finally {
+      setLoading(false);
     }
   };
 
-  const filteredEvents = events.filter((evt) => {
+  const filteredEvents = sortEventsDesc(events).filter((evt) => {
     const matchesSearch =
       evt.title.toLowerCase().includes(search.toLowerCase()) ||
       (evt.description || "").toLowerCase().includes(search.toLowerCase()) ||

@@ -44,12 +44,6 @@ export default function AdminBhavanDashboard() {
   return (
     <div className="space-y-8" suppressHydrationWarning>
       <div>
-        <Link
-          href="/admin"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:underline mb-2"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to Admin Portal
-        </Link>
         <h1 className="text-3xl font-extrabold text-zinc-900">Bhavan Booking Management</h1>
         <p className="text-sm text-zinc-500 mt-1">Overview of enquiries, rule engine profiles, availability calendar, and inventory</p>
       </div>
@@ -159,6 +153,16 @@ export default function AdminBhavanDashboard() {
           <span className="text-xs font-bold text-teal-600 inline-flex items-center gap-1">Manage Terms <ArrowRight className="w-4 h-4" /></span>
         </Link>
 
+      </div>
+
+      {/* Bottom Navigation */}
+      <div className="pt-4 border-t border-zinc-200 flex items-center justify-between bg-white p-4 rounded-2xl border border-zinc-200 shadow-sm">
+        <Link
+          href="/admin"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-300 bg-white hover:bg-zinc-50 text-xs font-bold text-zinc-700 shadow-sm transition-all"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to Admin Portal
+        </Link>
       </div>
     </div>
   );

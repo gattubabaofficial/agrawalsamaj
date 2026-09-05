@@ -22,13 +22,14 @@ import {
   Ticket,
   CalendarRange,
   Menu,
-  X
+  X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const contentRef = useRef<HTMLDivElement>(null);
   const [isClient, setIsClient] = useState(false);
   const [role, setRole] = useState<string>("");
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
@@ -85,6 +86,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     setIsMobileNavOpen(false);
+    if (contentRef.current) {
+      contentRef.current.scrollTop = 0;
+      contentRef.current.scrollLeft = 0;
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [pathname]);
 
   const handleLogout = () => {
@@ -222,7 +228,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-auto p-6">
+        <div ref={contentRef} className="flex-1 overflow-auto p-6">
           {children}
         </div>
       </main>

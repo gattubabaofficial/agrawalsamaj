@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { Search, CheckCircle2, AlertTriangle, XCircle, Loader2, Calendar, MapPin, Phone, User, Camera, Mail } from "lucide-react";
-import axios from "axios";
-import { getApiBaseUrl } from "@/utils/api";
+import { getApiBaseUrl, safeFetch, formatErrorMessage } from "@/utils/api";
 
 export default function AdminScanPage() {
   const [passId, setPassId] = useState("");
@@ -18,16 +17,11 @@ export default function AdminScanPage() {
   const [scannerInstance, setScannerInstance] = useState<any>(null);
 
   const startCamera = async () => {
-    setCameraScanning(true);
     setError(null);
-    setPassData(null);
-    setSuccessMsg(null);
+    setCameraScanning(true);
 
     try {
-      // Dynamically import to prevent SSR build issues
       const { Html5Qrcode } = await import("html5-qrcode");
-      
-      // Short timeout to ensure the DOM element #reader is mounted
       setTimeout(() => {
         const html5QrCode = new Html5Qrcode("reader");
         setScannerInstance(html5QrCode);
@@ -39,36 +33,28 @@ export default function AdminScanPage() {
             qrbox: { width: 250, height: 250 }
           },
           (decodedText) => {
-            // Success Callback: Regex to extract UUID if it is a URL
             const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
             const match = decodedText.match(uuidRegex);
             const resolvedId = match ? match[0] : decodedText.trim();
-
             setPassId(resolvedId);
 
-            // Stop camera
             html5QrCode.stop().then(() => {
               setCameraScanning(false);
               setScannerInstance(null);
               triggerLookup(resolvedId);
-            }).catch(err => {
-              console.error("Error stopping camera", err);
+            }).catch(() => {
               setCameraScanning(false);
               setScannerInstance(null);
               triggerLookup(resolvedId);
             });
           },
-          () => {
-            // Ignored scan failures (continuous scanning)
-          }
-        ).catch(err => {
-          console.error(err);
+          () => {}
+        ).catch(() => {
           setError("Failed to access camera. Please verify camera permissions are granted.");
           setCameraScanning(false);
         });
       }, 200);
-    } catch (err) {
-      console.error(err);
+    } catch {
       setError("Error initializing scanner.");
       setCameraScanning(false);
     }
@@ -93,14 +79,19 @@ export default function AdminScanPage() {
     setSuccessMsg(null);
 
     const token = localStorage.getItem("token");
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
     try {
-      const res = await axios.get(`${getApiBaseUrl()}/passes/${id.trim()}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setPassData(res.data);
+      const res = await safeFetch(`${getApiBaseUrl()}/passes/${id.trim()}`, { headers });
+      const data = await res.json();
+      if (res.ok) {
+        setPassData(data);
+      } else {
+        setError(formatErrorMessage(data?.detail, "Pass not found. Please verify the Pass ID is correct."));
+      }
     } catch (err: any) {
-      console.error(err);
-      setError(err.response?.data?.detail || "Pass not found. Please verify the Pass ID is correct.");
+      setError(formatErrorMessage(err, "Pass not found. Please verify the Pass ID is correct."));
     } finally {
       setIsLoading(false);
     }
@@ -118,19 +109,27 @@ export default function AdminScanPage() {
 
     setCheckingIn(true);
     setSuccessMsg(null);
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
     try {
-      await axios.post(`${getApiBaseUrl()}/passes/admin/${passData.pass_id}/check-in`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await safeFetch(`${getApiBaseUrl()}/passes/admin/${passData.pass_id}/check-in`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({})
       });
-      setSuccessMsg("Pass successfully checked in!");
-      
-      // Reload pass data
-      const res = await axios.get(`${getApiBaseUrl()}/passes/${passData.pass_id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setPassData(res.data);
-    } catch (err: any) {
-      alert(err.response?.data?.detail || "Check-in failed.");
+      const data = await res.json();
+      if (res.ok) {
+        setSuccessMsg("Pass successfully checked in!");
+        const refreshRes = await safeFetch(`${getApiBaseUrl()}/passes/${passData.pass_id}`, { headers });
+        if (refreshRes.ok) {
+          setPassData(await refreshRes.json());
+        }
+      } else {
+        alert(formatErrorMessage(data?.detail, "Check-in failed."));
+      }
+    } catch {
+      alert("Check-in failed.");
     } finally {
       setCheckingIn(false);
     }

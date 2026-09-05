@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Heart, ArrowRight, Loader2, CheckCircle, XCircle, CreditCard, Sparkles, Shield, IndianRupee } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import axios from "axios";
-import { getApiBaseUrl } from "@/utils/api";
+import { getApiBaseUrl, safeFetch, formatErrorMessage } from "@/utils/api";
 
 interface Category {
   category_id: string;
@@ -56,10 +55,11 @@ export default function DonatePage() {
     const init = async () => {
       // Load categories
       try {
-        const catRes = await axios.get(`${getApiBaseUrl()}/donations/categories`);
-        if (catRes.data?.length > 0) {
-          setCategories(catRes.data);
-          setSelectedCat(catRes.data[0].category_id);
+        const catRes = await safeFetch(`${getApiBaseUrl()}/donations/categories`);
+        const catData = await catRes.json();
+        if (catRes.ok && Array.isArray(catData) && catData.length > 0) {
+          setCategories(catData);
+          setSelectedCat(catData[0].category_id);
         }
       } catch {
         // ignore
@@ -69,10 +69,16 @@ export default function DonatePage() {
       const token = localStorage.getItem("token");
       if (token) {
         try {
-          await axios.get(`${getApiBaseUrl()}/auth/me`, {
+          const res = await safeFetch(`${getApiBaseUrl()}/auth/me`, {
             headers: { Authorization: `Bearer ${token}` },
           });
-          setIsLoggedIn(true);
+          if (res.ok) {
+            setIsLoggedIn(true);
+          } else {
+            localStorage.removeItem("token");
+            localStorage.removeItem("userRole");
+            setIsLoggedIn(false);
+          }
         } catch {
           localStorage.removeItem("token");
           localStorage.removeItem("userRole");
@@ -112,29 +118,43 @@ export default function DonatePage() {
     try {
       const token = localStorage.getItem("token");
       const amt = parseFloat(amount);
-      const catName = categories.find(c => c.category_id === selectedCat)?.name || "General";
 
+      let res;
       if (isLoggedIn && token) {
-        await axios.post(
-          `${getApiBaseUrl()}/donations/`,
-          {
+        res = await safeFetch(`${getApiBaseUrl()}/donations/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
             category_id: selectedCat,
             amount: amt,
             message: `Payment ID: ${paymentId}`,
             purpose_of_donation: purposeOfDonation.trim() || null,
-          },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-      } else {
-        await axios.post(`${getApiBaseUrl()}/donations/guest`, {
-          category_id: selectedCat,
-          amount: amt,
-          message: `Payment ID: ${paymentId}`,
-          purpose_of_donation: purposeOfDonation.trim() || null,
-          guest_name: guestName.trim(),
-          guest_email: guestEmail.trim(),
-          guest_mobile: guestMobile.trim(),
+          })
         });
+      } else {
+        res = await safeFetch(`${getApiBaseUrl()}/donations/guest`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            category_id: selectedCat,
+            amount: amt,
+            message: `Payment ID: ${paymentId}`,
+            purpose_of_donation: purposeOfDonation.trim() || null,
+            guest_name: guestName.trim(),
+            guest_email: guestEmail.trim(),
+            guest_mobile: guestMobile.trim(),
+          })
+        });
+      }
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(formatErrorMessage(data?.detail, "Donation submission failed. Please try again."));
+        setShowPayment(false);
+        return;
       }
 
       setShowPayment(false);
@@ -145,7 +165,7 @@ export default function DonatePage() {
       setGuestEmail("");
       setGuestMobile("");
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Donation submission failed. Please try again.");
+      setError(formatErrorMessage(err, "Donation submission failed. Please try again."));
       setShowPayment(false);
     } finally {
       setIsProcessing(false);

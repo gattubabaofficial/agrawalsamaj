@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, AlertTriangle, XCircle, ArrowLeft, Loader2, Calendar, MapPin, Phone, User, DollarSign } from "lucide-react";
-import axios from "axios";
-import { getApiBaseUrl } from "@/utils/api";
+import { getApiBaseUrl, safeFetch, formatErrorMessage } from "@/utils/api";
 
 export default function VerifyPassPage() {
   const params = useParams();
@@ -38,13 +37,18 @@ export default function VerifyPassPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await axios.get(`${getApiBaseUrl()}/passes/${passId}`, {
+      const res = await safeFetch(`${getApiBaseUrl()}/passes/${passId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setPassData(res.data);
+      if (res.ok) {
+        const data = await res.json();
+        setPassData(data);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setError(formatErrorMessage(errData.detail, "Failed to retrieve pass details. Please verify the Pass ID is correct."));
+      }
     } catch (err: any) {
-      console.error(err);
-      setError(err.response?.data?.detail || "Failed to retrieve pass details. Please verify the Pass ID is correct.");
+      setError(formatErrorMessage(err, "Failed to retrieve pass details. Please verify the Pass ID is correct."));
     } finally {
       setIsLoading(false);
     }
@@ -56,13 +60,18 @@ export default function VerifyPassPage() {
 
     setCheckingIn(true);
     try {
-      await axios.post(`${getApiBaseUrl()}/passes/admin/${passId}/check-in`, {}, {
+      const res = await safeFetch(`${getApiBaseUrl()}/passes/admin/${passId}/check-in`, {
+        method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       });
-      // Refresh details
-      await fetchPassDetails(token);
-    } catch (err: any) {
-      alert(err.response?.data?.detail || "Check-in failed.");
+      if (res.ok) {
+        await fetchPassDetails(token);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.detail || "Check-in failed.");
+      }
+    } catch {
+      alert("Check-in failed.");
     } finally {
       setCheckingIn(false);
     }

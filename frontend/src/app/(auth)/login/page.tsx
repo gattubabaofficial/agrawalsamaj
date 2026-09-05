@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Mail, Phone, Lock, Eye, EyeOff, ShieldCheck, Loader2 } from "lucide-react";
 import { signIn } from "next-auth/react";
-import axios from "axios";
-import { getApiBaseUrl } from "@/utils/api";
+import { getApiBaseUrl, safeFetch } from "@/utils/api";
 
 function getRoleHomeUrl(role: string) {
   const r = (role || "").toLowerCase();
@@ -42,7 +41,7 @@ export default function LoginPage() {
 
       try {
         const { getApiBaseUrl } = await import("@/utils/api");
-        const res = await fetch(`${getApiBaseUrl()}/auth/me`, {
+        const res = await safeFetch(`${getApiBaseUrl()}/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -92,11 +91,20 @@ export default function LoginPage() {
       try {
         setIsLoading(true);
         setErrorMsg("");
-        await axios.post(`${getApiBaseUrl()}/auth/phone/send-otp`, { phone: mobile });
-        setOtpSent(true);
-        setResendCountdown(30); // 30s cooldown
+        const res = await safeFetch(`${getApiBaseUrl()}/auth/phone/send-otp`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone: mobile }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setOtpSent(true);
+          setResendCountdown(30); // 30s cooldown
+        } else {
+          setErrorMsg(data.detail || "Failed to send OTP");
+        }
       } catch (error: any) {
-        setErrorMsg(error.response?.data?.detail || "Failed to send OTP");
+        setErrorMsg("Failed to send OTP");
       } finally {
         setIsLoading(false);
       }
@@ -109,40 +117,53 @@ export default function LoginPage() {
     setErrorMsg("");
 
     try {
-      let response;
+      let res;
       if (method === "password") {
         const formData = new URLSearchParams();
         formData.append('username', email);
         formData.append('password', password);
 
-        response = await axios.post(`${getApiBaseUrl()}/auth/login`, formData, {
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        res = await safeFetch(`${getApiBaseUrl()}/auth/login`, {
+          method: "POST",
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: formData.toString()
         });
       } else {
-        response = await axios.post(`${getApiBaseUrl()}/auth/phone/verify-otp`, {
-          phone: mobile,
-          otp: otp
+        res = await safeFetch(`${getApiBaseUrl()}/auth/phone/verify-otp`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            phone: mobile,
+            otp: otp
+          })
         });
       }
 
-      if (response.data.access_token) {
-        localStorage.setItem("token", response.data.access_token);
-        localStorage.setItem("userRole", response.data.role || "guest");
-        // Store name if returned (some backends include it in token response)
-        if (response.data.first_name) {
-          localStorage.setItem("userName", `${response.data.first_name} ${response.data.surname || ""}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrorMsg(data.detail || "Invalid credentials. Please try again.");
+        setIsLoading(false);
+        return;
+      }
+
+      if (data.access_token) {
+        localStorage.setItem("token", data.access_token);
+        localStorage.setItem("userRole", data.role || "guest");
+        if (data.first_name) {
+          localStorage.setItem("userName", `${data.first_name} ${data.surname || ""}`);
         }
 
         const params = new URLSearchParams(window.location.search);
         let redirectUrl = params.get("next");
         if (!redirectUrl) {
-          redirectUrl = getRoleHomeUrl(response.data.role);
+          redirectUrl = getRoleHomeUrl(data.role);
         }
         window.location.href = redirectUrl;
       }
     } catch (error: any) {
       console.error("Login Error:", error);
-      setErrorMsg(error.response?.data?.detail || "Invalid credentials. Please try again.");
+      setErrorMsg("Invalid credentials. Please try again.");
     } finally {
       setIsLoading(false);
     }

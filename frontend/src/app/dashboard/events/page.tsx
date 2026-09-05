@@ -59,7 +59,12 @@ export default function UserEventsPage() {
       const [eventsData, regData] = await Promise.all([eventsPromise, regPromise]);
 
       if (Array.isArray(eventsData) && eventsData.length > 0) {
-        setEvents(eventsData);
+        const sorted = [...eventsData].sort((a, b) => {
+          const timeA = new Date(a.start_datetime || a.created_at || 0).getTime();
+          const timeB = new Date(b.start_datetime || b.created_at || 0).getTime();
+          return timeB - timeA;
+        });
+        setEvents(sorted);
       }
       if (Array.isArray(regData)) {
         setMyRegistrations(regData);

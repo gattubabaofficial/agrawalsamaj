@@ -49,15 +49,19 @@ async def my_receipts(
 
 @router.get("", response_model=List[ReceiptResponse])
 async def list_all_receipts(
-    receipt_type: Optional[ReceiptType] = None,
+    receipt_type: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     if not is_admin_level(current_user):
         raise HTTPException(status_code=403, detail="Not authorized")
     stmt = select(Receipt).order_by(Receipt.issued_at.desc())
-    if receipt_type is not None:
-        stmt = stmt.where(Receipt.receipt_type == receipt_type)
+    if receipt_type:
+        try:
+            r_enum = ReceiptType[receipt_type.strip().upper()]
+            stmt = stmt.where(Receipt.receipt_type == r_enum)
+        except Exception:
+            pass
     result = await db.execute(stmt)
     return result.scalars().all()
 

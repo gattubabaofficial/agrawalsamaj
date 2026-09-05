@@ -5,8 +5,7 @@ import {
   Search, Phone, MapPin, Lock, Award, Edit3, UserPlus,
   CheckCircle2, AlertCircle, ShieldCheck, X, Send, KeyRound, UserCheck, RefreshCw, Eye, MessageSquare, User, Camera, Upload, Globe
 } from "lucide-react";
-import axios from "axios";
-import { getApiBaseUrl } from "@/utils/api";
+import { getApiBaseUrl, safeFetch, formatErrorMessage } from "@/utils/api";
 import { formatParentage } from "@/utils/member";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -139,13 +138,25 @@ export default function PublicMembersPage() {
 
   useEffect(() => {
     fetchMembers();
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("apply") === "true" || params.get("register") === "true") {
+        setShowRegisterModal(true);
+        setRegStep("details");
+        setRegError("");
+        setRegSuccessMsg("");
+      }
+    }
   }, []);
 
   const fetchMembers = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${getApiBaseUrl()}/membership/members`);
-      setMembers(res.data);
+      const res = await safeFetch(`${getApiBaseUrl()}/membership/members`);
+      if (res.ok) {
+        const data = await res.json();
+        setMembers(Array.isArray(data) ? data : []);
+      }
     } catch (error) {
       console.error("Failed to fetch members directory", error);
     } finally {
@@ -170,11 +181,17 @@ export default function PublicMembersPage() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await axios.post(`${getApiBaseUrl()}/membership/upload-photo`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      const res = await safeFetch(`${getApiBaseUrl()}/membership/upload-photo`, {
+        method: "POST",
+        body: formData,
       });
-      const baseUrl = getApiBaseUrl().replace(/\/api\/v1\/?$/, "");
-      setPhotoUrl(`${baseUrl}${res.data.url}`);
+      if (res.ok) {
+        const data = await res.json();
+        const baseUrl = getApiBaseUrl().replace(/\/api\/v1\/?$/, "");
+        setPhotoUrl(`${baseUrl}${data.url}`);
+      } else {
+        throw new Error("Upload failed");
+      }
     } catch (err: any) {
       console.error("Photo upload failed, converting to local preview data URL", err);
       const reader = new FileReader();
@@ -250,17 +267,27 @@ export default function PublicMembersPage() {
         return;
       }
 
-      const res = await axios.post(`${getApiBaseUrl()}/membership/send-member-edit-otp`, payload);
-      setOtpSentMessage(res.data.message || `Verification code sent to registered mobile number.`);
+      const res = await safeFetch(`${getApiBaseUrl()}/membership/send-member-edit-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setOtpError(formatErrorMessage(data?.detail, "Failed to send OTP. Please verify member details."));
+        return;
+      }
+
+      setOtpSentMessage(data.message || `Verification code sent to registered mobile number.`);
       
-      if (res.data.user_id) {
-        const found = members.find(m => m.user_id === res.data.user_id);
+      if (data.user_id) {
+        const found = members.find(m => m.user_id === data.user_id);
         if (found) setTargetMember(found);
       }
 
       setEditStep("otp");
     } catch (err: any) {
-      setOtpError(err.response?.data?.detail || "Failed to send OTP. Please verify member details.");
+      setOtpError(formatErrorMessage(err?.message, "Failed to send OTP. Please verify member details."));
     } finally {
       setSendingOtp(false);
     }
@@ -279,8 +306,18 @@ export default function PublicMembersPage() {
         ? { user_id: targetMember.user_id, otp: editOtp.trim() }
         : { identifier: identifierInput.trim(), otp: editOtp.trim() };
 
-      const res = await axios.post(`${getApiBaseUrl()}/membership/verify-member-edit-otp`, payload);
-      const user = res.data.user;
+      const res = await safeFetch(`${getApiBaseUrl()}/membership/verify-member-edit-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setOtpError(formatErrorMessage(data?.detail, "Invalid or expired OTP code."));
+        return;
+      }
+
+      const user = data.user;
 
       if (user) {
         const found = members.find(m => m.user_id === user.user_id) || targetMember;
@@ -306,7 +343,7 @@ export default function PublicMembersPage() {
 
       setEditStep("form");
     } catch (err: any) {
-      setOtpError(err.response?.data?.detail || "Invalid or expired OTP code.");
+      setOtpError(formatErrorMessage(err?.message, "Invalid or expired OTP code."));
     } finally {
       setVerifyingOtp(false);
     }
@@ -326,30 +363,39 @@ export default function PublicMembersPage() {
     setSubmittingEdit(true);
     setOtpError("");
     try {
-      await axios.post(`${getApiBaseUrl()}/membership/update-profile/request`, {
-        user_id: targetMember.user_id,
-        otp: editOtp.trim(),
-        first_name: editFirstName.trim(),
-        surname: editSurname.trim(),
-        father_name: editFatherName.trim() || null,
-        profession: editProfession.trim() || null,
-        native_place: editNativePlace.trim() || null,
-        bio: editBio.trim() || null,
-        email: editEmail.trim() || null,
-        mobile: editMobile.trim() || null,
-        address: editAddress.trim() || null,
-        profile_photo: editPhotoUrl.trim() || null,
-        mobile_private: editMobilePrivate,
-        email_private: editEmailPrivate,
-        address_private: editAddressPrivate,
-        profession_private: editProfessionPrivate,
-        native_place_private: editNativePlacePrivate,
-        bio_private: editBioPrivate,
+      const res = await safeFetch(`${getApiBaseUrl()}/membership/update-profile/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: targetMember.user_id,
+          otp: editOtp.trim(),
+          first_name: editFirstName.trim(),
+          surname: editSurname.trim(),
+          father_name: editFatherName.trim() || null,
+          profession: editProfession.trim() || null,
+          native_place: editNativePlace.trim() || null,
+          bio: editBio.trim() || null,
+          email: editEmail.trim() || null,
+          mobile: editMobile.trim() || null,
+          address: editAddress.trim() || null,
+          profile_photo: editPhotoUrl.trim() || null,
+          mobile_private: editMobilePrivate,
+          email_private: editEmailPrivate,
+          address_private: editAddressPrivate,
+          profession_private: editProfessionPrivate,
+          native_place_private: editNativePlacePrivate,
+          bio_private: editBioPrivate,
+        }),
       });
+      const data = await res.json();
+      if (!res.ok) {
+        setOtpError(formatErrorMessage(data?.detail, "Failed to submit profile update request."));
+        return;
+      }
 
       setEditSuccessMsg("Your profile updates have been submitted to Agrawal Samaj Mansrovar Jaipur Admin for verification! Once approved by Admin, your updated details will appear on the live website.");
     } catch (err: any) {
-      setOtpError(err.response?.data?.detail || "Failed to submit profile update request.");
+      setOtpError(formatErrorMessage(err?.message, "Failed to submit profile update request."));
     } finally {
       setSubmittingEdit(false);
     }
@@ -364,10 +410,19 @@ export default function PublicMembersPage() {
     setMsgSendingOtp(true);
     setMessageError("");
     try {
-      await axios.post(`${getApiBaseUrl()}/auth/phone/send-otp`, { phone: senderMobile.trim() });
+      const res = await safeFetch(`${getApiBaseUrl()}/auth/phone/send-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: senderMobile.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessageError(formatErrorMessage(data?.detail, "Failed to send OTP code to your phone number."));
+        return;
+      }
       setMsgStep("otp");
     } catch (err: any) {
-      setMessageError(err.response?.data?.detail || "Failed to send OTP code to your phone number.");
+      setMessageError(formatErrorMessage(err?.message, "Failed to send OTP code to your phone number."));
     } finally {
       setMsgSendingOtp(false);
     }
@@ -384,18 +439,27 @@ export default function PublicMembersPage() {
     setSendingMessage(true);
     setMessageError("");
     try {
-      const res = await axios.post(`${getApiBaseUrl()}/membership/contact-member`, {
-        recipient_user_id: messageMemberModal.user_id,
-        sender_name: senderName.trim(),
-        sender_mobile: senderMobile.trim(),
-        sender_email: senderEmail.trim() || null,
-        reason: messageReason,
-        message: messageText.trim(),
-        otp: msgOtp.trim(),
+      const res = await safeFetch(`${getApiBaseUrl()}/membership/contact-member`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipient_user_id: messageMemberModal.user_id,
+          sender_name: senderName.trim(),
+          sender_mobile: senderMobile.trim(),
+          sender_email: senderEmail.trim() || null,
+          reason: messageReason,
+          message: messageText.trim(),
+          otp: msgOtp.trim(),
+        }),
       });
-      setMessageSuccessMsg(res.data.message || `Your message request has been sent to ${messageMemberModal.first_name} ${messageMemberModal.surname}.`);
+      const data = await res.json();
+      if (!res.ok) {
+        setMessageError(formatErrorMessage(data?.detail, "Failed to send message request."));
+        return;
+      }
+      setMessageSuccessMsg(data.message || `Your message request has been sent to ${messageMemberModal.first_name} ${messageMemberModal.surname}.`);
     } catch (err: any) {
-      setMessageError(err.response?.data?.detail || "Failed to send message request.");
+      setMessageError(formatErrorMessage(err?.message, "Failed to send message request."));
     } finally {
       setSendingMessage(false);
     }
@@ -410,10 +474,19 @@ export default function PublicMembersPage() {
     setRegSendingOtp(true);
     setRegError("");
     try {
-      await axios.post(`${getApiBaseUrl()}/auth/register/send-otp`, { identifier: regMobile.trim() });
+      const res = await safeFetch(`${getApiBaseUrl()}/auth/register/send-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: regMobile.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setRegError(formatErrorMessage(data?.detail, "Failed to send OTP."));
+        return;
+      }
       setRegStep("otp");
     } catch (err: any) {
-      setRegError(err.response?.data?.detail || "Failed to send OTP.");
+      setRegError(formatErrorMessage(err?.message, "Failed to send OTP."));
     } finally {
       setRegSendingOtp(false);
     }
@@ -428,29 +501,38 @@ export default function PublicMembersPage() {
     setRegSubmitting(true);
     setRegError("");
     try {
-      await axios.post(`${getApiBaseUrl()}/membership/apply-with-otp`, {
-        first_name: regFirstName.trim(),
-        surname: regSurname.trim(),
-        father_name: regFatherName.trim() || null,
-        parent_relation: regParentRelation.trim() || null,
-        mobile: regMobile.trim(),
-        email: regEmail.trim() || null,
-        profession: regProfession.trim() || null,
-        native_place: regNativePlace.trim() || null,
-        bio: regBio.trim() || null,
-        address: regAddress.trim() || null,
-        profile_photo: regPhotoUrl.trim() || null,
-        mobile_private: regMobilePrivate,
-        email_private: regEmailPrivate,
-        address_private: regAddressPrivate,
-        profession_private: regProfessionPrivate,
-        native_place_private: regNativePlacePrivate,
-        bio_private: regBioPrivate,
-        otp: regOtp.trim(),
+      const res = await safeFetch(`${getApiBaseUrl()}/membership/apply-with-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          first_name: regFirstName.trim(),
+          surname: regSurname.trim(),
+          father_name: regFatherName.trim() || null,
+          parent_relation: regParentRelation.trim() || null,
+          mobile: regMobile.trim(),
+          email: regEmail.trim() || null,
+          profession: regProfession.trim() || null,
+          native_place: regNativePlace.trim() || null,
+          bio: regBio.trim() || null,
+          address: regAddress.trim() || null,
+          profile_photo: regPhotoUrl.trim() || null,
+          mobile_private: regMobilePrivate,
+          email_private: regEmailPrivate,
+          address_private: regAddressPrivate,
+          profession_private: regProfessionPrivate,
+          native_place_private: regNativePlacePrivate,
+          bio_private: regBioPrivate,
+          otp: regOtp.trim(),
+        }),
       });
+      const data = await res.json();
+      if (!res.ok) {
+        setRegError(formatErrorMessage(data?.detail, "Failed to submit membership application."));
+        return;
+      }
       setRegSuccessMsg("Registration application submitted successfully! Our executive committee will verify your details and approve your membership.");
     } catch (err: any) {
-      setRegError(err.response?.data?.detail || "Failed to submit registration application.");
+      setRegError(formatErrorMessage(err?.message, "Failed to submit membership application."));
     } finally {
       setRegSubmitting(false);
     }

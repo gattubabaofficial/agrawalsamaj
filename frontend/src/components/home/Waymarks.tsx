@@ -1,13 +1,11 @@
 import Link from "next/link";
-import { Heart, Calendar, Building, Info, Home, BookOpen, Users, History } from "lucide-react";
+import { Heart, Calendar, Building, Info, Home, BookOpen, Users, History, UserPlus } from "lucide-react";
 import { Eyebrow, Rule, Section } from "@/components/ui/primitives";
 import { Reveal, RevealGroup, RevealItem } from "@/components/ui/motion";
 
-/* A Hindi-language guide to the header navigation — for the visitor who
-   reads the site in Hindi and wants to know what each button above does
-   before clicking it. Mirrors navItems in components/layout/Navbar.tsx,
-   icons included; keep the two in sync if a nav link is ever added,
-   renamed, or removed.
+/* A Hindi-language guide to the navigation and community services — for the visitor who
+   reads the site in Hindi and wants to know what each service or section does
+   before clicking it.
 
    Note: Devanagari text never goes inside <Eyebrow> — that component
    uppercases and letter-spaces, which mangles the script (see the same
@@ -22,6 +20,7 @@ const NAV_GUIDE = [
   { name: "कार्यक्रम", href: "/events", icon: Calendar, description: "आगामी आयोजनों की जानकारी और पास बुक करने की सुविधा।" },
   { name: "ब्लॉग", href: "/blog", icon: BookOpen, description: "समाज की कहानियाँ पढ़ें, या फ़ोन सत्यापन के बाद स्वयं लिखें।" },
   { name: "दान", href: "/donate", icon: Heart, description: "समाज के कार्यों में सीधे योगदान देने का माध्यम।" },
+  { name: "सदस्यता आवेदन", href: "/members?apply=true", icon: UserPlus, description: "अग्रवाल समाज मानसरोवर की नई सदस्यता हेतु ऑनलाइन आवेदन करें।" },
 ];
 
 export default function Waymarks() {
@@ -45,7 +44,7 @@ export default function Waymarks() {
           </p>
         </Reveal>
 
-        <RevealGroup as="div" stagger={0.06} className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <RevealGroup as="div" stagger={0.06} className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {NAV_GUIDE.map((item, i) => (
             <RevealItem key={item.href} distance={14} className="h-full">
               <Link

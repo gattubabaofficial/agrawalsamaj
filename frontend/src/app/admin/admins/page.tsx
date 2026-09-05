@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { getApiBaseUrl } from "@/utils/api";
+import { getApiBaseUrl, safeFetch, formatErrorMessage } from "@/utils/api";
 import { Shield, UserPlus, KeyRound, Loader2, IndianRupee, CheckCircle2, X } from "lucide-react";
 
 interface AdminStats {
@@ -38,16 +37,21 @@ export default function AdminManagementPage() {
   const [newPassword, setNewPassword] = useState("");
   const [toast, setToast] = useState("");
 
-  const authHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } });
+  const authHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem("token")}`, "Content-Type": "application/json" } });
 
   const loadAdmins = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${getApiBaseUrl()}/admin/admins`, authHeader());
-      setAdmins(res.data);
-      setError("");
+      const res = await safeFetch(`${getApiBaseUrl()}/admin/admins`, authHeader());
+      const data = await res.json();
+      if (res.ok) {
+        setAdmins(Array.isArray(data) ? data : []);
+        setError("");
+      } else {
+        setError(formatErrorMessage(data?.detail, "Failed to load admins. Super admin access required."));
+      }
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Failed to load admins. Super admin access required.");
+      setError(formatErrorMessage(e, "Failed to load admins. Super admin access required."));
     } finally {
       setLoading(false);
     }
@@ -59,13 +63,22 @@ export default function AdminManagementPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await axios.post(`${getApiBaseUrl()}/admin/admins`, form, authHeader());
-      setToast(`Admin ${form.first_name} created`);
-      setForm({ first_name: "", surname: "", email: "", mobile: "", password: "", admin_notes: "" });
-      setShowForm(false);
-      loadAdmins();
+      const res = await safeFetch(`${getApiBaseUrl()}/admin/admins`, {
+        method: "POST",
+        ...authHeader(),
+        body: JSON.stringify(form)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setToast(`Admin ${form.first_name} created`);
+        setForm({ first_name: "", surname: "", email: "", mobile: "", password: "", admin_notes: "" });
+        setShowForm(false);
+        loadAdmins();
+      } else {
+        setError(formatErrorMessage(data?.detail, "Failed to create admin"));
+      }
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Failed to create admin");
+      setError(formatErrorMessage(e, "Failed to create admin"));
     } finally {
       setSubmitting(false);
     }
@@ -74,21 +87,39 @@ export default function AdminManagementPage() {
   const resetPassword = async (id: string) => {
     if (!newPassword || newPassword.length < 6) { setError("Password must be at least 6 characters"); return; }
     try {
-      await axios.post(`${getApiBaseUrl()}/admin/admins/${id}/reset-password`, { new_password: newPassword }, authHeader());
-      setToast("Password updated");
-      setResetId(null);
-      setNewPassword("");
+      const res = await safeFetch(`${getApiBaseUrl()}/admin/admins/${id}/reset-password`, {
+        method: "POST",
+        ...authHeader(),
+        body: JSON.stringify({ new_password: newPassword })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setToast("Password updated");
+        setResetId(null);
+        setNewPassword("");
+      } else {
+        setError(formatErrorMessage(data?.detail, "Failed to reset password"));
+      }
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Failed to reset password");
+      setError(formatErrorMessage(e, "Failed to reset password"));
     }
   };
 
   const toggleActive = async (a: Admin) => {
     try {
-      await axios.put(`${getApiBaseUrl()}/admin/admins/${a.user_id}`, { is_active: !a.is_active }, authHeader());
-      loadAdmins();
+      const res = await safeFetch(`${getApiBaseUrl()}/admin/admins/${a.user_id}`, {
+        method: "PUT",
+        ...authHeader(),
+        body: JSON.stringify({ is_active: !a.is_active })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        loadAdmins();
+      } else {
+        setError(formatErrorMessage(data?.detail, "Failed to update"));
+      }
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Failed to update");
+      setError(formatErrorMessage(e, "Failed to update"));
     }
   };
 

@@ -517,6 +517,12 @@ export default function BlogReaderPage() {
               Show {comments.length - 3} more comments
             </button>
           )}
+
+          <div className="pt-8 mt-8 border-t border-zinc-100 flex justify-center">
+            <Link href="/blog" className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-sm font-semibold text-zinc-600 hover:text-amber-600 transition-all">
+              <ArrowLeft className="w-4 h-4" /> Back to Blog
+            </Link>
+          </div>
         </section>
       </article>
 

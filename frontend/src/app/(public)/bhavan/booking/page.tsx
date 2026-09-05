@@ -17,6 +17,7 @@ interface AccommodationType {
   description?: string;
   capacity_per_unit: number;
   base_price_per_night: number;
+  total_units?: number | null;
 }
 
 interface Amenity {
@@ -24,6 +25,8 @@ interface Amenity {
   name: string;
   price: number;
   pricing_type: string;
+  available_quantity?: number | null;
+  allow_over_request?: boolean;
 }
 
 interface Purpose {
@@ -58,6 +61,7 @@ interface QuoteResponse {
   allowed_purpose_ids?: string[];
   blocked_type_ids?: string[];
   effective_type_prices?: Record<string, string>; // type_id -> price string
+  available_units?: Record<string, number | null>;
 }
 
 
@@ -165,6 +169,13 @@ export default function BhavanBookingPage() {
       fetchQuote();
     }
   }, [checkIn, checkOut, purposeId, selectedTypes, selectedAmenities, guestsTotal, selectedVoucherId, selectedVoucherCode]);
+
+  // Scroll to top whenever step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [step]);
 
   // Cooldown timer effect
   useEffect(() => {
@@ -454,8 +465,14 @@ export default function BhavanBookingPage() {
                   </div>
                 </div>
 
-                {/* Next Step Action */}
-                <div className="pt-4 flex justify-end">
+                {/* Navigation Actions */}
+                <div className="pt-4 flex items-center justify-between">
+                  <Link
+                    href="/bhavan"
+                    className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 px-5 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors cursor-pointer"
+                  >
+                    <ArrowLeft className="w-4 h-4" /> Back to Bhavan
+                  </Link>
                   {(() => {
                     const isClosed = quote?.blockers?.some((b) => b.includes("closed") || b.includes("maintenance"));
                     const canAdvance = checkIn && checkOut && checkOut > checkIn && !isClosed && !quoteLoading;
@@ -578,11 +595,23 @@ export default function BhavanBookingPage() {
                             // Fall back to base price if effective is 0 (no quote yet or no rule override)
                             const effectivePrice = rawEffective > 0 ? rawEffective : basePrice;
                             const isPriceAdjusted = rawEffective > 0 && Math.abs(rawEffective - basePrice) > 0.01;
+
+                            const hasQuoteAvailability = quote?.available_units && t.id in quote.available_units;
+                            const availableUnits = hasQuoteAvailability
+                              ? quote.available_units![t.id]
+                              : (t.total_units !== undefined ? t.total_units : null);
+
+                            const isOutOfStock = availableUnits !== null && availableUnits !== undefined && availableUnits <= 0;
+                            const isRoom = t.kind === "room" || t.name.toLowerCase().includes("room");
+                            const unitLabel = isRoom
+                              ? (availableUnits === 1 ? "room" : "rooms")
+                              : (availableUnits === 1 ? "unit" : "units");
+
                             return (
                               <div key={t.id} className="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
                                 <div className="flex items-start justify-between gap-4">
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                                       <h4 className="font-bold text-white text-base">{t.name}</h4>
                                       {isPriceAdjusted && (
                                         <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/25">Event Rate</span>
@@ -592,24 +621,60 @@ export default function BhavanBookingPage() {
                                       <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">{t.description}</p>
                                     )}
                                     <p className="text-xs text-zinc-500 mt-1">Capacity: {t.capacity_per_unit} guests per unit</p>
-                                    <div className="mt-2">
+                                    <div className="flex items-center gap-2.5 mt-2 flex-wrap">
                                       <span className="text-base font-bold text-amber-400">₹{effectivePrice.toLocaleString('en-IN')} / night</span>
+                                      <span className="text-zinc-600 text-xs">•</span>
+                                      {availableUnits !== null && availableUnits !== undefined ? (
+                                        <span
+                                          className={`text-[11px] font-semibold px-2 py-0.5 rounded ${
+                                            availableUnits > 0
+                                              ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                                              : "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                                          }`}
+                                        >
+                                          {availableUnits > 0
+                                            ? `Available: ${availableUnits} ${unitLabel}`
+                                            : "Out of Stock (0 available)"}
+                                        </span>
+                                      ) : (
+                                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+                                          Available
+                                        </span>
+                                      )}
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-3 shrink-0">
-                                    <button
-                                      onClick={() => updateTypeQty(t.id, -1)}
-                                      className="w-9 h-9 rounded-lg bg-zinc-800 text-white flex items-center justify-center font-bold text-lg hover:bg-zinc-700"
-                                    >
-                                      -
-                                    </button>
-                                    <span className="w-8 text-center font-bold text-white text-lg">{qty}</span>
-                                    <button
-                                      onClick={() => updateTypeQty(t.id, 1)}
-                                      className="w-9 h-9 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold text-lg hover:bg-amber-400"
-                                    >
-                                      +
-                                    </button>
+                                  <div className="flex flex-col items-end gap-1 shrink-0">
+                                    <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                                      Quantity
+                                    </label>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      disabled={isOutOfStock}
+                                      max={availableUnits !== null && availableUnits !== undefined ? availableUnits : undefined}
+                                      value={selectedTypes[t.id] === undefined || selectedTypes[t.id] === 0 ? "" : selectedTypes[t.id]}
+                                      placeholder="0"
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        if (val === "" || val === "0") {
+                                          setSelectedTypes((prev) => {
+                                            const next = { ...prev };
+                                            delete next[t.id];
+                                            return next;
+                                          });
+                                        } else {
+                                          const parsed = parseInt(val, 10);
+                                          if (!isNaN(parsed) && parsed >= 0) {
+                                            const maxLimit = (availableUnits !== null && availableUnits !== undefined)
+                                              ? availableUnits
+                                              : Infinity;
+                                            const finalVal = Math.min(parsed, maxLimit);
+                                            setSelectedTypes((prev) => ({ ...prev, [t.id]: finalVal }));
+                                          }
+                                        }
+                                      }}
+                                      className="w-24 rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-center text-lg font-bold text-white focus:border-amber-500 focus:bg-zinc-900 focus:outline-none transition-all placeholder:text-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                                    />
                                   </div>
                                 </div>
                               </div>
@@ -649,27 +714,72 @@ export default function BhavanBookingPage() {
 
                 <div className="space-y-4">
                   {amenities.map((a) => {
-                    const qty = selectedAmenities[a.id] || 0;
+                    const isOutOfStock = a.available_quantity !== null && a.available_quantity !== undefined && a.available_quantity <= 0 && !a.allow_over_request;
                     return (
-                      <div key={a.id} className="rounded-xl border border-zinc-800 bg-zinc-950 p-5 flex items-center justify-between">
-                        <div>
+                      <div key={a.id} className="rounded-xl border border-zinc-800 bg-zinc-950 p-5 flex items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
                           <h4 className="font-bold text-white text-base">{a.name}</h4>
-                          <p className="text-xs text-amber-400 mt-1 font-medium">₹{a.price} ({a.pricing_type.replace("_", " ")})</p>
+                          <div className="flex items-center gap-2.5 mt-1.5 flex-wrap">
+                            <span className="text-xs text-amber-400 font-semibold">
+                              ₹{parseFloat(String(a.price)).toFixed(2)} ({a.pricing_type.replace("_", " ")})
+                            </span>
+                            <span className="text-zinc-600 text-xs">•</span>
+                            {a.available_quantity !== null && a.available_quantity !== undefined ? (
+                              <span
+                                className={`text-[11px] font-semibold px-2 py-0.5 rounded ${
+                                  a.available_quantity > 0
+                                    ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                                    : "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                                }`}
+                              >
+                                {a.available_quantity > 0
+                                  ? `Available: ${a.available_quantity} ${a.available_quantity === 1 ? "unit" : "units"}`
+                                  : "Out of Stock (0 available)"}
+                              </span>
+                            ) : (
+                              <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+                                Available: Unlimited
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => updateAmenityQty(a.id, -1)}
-                            className="w-9 h-9 rounded-lg bg-zinc-800 text-white flex items-center justify-center font-bold text-lg hover:bg-zinc-700"
-                          >
-                            -
-                          </button>
-                          <span className="w-8 text-center font-bold text-white text-lg">{qty}</span>
-                          <button
-                            onClick={() => updateAmenityQty(a.id, 1)}
-                            className="w-9 h-9 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold text-lg hover:bg-amber-400"
-                          >
-                            +
-                          </button>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                            Quantity
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            disabled={isOutOfStock}
+                            max={
+                              a.available_quantity !== null && a.available_quantity !== undefined && !a.allow_over_request
+                                ? a.available_quantity
+                                : undefined
+                            }
+                            value={selectedAmenities[a.id] === undefined || selectedAmenities[a.id] === 0 ? "" : selectedAmenities[a.id]}
+                            placeholder="0"
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === "" || val === "0") {
+                                setSelectedAmenities((prev) => {
+                                  const next = { ...prev };
+                                  delete next[a.id];
+                                  return next;
+                                });
+                              } else {
+                                const parsed = parseInt(val, 10);
+                                if (!isNaN(parsed) && parsed >= 0) {
+                                  const maxLimit =
+                                    a.available_quantity !== null && a.available_quantity !== undefined && !a.allow_over_request
+                                      ? a.available_quantity
+                                      : Infinity;
+                                  const finalVal = Math.min(parsed, maxLimit);
+                                  setSelectedAmenities((prev) => ({ ...prev, [a.id]: finalVal }));
+                                }
+                              }
+                            }}
+                            className="w-24 rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-center text-lg font-bold text-white focus:border-amber-500 focus:bg-zinc-900 focus:outline-none transition-all placeholder:text-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                          />
                         </div>
                       </div>
                     );

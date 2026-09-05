@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { getApiBaseUrl } from "@/utils/api";
+import { getApiBaseUrl, safeFetch, formatErrorMessage } from "@/utils/api";
 import { Loader2, Download, Receipt as ReceiptIcon } from "lucide-react";
 
 interface Receipt {
@@ -28,12 +27,18 @@ export default function MyReceiptsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await axios.get(`${getApiBaseUrl()}/receipts/me`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        });
-        setReceipts(res.data);
+        const token = localStorage.getItem("token");
+        const headers: Record<string, string> = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        const res = await safeFetch(`${getApiBaseUrl()}/receipts/me`, { headers });
+        const data = await res.json();
+        if (res.ok) {
+          setReceipts(Array.isArray(data) ? data : []);
+        } else {
+          setError(formatErrorMessage(data?.detail, "Failed to load your receipts"));
+        }
       } catch (e: any) {
-        setError(e.response?.data?.detail || "Failed to load your receipts");
+        setError(formatErrorMessage(e, "Failed to load your receipts"));
       } finally {
         setLoading(false);
       }
@@ -62,7 +67,7 @@ export default function MyReceiptsPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-xs text-zinc-500">{r.receipt_number}</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${r.receipt_type === "booking" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>{r.receipt_type}</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${r.receipt_type?.toLowerCase() === "booking" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>{r.receipt_type}</span>
                 </div>
                 <p className="text-sm text-zinc-800 mt-1">{r.description}</p>
                 <p className="text-xs text-zinc-400">{new Date(r.issued_at).toLocaleDateString("en-IN")} · {(r.payment_mode || "").toUpperCase()}</p>

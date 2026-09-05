@@ -3,8 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
-import axios from "axios";
-import { getApiBaseUrl } from "@/utils/api";
+import { getApiBaseUrl, safeFetch } from "@/utils/api";
 
 export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -23,22 +22,32 @@ export default function AdminLoginPage() {
       formData.append('username', email);
       formData.append('password', password);
 
-      const response = await axios.post(`${getApiBaseUrl()}/auth/login`, formData, {
+      const response = await safeFetch(`${getApiBaseUrl()}/auth/login`, {
+        method: "POST",
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
-        }
+        },
+        body: formData.toString()
       });
 
-      if (response.data.access_token) {
-        const role = (response.data.role || "").toUpperCase();
+      const data = await response.json();
+
+      if (!response.ok) {
+        setErrorMsg(data.detail || "Invalid credentials. Please try again.");
+        setIsLoading(false);
+        return;
+      }
+
+      if (data.access_token) {
+        const role = (data.role || "").toUpperCase();
         if (role !== "ADMIN" && role !== "SUPER_ADMIN" && role !== "VOLUNTEER") {
           setErrorMsg("Access Denied: You are not an administrator.");
           setIsLoading(false);
           return;
         }
 
-        localStorage.setItem("token", response.data.access_token);
-        localStorage.setItem("userRole", response.data.role);
+        localStorage.setItem("token", data.access_token);
+        localStorage.setItem("userRole", data.role);
 
         const params = new URLSearchParams(window.location.search);
         const redirectUrl = params.get("next") || (role === "VOLUNTEER" ? "/admin/scan" : "/admin/dashboard");
@@ -46,7 +55,7 @@ export default function AdminLoginPage() {
       }
     } catch (error: any) {
       console.error("Login Error:", error);
-      setErrorMsg(error.response?.data?.detail || "Invalid credentials. Please try again.");
+      setErrorMsg("Invalid credentials. Please try again.");
     } finally {
       setIsLoading(false);
     }

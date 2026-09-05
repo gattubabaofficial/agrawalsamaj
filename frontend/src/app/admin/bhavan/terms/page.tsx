@@ -133,6 +133,23 @@ export default function AdminTermsPage() {
         </div>
       )}
 
+      {/* Bottom Navigation & Actions Bar */}
+      <div className="pt-4 border-t border-zinc-200 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-zinc-200 shadow-sm">
+        <Link
+          href="/admin/bhavan"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-300 bg-white hover:bg-zinc-50 text-xs font-bold text-zinc-700 shadow-sm transition-all"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to Bhavan Overview
+        </Link>
+
+        <button
+          onClick={() => setShowModal(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl text-xs shadow-sm transition-colors cursor-pointer"
+        >
+          <Plus className="w-4 h-4" /> Create New Version
+        </button>
+      </div>
+
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-xl space-y-4">
