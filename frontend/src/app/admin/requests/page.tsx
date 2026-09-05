@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, XCircle, Search, UserPlus, Home, Users, Edit3, ArrowRight, ShieldCheck, Eye, X } from "lucide-react";
+import { CheckCircle, XCircle, Search, UserPlus, Home, Users, Edit3, ArrowRight, ShieldCheck, Eye, X, Award, Hash, AlertCircle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
@@ -12,6 +12,12 @@ export default function AdminRequestsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [viewApplication, setViewApplication] = useState<any | null>(null);
+
+  // Approve Modal State (asking for LM Number manually)
+  const [approveModalRequest, setApproveModalRequest] = useState<any | null>(null);
+  const [lmNumberInput, setLmNumberInput] = useState("");
+  const [isApproving, setIsApproving] = useState(false);
+  const [approveError, setApproveError] = useState("");
 
   useEffect(() => {
     fetchData();
@@ -37,15 +43,66 @@ export default function AdminRequestsPage() {
     }
   };
 
-  const handleMembershipAction = async (id: string, action: "approve" | "reject") => {
+  const openApproveModal = (req: any) => {
+    setApproveModalRequest(req);
+    setLmNumberInput("");
+    setApproveError("");
+  };
+
+  const handleConfirmApprove = async () => {
+    if (!approveModalRequest) return;
+    setIsApproving(true);
+    setApproveError("");
+
     try {
       const token = localStorage.getItem("token");
-      await axios.post(`${getApiBaseUrl()}/membership/requests/${id}/${action}`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const payload: { lm_no?: number | null } = {};
+
+      if (lmNumberInput.trim()) {
+        const parsed = parseInt(lmNumberInput.trim(), 10);
+        if (isNaN(parsed) || parsed <= 0) {
+          setApproveError("Please enter a valid positive number for LM Number.");
+          setIsApproving(false);
+          return;
+        }
+        payload.lm_no = parsed;
+      } else {
+        payload.lm_no = null;
+      }
+
+      await axios.post(
+        `${getApiBaseUrl()}/membership/requests/${approveModalRequest.request_id}/approve`,
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setApproveModalRequest(null);
+      if (viewApplication?.request_id === approveModalRequest.request_id) {
+        setViewApplication(null);
+      }
       fetchData();
     } catch (error: any) {
-      alert(error.response?.data?.detail || `Failed to ${action} request.`);
+      setApproveError(error.response?.data?.detail || "Failed to approve membership request.");
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  const handleMembershipReject = async (id: string) => {
+    if (!window.confirm("Are you sure you want to reject this membership application?")) {
+      return;
+    }
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(`${getApiBaseUrl()}/membership/requests/${id}/reject`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (viewApplication?.request_id === id) {
+        setViewApplication(null);
+      }
+      fetchData();
+    } catch (error: any) {
+      alert(error.response?.data?.detail || "Failed to reject request.");
     }
   };
 
@@ -189,13 +246,13 @@ export default function AdminRequestsPage() {
                             <Eye className="w-3.5 h-3.5" /> View Details
                           </button>
                           <button
-                            onClick={() => handleMembershipAction(req.request_id, "approve")}
+                            onClick={() => openApproveModal(req)}
                             className="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1"
                           >
                             <CheckCircle className="w-3.5 h-3.5" /> Approve
                           </button>
                           <button
-                            onClick={() => handleMembershipAction(req.request_id, "reject")}
+                            onClick={() => handleMembershipReject(req.request_id)}
                             className="px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1"
                           >
                             <XCircle className="w-3.5 h-3.5" /> Reject
@@ -479,16 +536,155 @@ export default function AdminRequestsPage() {
 
             <div className="p-4 bg-zinc-50 border-t border-zinc-200 flex justify-end gap-2">
               <button
-                onClick={() => { handleMembershipAction(viewApplication.request_id, "reject"); setViewApplication(null); }}
+                onClick={() => handleMembershipReject(viewApplication.request_id)}
                 className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5"
               >
                 <XCircle className="w-4 h-4" /> Reject
               </button>
               <button
-                onClick={() => { handleMembershipAction(viewApplication.request_id, "approve"); setViewApplication(null); }}
+                onClick={() => openApproveModal(viewApplication)}
                 className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow-sm"
               >
                 <CheckCircle className="w-4 h-4" /> Approve
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Approve Membership Modal — Prompt for LM Number */}
+      {approveModalRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-lg w-full border border-zinc-200 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="px-6 py-5 bg-gradient-to-r from-amber-500 to-orange-600 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-white/20 rounded-xl">
+                  <Award className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg leading-tight">Approve Membership</h3>
+                  <p className="text-xs text-amber-100 mt-0.5">Agrawal Samaj Mansrovar Jaipur</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setApproveModalRequest(null)}
+                disabled={isApproving}
+                className="p-2 rounded-full hover:bg-white/20 transition-colors disabled:opacity-50"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-6 space-y-5">
+              {/* Applicant Card */}
+              <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-4">
+                <div className="flex items-start gap-3">
+                  {approveModalRequest.user?.profile_photo ? (
+                    <img
+                      src={approveModalRequest.user.profile_photo}
+                      alt=""
+                      className="w-12 h-12 rounded-full object-cover border border-amber-200"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-amber-200/70 text-amber-900 flex items-center justify-center font-bold text-sm">
+                      {approveModalRequest.user?.first_name?.[0]}
+                      {approveModalRequest.user?.surname?.[0]}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-zinc-900 text-base leading-tight truncate">
+                      {approveModalRequest.user?.name || `${approveModalRequest.user?.first_name} ${approveModalRequest.user?.surname}`}
+                    </h4>
+                    {approveModalRequest.user?.father_name && (
+                      <p className="text-xs text-zinc-600 mt-0.5">
+                        {approveModalRequest.user?.parent_relation || "S/o"} {approveModalRequest.user.father_name}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500 mt-1">
+                      {approveModalRequest.user?.mobile && (
+                        <span>📞 {approveModalRequest.user.mobile}</span>
+                      )}
+                      {approveModalRequest.family_name && (
+                        <span className="font-medium text-amber-800">
+                          🏠 {approveModalRequest.family_name}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* LM Number Input Field */}
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-zinc-800 flex items-center gap-1.5">
+                  <Hash className="w-4 h-4 text-amber-600" />
+                  Life Member Number (LM No.)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    autoFocus
+                    placeholder="Enter LM Number (e.g. 1502)"
+                    value={lmNumberInput}
+                    onChange={(e) => {
+                      setLmNumberInput(e.target.value);
+                      if (approveError) setApproveError("");
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !isApproving) {
+                        e.preventDefault();
+                        handleConfirmApprove();
+                      }
+                    }}
+                    disabled={isApproving}
+                    className="w-full px-4 py-2.5 text-base border border-zinc-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 transition-all bg-white font-mono"
+                  />
+                </div>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  ℹ️ LM numbers are <strong>not created automatically</strong>. Please enter the assigned Life Member number for this applicant. Leave blank if allocating later.
+                </p>
+              </div>
+
+              {/* Error Message */}
+              {approveError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                  <span>{approveError}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Actions Footer */}
+            <div className="p-4 bg-zinc-50 border-t border-zinc-200 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setApproveModalRequest(null)}
+                disabled={isApproving}
+                className="px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-200/70 rounded-xl transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmApprove}
+                disabled={isApproving}
+                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
+              >
+                {isApproving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Approving...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-4 h-4" />
+                    Confirm & Approve
+                  </>
+                )}
               </button>
             </div>
           </div>

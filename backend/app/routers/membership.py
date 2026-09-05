@@ -295,9 +295,14 @@ async def get_membership_requests(
     return requests_data
 
 
+class ApproveMembershipPayload(BaseModel):
+    lm_no: Optional[int] = None
+
+
 @router.post("/requests/{request_id}/approve")
 async def approve_membership(
     request_id: str,
+    payload: Optional[ApproveMembershipPayload] = None,
     current_admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db_session)
 ):
@@ -351,7 +356,19 @@ async def approve_membership(
         if head_user.role == UserRole.GUEST:
             head_user.role = UserRole.MEMBER
             head_user.is_member = True
-            head_user.samaj_id = f"SMJ-{str(head_user.user_id)[:6].upper()}"
+
+        if payload and payload.lm_no is not None:
+            head_user.lm_no = payload.lm_no
+            candidate_samaj_id = f"LM-{payload.lm_no}"
+            existing_sid = await db.execute(select(User).where(User.samaj_id == candidate_samaj_id, User.user_id != head_user.user_id))
+            if existing_sid.scalars().first():
+                head_user.samaj_id = f"LM-{payload.lm_no}-{str(head_user.user_id)[:4].upper()}"
+            else:
+                head_user.samaj_id = candidate_samaj_id
+        else:
+            head_user.lm_no = None
+            if not head_user.samaj_id:
+                head_user.samaj_id = f"SMJ-{str(head_user.user_id)[:6].upper()}"
 
         # Process placeholder members from stored JSON
         if fc_req.members_json:
@@ -411,7 +428,19 @@ async def approve_membership(
     if user.role == UserRole.GUEST:
         user.role = UserRole.MEMBER
         user.is_member = True
-        user.samaj_id = f"SMJ-{str(user.user_id)[:6].upper()}"
+
+    if payload and payload.lm_no is not None:
+        user.lm_no = payload.lm_no
+        candidate_samaj_id = f"LM-{payload.lm_no}"
+        existing_sid = await db.execute(select(User).where(User.samaj_id == candidate_samaj_id, User.user_id != user.user_id))
+        if existing_sid.scalars().first():
+            user.samaj_id = f"LM-{payload.lm_no}-{str(user.user_id)[:4].upper()}"
+        else:
+            user.samaj_id = candidate_samaj_id
+    else:
+        user.lm_no = None
+        if not user.samaj_id:
+            user.samaj_id = f"SMJ-{str(user.user_id)[:6].upper()}"
 
     if req.family_id:
         user.family_id = req.family_id
