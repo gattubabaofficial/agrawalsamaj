@@ -286,7 +286,9 @@ async def calculate_quote(
         alloc_units_sum = sum(int(a.get("rooms", 0)) for a in allocations)
         total_requested_units = max(total_requested_units, alloc_units_sum)
 
-    if total_requested_units < strictest_min_units:
+    if strictest_min_units > 1 and total_requested_units < strictest_min_units:
+        blockers.append(to_public_message("MIN_UNITS", str(strictest_min_units)))
+    elif total_requested_units > 0 and total_requested_units < strictest_min_units:
         blockers.append(to_public_message("MIN_UNITS", str(strictest_min_units)))
 
     effective_allowed_purposes: Optional[Set[str]] = None
@@ -334,9 +336,11 @@ async def calculate_quote(
     # 6. Availability & stock check
 
     unit_capacities = await get_accommodation_capacities(db)
-    committed_acc = await get_committed_accommodations(db, check_in, check_out)
+    committed_acc = await get_committed_accommodations(db, check_in, check_out, types_map=type_map)
     committed_amen = await get_committed_amenities(db, check_in, check_out)
-    effective_avail_acc = await get_effective_available_accommodations(db, check_in, check_out)
+    effective_avail_acc = await get_effective_available_accommodations(
+        db, check_in, check_out, capacities=unit_capacities, committed=committed_acc, types_map=type_map
+    )
     available_units_dict: Dict[str, Optional[int]] = {str(tid): count for tid, count in effective_avail_acc.items()}
 
     total_guest_capacity = 0

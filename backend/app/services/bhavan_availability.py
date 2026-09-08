@@ -50,12 +50,16 @@ async def get_accommodation_types_dict(db: Union[AsyncSession, Session]) -> Dict
 
 
 async def get_committed_accommodations(
-    db: Union[AsyncSession, Session], check_in: date, check_out: date
+    db: Union[AsyncSession, Session],
+    check_in: date,
+    check_out: date,
+    types_map: Optional[Dict[uuid.UUID, BhavanAccommodationType]] = None,
 ) -> Dict[date, Dict[uuid.UUID, int]]:
     """Committed accommodation units per night for overlapping APPROVED enquiries,
     factoring in composite component compositions.
     """
-    types_map = await get_accommodation_types_dict(db)
+    if types_map is None:
+        types_map = await get_accommodation_types_dict(db)
 
     stmt = (
         select(
@@ -120,14 +124,22 @@ async def get_committed_accommodations(
 
 
 async def get_effective_available_accommodations(
-    db: Union[AsyncSession, Session], check_in: date, check_out: date
+    db: Union[AsyncSession, Session],
+    check_in: date,
+    check_out: date,
+    capacities: Optional[Dict[uuid.UUID, int]] = None,
+    committed: Optional[Dict[date, Dict[uuid.UUID, int]]] = None,
+    types_map: Optional[Dict[uuid.UUID, BhavanAccommodationType]] = None,
 ) -> Dict[uuid.UUID, Optional[int]]:
     """Calculates max bookable units per accommodation type for the stay duration,
     correctly handling composite unit bounds. None indicates unconstrained/unlimited.
     """
-    capacities = await get_accommodation_capacities(db)
-    committed = await get_committed_accommodations(db, check_in, check_out)
-    types_map = await get_accommodation_types_dict(db)
+    if capacities is None:
+        capacities = await get_accommodation_capacities(db)
+    if types_map is None:
+        types_map = await get_accommodation_types_dict(db)
+    if committed is None:
+        committed = await get_committed_accommodations(db, check_in, check_out, types_map=types_map)
 
     # 1. Base net availability per type across stay nights
     base_net: Dict[uuid.UUID, int] = {}

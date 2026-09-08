@@ -193,6 +193,7 @@ export default function BhavanBookingPage() {
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
   const [quoteLoading, setQuoteLoading] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const quoteAbortRef = useRef<AbortController | null>(null);
 
   // Safe timezone-independent date string helpers
   const parseDateString = (str: string): Date => {
@@ -412,10 +413,23 @@ export default function BhavanBookingPage() {
     return sum + amenities.reduce((aSum, a) => aSum + getDateAmenityQty(d, a.id), 0);
   }, 0);
 
-  // Recalculate quote whenever dates, allocations, selections, purpose, or voucher change
+  // Recalculate quote whenever dates, allocations, selections, purpose, or voucher change (debounced)
   useEffect(() => {
     if (checkIn && checkOut && checkOut > checkIn) {
-      fetchQuote();
+      if (quoteAbortRef.current) {
+        quoteAbortRef.current.abort();
+      }
+      const controller = new AbortController();
+      quoteAbortRef.current = controller;
+
+      const timer = setTimeout(() => {
+        fetchQuote(controller.signal);
+      }, 150);
+
+      return () => {
+        clearTimeout(timer);
+        controller.abort();
+      };
     }
   }, [
     checkIn, checkOut, purposeId, selectedTypes, selectedAmenities,
@@ -482,7 +496,7 @@ export default function BhavanBookingPage() {
     return null;
   };
 
-  const fetchQuote = async () => {
+  const fetchQuote = async (signal?: AbortSignal) => {
     setQuoteLoading(true);
     try {
       // Build date-wise multi-type allocations payload: { [date]: { [typeId]: qty } }
@@ -519,6 +533,7 @@ export default function BhavanBookingPage() {
       const res = await safeFetch(`${getApiBaseUrl()}/bhavan/quote`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal,
         body: JSON.stringify({
           check_in: checkIn,
           check_out: checkOut,
@@ -533,6 +548,8 @@ export default function BhavanBookingPage() {
         }),
       });
 
+      if (signal?.aborted) return;
+
       if (res.ok) {
         const data = await res.json();
         setQuote(data);
@@ -544,10 +561,14 @@ export default function BhavanBookingPage() {
         }
       }
 
-    } catch (err) {
-      console.error("Quote error:", err);
+    } catch (err: any) {
+      if (err?.name !== "AbortError") {
+        console.error("Quote error:", err);
+      }
     } finally {
-      setQuoteLoading(false);
+      if (!signal || !signal.aborted) {
+        setQuoteLoading(false);
+      }
     }
   };
 
@@ -1230,19 +1251,6 @@ export default function BhavanBookingPage() {
                   </div>
                 )}
 
-                {/* Blocker Alert if active on selected dates */}
-                {quote?.blockers && quote.blockers.length > 0 && (
-                  <div className="rounded-xl border border-rose-800/40 bg-rose-950/20 p-4 space-y-1 text-xs text-rose-300">
-                    <div className="flex items-center gap-2 font-bold text-rose-400">
-                      <AlertCircle className="w-4 h-4 text-rose-400" />
-                      <span>Date Notice:</span>
-                    </div>
-                    {quote.blockers.map((b, idx) => (
-                      <p key={idx} className="pl-6 text-zinc-300">{b}</p>
-                    ))}
-                  </div>
-                )}
-
                 {/* Navigation Actions */}
                 <div className="pt-4 flex items-center justify-between">
                   <Link
@@ -1253,18 +1261,23 @@ export default function BhavanBookingPage() {
                   </Link>
                   {(() => {
                     const isClosed = quote?.blockers?.some((b) => b.includes("closed") || b.includes("maintenance"));
-                    const canAdvance = checkIn && checkOut && checkOut > checkIn && !isClosed && !quoteLoading;
+                    const canAdvance = Boolean(checkIn && checkOut && checkOut > checkIn && !isClosed);
 
                     return (
                       <button
+                        type="button"
                         disabled={!canAdvance}
                         onClick={() => setStep(2)}
                         className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-3 font-bold text-white hover:bg-amber-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-lg shadow-amber-500/20"
                       >
-                        {quoteLoading ? (
-                          <>Checking Availability...</>
+                        {quoteLoading && !quote ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 animate-spin" /> Checking Availability...
+                          </>
                         ) : (
-                          <>Select Rooms per Date <ArrowRight className="w-4 h-4" /></>
+                          <>
+                            Select Rooms per Date <ArrowRight className="w-4 h-4" />
+                          </>
                         )}
                       </button>
                     );
@@ -2689,12 +2702,20 @@ export default function BhavanBookingPage() {
           {/* Side Summary & Live Quote Panel */}
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 flex flex-col justify-between">
             <div>
-              <h3 className="text-lg font-bold text-white mb-4 border-b border-zinc-800 pb-3 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-400" /> Booking Estimate
+              <h3 className="text-lg font-bold text-white mb-4 border-b border-zinc-800 pb-3 flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-400" /> Booking Estimate
+                </span>
+                {quoteLoading && (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                )}
               </h3>
 
-              {quoteLoading ? (
-                <div className="py-8 text-center text-xs text-zinc-500">Calculating running estimate...</div>
+              {quoteLoading && !quote ? (
+                <div className="py-8 text-center text-xs text-zinc-500 flex flex-col items-center gap-2">
+                  <RefreshCw className="w-4 h-4 animate-spin text-amber-500" />
+                  <span>Calculating running estimate...</span>
+                </div>
               ) : quote ? (
                 <div className="space-y-4 text-xs">
                   <div>
