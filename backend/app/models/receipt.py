@@ -1,12 +1,15 @@
 import uuid
 from datetime import datetime
 from enum import Enum as PyEnum
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from sqlalchemy import String, ForeignKey, DateTime, Enum, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 from app.models.base import TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 class ReceiptType(str, PyEnum):
@@ -28,7 +31,6 @@ class Receipt(Base, TimestampMixin):
     )
 
     booking_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey("bookings.booking_id", ondelete="CASCADE"),
         nullable=True
     )
 
@@ -63,3 +65,4 @@ class Receipt(Base, TimestampMixin):
 
     user: Mapped[Optional["User"]] = relationship("User", foreign_keys=[user_id])
     issuer: Mapped[Optional["User"]] = relationship("User", foreign_keys=[issued_by])
+

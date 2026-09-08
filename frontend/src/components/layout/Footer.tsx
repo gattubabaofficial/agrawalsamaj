@@ -17,6 +17,8 @@ const COLUMNS = [
     links: [
       { label: "Upcoming events", href: "/events", description: "See upcoming events and passes" },
       { label: "Donation schemes", href: "/donate", description: "Support the Samaj's work" },
+      { label: "Member Login", href: "/login", description: "Sign in to your member account" },
+      { label: "Admin Portal", href: "/admin-login", description: "Administrator and committee sign in" },
     ],
   },
 

@@ -1,18 +1,18 @@
 import uuid
 from datetime import datetime
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from typing import Optional
+from sqlalchemy.orm import joinedload
 
 from app.dependencies import get_db, get_current_user, is_admin_level
 from app.models.user import User, UserRole
-from app.models.event import EventPass, PassStatus
+from app.models.event import EventPass, PassStatus, EventRegistration
 
 router = APIRouter(prefix="/api/v1/passes", tags=["Passes & Webhooks"])
 
-from sqlalchemy.orm import joinedload
-from app.models.event import EventRegistration
 
 @router.get("/{pass_id}")
 async def get_pass_details(
@@ -40,42 +40,34 @@ async def get_pass_details(
     registration = event_pass.registration
     event = event_pass.event
     
-    g_name = registration.guest_name
-    g_phone = registration.guest_phone
-    g_email = registration.guest_email
-    samaj_id = None
-    if registration.user:
-        if not g_name:
-            g_name = f"{registration.user.first_name} {registration.user.surname}"
-        if not g_phone:
-            g_phone = registration.user.mobile
-        if not g_email:
-            g_email = registration.user.email
-        samaj_id = registration.user.samaj_id
-        
+    # Calculate amount paid per pass
+    pass_price = 0.0
+    if registration and registration.pass_count > 0:
+        pass_price = float(registration.total_amount) / registration.pass_count
+
     return {
-        "pass_id": event_pass.pass_id,
-        "registration_id": event_pass.registration_id,
-        "event_id": event_pass.event_id,
-        "event_title": event.title if event else "Unknown Event",
-        "event_description": event.description if event else None,
-        "event_category": event.category if event else None,
-        "event_start_datetime": event.start_datetime if event else None,
-        "event_venue": event.venue if event else "Unknown Venue",
-        "event_address": event.address if event else None,
-        "guest_name": event_pass.guest_name or g_name or "Guest",
-        "guest_phone": g_phone or "N/A",
-        "guest_email": g_email or "N/A",
-        "primary_contact_name": g_name or "Guest",
-        "samaj_id": samaj_id,
-        "payment_status": registration.payment_status if registration else "PENDING",
-        "payment_mode": registration.payment_mode if registration else None,
+        "pass_id": str(event_pass.pass_id),
+        "registration_id": str(event_pass.registration_id),
+        "event_id": str(event_pass.event_id),
+        "event_title": event.title if event else "Event",
+        "event_date": event.start_datetime if event else None,
+        "event_venue": event.venue if event else None,
+        "guest_name": event_pass.guest_name or (f"{registration.user.first_name} {registration.user.surname}" if registration and registration.user else (registration.guest_name if registration else "Guest")),
+        "guest_phone": event_pass.guest_phone or (registration.user.mobile if registration and registration.user else (registration.guest_phone if registration else "N/A")),
         "status": event_pass.status,
-        "delivery_status": event_pass.delivery_status,
-        "scanned_at": event_pass.scanned_at
+        "scanned_at": event_pass.scanned_at,
+        "pass_price": pass_price,
+        "payment_status": registration.payment_status if registration else None,
+        "payment_mode": registration.payment_mode if registration else None,
+        "cancelled_at": event_pass.cancelled_at,
+        "cancelled_by": str(event_pass.cancelled_by) if event_pass.cancelled_by else None,
+        "cancel_reason": event_pass.cancel_reason,
+        "refund_amount": float(event_pass.refund_amount) if event_pass.refund_amount else 0.0,
+        "refund_status": event_pass.refund_status or "not_applicable",
     }
 
-@router.post("/admin/{pass_id}/check-in")
+
+@router.post("/{pass_id}/check-in")
 async def check_in_pass(
     pass_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -103,16 +95,17 @@ async def check_in_pass(
     return {"status": "success", "message": "Pass successfully checked in"}
 
 
-class CancelPassRequest(BaseModel if 'BaseModel' in globals() else object):
+class CancelPassRequest(BaseModel):
     reason: Optional[str] = "Cancelled by admin"
     refund_amount: Optional[float] = 0.0
     refund_status: Optional[str] = "not_applicable"
 
 
+
 @router.post("/admin/{pass_id}/cancel")
 async def cancel_pass(
     pass_id: uuid.UUID,
-    payload: dict,
+    payload: CancelPassRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):

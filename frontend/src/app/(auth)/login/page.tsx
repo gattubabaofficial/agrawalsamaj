@@ -208,12 +208,6 @@ export default function LoginPage() {
           </button>
         </div>
 
-        {errorMsg && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm font-medium border border-red-100">
-            {errorMsg}
-          </div>
-        )}
-
         <form onSubmit={handleLogin} className="space-y-5 text-sm">
           {method === "password" ? (
             <div className="space-y-4">
@@ -300,6 +294,12 @@ export default function LoginPage() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {errorMsg && (
+            <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-medium border border-red-100">
+              {errorMsg}
             </div>
           )}
 

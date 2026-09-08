@@ -290,6 +290,26 @@ export default function AdminEnquiriesPage() {
                 <p className="text-base font-extrabold text-amber-600 mt-1">Estimated Total: ₹{selectedEnquiry.estimated_total}</p>
               </div>
 
+              {/* Multi-Date Allocation Breakdown if present */}
+              {selectedEnquiry.quote_snapshot?.allocations && selectedEnquiry.quote_snapshot.allocations.length > 0 && (
+                <div className="border-t border-zinc-100 pt-3 space-y-1.5">
+                  <p className="text-zinc-400 font-semibold uppercase text-[10px]">Multi-Date Room Plan</p>
+                  <div className="space-y-1">
+                    {selectedEnquiry.quote_snapshot.allocations.map((alloc: any, idx: number) => (
+                      <div key={idx} className="p-2 rounded-lg bg-zinc-50 border border-zinc-100 flex items-center justify-between text-[11px]">
+                        <div>
+                          <span className="font-bold text-zinc-800">{alloc.from} → {alloc.to}</span>
+                          <span className="text-zinc-500 block">{alloc.nights} night(s)</span>
+                        </div>
+                        <span className="font-mono font-bold text-amber-600">
+                          {alloc.rooms} Rooms
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Status Action Buttons */}
               <div className="border-t border-zinc-100 pt-3 space-y-2">
                 <p className="text-zinc-400 font-semibold uppercase text-[10px]">Change Status</p>

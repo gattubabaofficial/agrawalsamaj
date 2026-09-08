@@ -76,12 +76,6 @@ export default function AdminLoginPage() {
           <p className="text-xs text-zinc-500">Sign in to manage the portal.</p>
         </div>
 
-        {errorMsg && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm font-medium border border-red-100">
-            {errorMsg}
-          </div>
-        )}
-
         <form onSubmit={handleLogin} className="space-y-5 text-sm">
           <div className="space-y-4">
             <div className="space-y-1.5">
@@ -123,6 +117,12 @@ export default function AdminLoginPage() {
               </div>
             </div>
           </div>
+
+          {errorMsg && (
+            <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-medium border border-red-100">
+              {errorMsg}
+            </div>
+          )}
 
           <button
             type="submit"

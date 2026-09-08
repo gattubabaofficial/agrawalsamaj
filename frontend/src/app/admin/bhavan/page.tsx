@@ -122,7 +122,7 @@ export default function AdminBhavanDashboard() {
             <Settings className="w-6 h-6" />
           </div>
           <h3 className="text-lg font-bold text-zinc-900 mb-1">Rules & 1-Click Vouchers</h3>
-          <p className="text-xs text-zinc-500 mb-4">Define Wedding Peak and Maintenance rules with direct dates, plus 1-click checkout vouchers.</p>
+          <p className="text-xs text-zinc-500 mb-4">Define custom booking rules, peak rates, room permissions with direct dates, plus 1-click checkout vouchers.</p>
           <span className="text-xs font-bold text-rose-600 inline-flex items-center gap-1">Configure Rules & Vouchers <ArrowRight className="w-4 h-4" /></span>
         </Link>
 

@@ -163,10 +163,8 @@ export default function Navbar() {
           </div>
 
           {/* Right — auth aware */}
-          <div className="hidden shrink-0 items-center gap-4 lg:flex">
-            {!authChecked ? (
-              <div className="h-8 w-20 animate-pulse bg-paper-2" />
-            ) : authUser ? (
+          {authChecked && authUser && (
+            <div className="hidden shrink-0 items-center gap-4 lg:flex">
               <div className="flex items-center gap-3">
                 {isVolunteer && (
                   <Link
@@ -232,8 +230,8 @@ export default function Navbar() {
                   </AnimatePresence>
                 </div>
               </div>
-            ) : null}
-          </div>
+            </div>
+          )}
 
           {/* Mobile trigger */}
           <div className="flex items-center gap-3 lg:hidden">
@@ -323,7 +321,16 @@ export default function Navbar() {
                       <LogOut className="h-4 w-4" /> Sign out
                     </button>
                   </>
-                ) : null}
+                ) : (
+                  <Link
+                    href="/login"
+                    onClick={() => setIsOpen(false)}
+                    title="Sign in to your member account"
+                    className="flex items-center justify-center gap-2 bg-vermilion px-6 py-3.5 text-[0.8125rem] font-medium uppercase tracking-[0.16em] text-paper"
+                  >
+                    <User className="h-4 w-4" /> Sign in / Member Login
+                  </Link>
+                )}
               </motion.div>
             </div>
           </motion.div>

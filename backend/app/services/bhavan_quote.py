@@ -69,6 +69,7 @@ class QuoteResult:
     blocked_type_ids: Optional[List[str]] = None
     effective_type_prices: Optional[dict] = None  # type_id str -> Decimal price per night
     available_units: Optional[Dict[str, Optional[int]]] = None
+    allocations: Optional[List[Dict[str, Any]]] = None
     rules_snapshot: dict = None
     quote_snapshot: dict = None
 
@@ -119,6 +120,9 @@ async def calculate_quote(
     guests_total: int = 1,
     voucher_code: Optional[str] = None,
     voucher_id: Optional[uuid.UUID] = None,
+    allocations: Optional[List[Dict[str, Any]]] = None,
+    date_allocations: Optional[Dict[str, Any]] = None,
+    date_amenity_allocations: Optional[Dict[str, Any]] = None,
 ) -> QuoteResult:
     nights = (check_out - check_in).days
     days = nights + 1 if nights > 0 else 0
@@ -270,6 +274,18 @@ async def calculate_quote(
         blockers.append(to_public_message("MIN_NIGHTS", str(strictest_min_nights)))
 
     total_requested_units = sum(int(req.get("quantity", 0)) for req in requested_accommodations)
+    if date_allocations:
+        date_units_sum = 0
+        for val in date_allocations.values():
+            if isinstance(val, dict):
+                date_units_sum += sum(int(q) for q in val.values() if isinstance(q, (int, float, str)) and int(q) > 0)
+            elif isinstance(val, (int, float, str)):
+                date_units_sum += max(0, int(val))
+        total_requested_units = max(total_requested_units, date_units_sum)
+    elif allocations:
+        alloc_units_sum = sum(int(a.get("rooms", 0)) for a in allocations)
+        total_requested_units = max(total_requested_units, alloc_units_sum)
+
     if total_requested_units < strictest_min_units:
         blockers.append(to_public_message("MIN_UNITS", str(strictest_min_units)))
 
@@ -325,12 +341,81 @@ async def calculate_quote(
 
     total_guest_capacity = 0
 
+    # Build date-wise allocation map for any accommodation type if provided
+    # Structure: Dict[date, Dict[UUID, int]]
+    date_type_alloc_map: Dict[date, Dict[uuid.UUID, int]] = {}
+    if date_allocations:
+        for d_k, val in date_allocations.items():
+            try:
+                d_obj = date.fromisoformat(str(d_k)) if isinstance(d_k, str) else d_k
+                if isinstance(val, dict):
+                    for t_k, q_v in val.items():
+                        try:
+                            t_uuid = uuid.UUID(str(t_k))
+                            date_type_alloc_map.setdefault(d_obj, {})[t_uuid] = int(q_v)
+                        except Exception:
+                            continue
+                else:
+                    # Flat integer room count (legacy support)
+                    r_count = int(val)
+                    if base_types:
+                        primary_id = base_types[0].id
+                        date_type_alloc_map.setdefault(d_obj, {})[primary_id] = r_count
+            except Exception:
+                continue
+    elif allocations:
+        for alloc in allocations:
+            try:
+                from_raw = alloc.get("from") or alloc.get("from_date")
+                to_raw = alloc.get("to") or alloc.get("to_date")
+                from_d = date.fromisoformat(str(from_raw)) if isinstance(from_raw, str) else from_raw
+                to_d = date.fromisoformat(str(to_raw)) if isinstance(to_raw, str) else to_raw
+                r_count = int(alloc.get("rooms", alloc.get("requestedRooms", alloc.get("requested_rooms", 0))))
+                tid_raw = alloc.get("type_id")
+                t_uuid = uuid.UUID(str(tid_raw)) if tid_raw else (base_types[0].id if base_types else None)
+                if t_uuid:
+                    cur_d = from_d
+                    while cur_d <= to_d:
+                        date_type_alloc_map.setdefault(cur_d, {})[t_uuid] = r_count
+                        cur_d += timedelta(days=1)
+            except Exception:
+                continue
+
+    total_guest_capacity = 0
     acc_quote_lines: List[AccommodationQuoteLine] = []
     estimated_total = Decimal("0.00")
+    computed_allocations: List[Dict[str, Any]] = []
 
-    for req in requested_accommodations:
-        tid = uuid.UUID(str(req["type_id"]))
-        qty = int(req["quantity"])
+    # Determine which accommodation types need to be processed
+    if date_type_alloc_map:
+        # Collect all type IDs that have at least 1 unit requested on any date
+        active_type_ids_set = set()
+        for d_obj, types_in_date in date_type_alloc_map.items():
+            for tid_item, qty_item in types_in_date.items():
+                if qty_item > 0:
+                    active_type_ids_set.add(tid_item)
+        
+        # If no types have qty > 0, fallback to requested_accommodations or primary type with 0
+        if not active_type_ids_set and requested_accommodations:
+            for req in requested_accommodations:
+                try:
+                    active_type_ids_set.add(uuid.UUID(str(req["type_id"])))
+                except Exception:
+                    pass
+
+        effective_req_accommodations = [
+            {"type_id": str(tid), "quantity": max((date_type_alloc_map.get(d, {}).get(tid, 0) for d in date_type_alloc_map), default=0)}
+            for tid in active_type_ids_set
+        ]
+    else:
+        effective_req_accommodations = list(requested_accommodations)
+
+    for req in effective_req_accommodations:
+        try:
+            tid = uuid.UUID(str(req["type_id"]))
+        except Exception:
+            continue
+        base_qty = int(req.get("quantity", 0))
 
         if tid not in type_map:
             continue
@@ -344,60 +429,153 @@ async def calculate_quote(
                 break
 
         total_units = unit_capacities.get(tid, 0)
-        # Skip capacity check when no physical units are configured (treat as unlimited)
-        if total_units > 0:
-            for ds in day_states:
-                committed = committed_acc.get(ds.date, {}).get(tid, 0)
-                avail_units = total_units - committed
-                if qty > avail_units:
-                    blockers.append(to_public_message("INSUFFICIENT_STOCK", acc_type.name))
-                    break
-
-        # Compute total price: use the best known price (max from effective_type_prices)
-        # to fill nights that have no rule override and a base_price of 0.
         type_best_price_str = effective_type_prices.get(str(tid))
         type_best_price = Decimal(str(type_best_price_str)) if type_best_price_str else acc_type.base_price_per_night
 
         acc_total_price = Decimal("0.00")
+        total_room_nights = 0
+        min_night_qty = None
+        max_night_qty = 0
+
+        # Day by day stock & price accumulation for this type
         for ds in day_states:
             st = ds.accommodation.get(tid)
             night_price = st.effective_price if st else acc_type.base_price_per_night
-            # If night_price is 0 but we know a better price exists (rule price for other nights),
-            # use the best known price so the total doesn't collapse to 0.
             if night_price == Decimal("0.00") and type_best_price > Decimal("0.00"):
                 night_price = type_best_price
-            acc_total_price += night_price * qty
 
-        unit_price_avg = acc_total_price / (qty * nights) if (qty * nights) > 0 else type_best_price
+            if date_type_alloc_map:
+                night_qty = date_type_alloc_map.get(ds.date, {}).get(tid, 0)
+            else:
+                night_qty = base_qty
+
+            max_night_qty = max(max_night_qty, night_qty)
+            min_night_qty = night_qty if min_night_qty is None else min(min_night_qty, night_qty)
+
+            if total_units > 0 and night_qty > 0:
+                committed = committed_acc.get(ds.date, {}).get(tid, 0)
+                avail_units = max(0, total_units - committed)
+                if night_qty > avail_units:
+                    blockers.append(
+                        f"Requested {acc_type.name} ({night_qty}) exceeds available capacity ({avail_units}) on {ds.date.strftime('%b %d')}."
+                    )
+
+            acc_total_price += night_price * night_qty
+            total_room_nights += night_qty
+
+        # Skip if zero units requested across all nights
+        if total_room_nights == 0 and date_type_alloc_map:
+            continue
+
+        # Build clean allocation groups for reporting
+        if day_states:
+            cur_group_start = day_states[0].date
+            cur_group_qty = date_type_alloc_map.get(cur_group_start, {}).get(tid, base_qty) if date_type_alloc_map else base_qty
+            cur_min_avail = total_units - committed_acc.get(cur_group_start, {}).get(tid, 0) if total_units > 0 else 999
+            cur_group_cost = Decimal("0.00")
+            cur_nights = 0
+
+            for idx, ds in enumerate(day_states):
+                n_qty = date_type_alloc_map.get(ds.date, {}).get(tid, base_qty) if date_type_alloc_map else base_qty
+                d_avail = max(0, total_units - committed_acc.get(ds.date, {}).get(tid, 0)) if total_units > 0 else 999
+                st = ds.accommodation.get(tid)
+                n_price = st.effective_price if st else acc_type.base_price_per_night
+                if n_price == Decimal("0.00") and type_best_price > Decimal("0.00"):
+                    n_price = type_best_price
+
+                if n_qty == cur_group_qty:
+                    cur_nights += 1
+                    cur_min_avail = min(cur_min_avail, d_avail)
+                    cur_group_cost += n_price * n_qty
+                else:
+                    # Flush previous group
+                    prev_end = day_states[idx - 1].date
+                    if cur_group_qty > 0:
+                        computed_allocations.append({
+                            "from": cur_group_start.isoformat(),
+                            "to": prev_end.isoformat(),
+                            "rooms": cur_group_qty,
+                            "max_available": max(0, cur_min_avail) if total_units > 0 else None,
+                            "nights": cur_nights,
+                            "line_total": str(cur_group_cost),
+                            "type_id": str(tid),
+                            "type_name": acc_type.name,
+                        })
+                    cur_group_start = ds.date
+                    cur_group_qty = n_qty
+                    cur_min_avail = d_avail
+                    cur_group_cost = n_price * n_qty
+                    cur_nights = 1
+
+            if cur_nights > 0 and cur_group_qty > 0:
+                computed_allocations.append({
+                    "from": cur_group_start.isoformat(),
+                    "to": day_states[-1].date.isoformat(),
+                    "rooms": cur_group_qty,
+                    "max_available": max(0, cur_min_avail) if total_units > 0 else None,
+                    "nights": cur_nights,
+                    "line_total": str(cur_group_cost),
+                    "type_id": str(tid),
+                    "type_name": acc_type.name,
+                })
+
+        unit_price_avg = acc_total_price / Decimal(str(total_room_nights)) if total_room_nights > 0 else type_best_price
 
         acc_quote_lines.append(AccommodationQuoteLine(
             type_id=tid,
             type_name=acc_type.name,
-            quantity=qty,
+            quantity=max_night_qty if date_type_alloc_map else base_qty,
             nights=nights,
             unit_price=unit_price_avg,
             line_total=acc_total_price,
         ))
         estimated_total += acc_total_price
 
-
         cap_per_unit = acc_type.capacity_per_unit
-        total_guest_capacity += (cap_per_unit * qty)
+        effective_allocated_units = max_night_qty if date_type_alloc_map else base_qty
+        total_guest_capacity += (cap_per_unit * effective_allocated_units)
 
-    if guests_total > 0 and total_guest_capacity < guests_total:
+    if guests_total > 0 and total_guest_capacity < guests_total and acc_quote_lines:
         blockers.append(to_public_message("GUESTS_EXCEEDED", str(total_guest_capacity)))
 
     # 7. Amenity Quote Lines
-    # Build a map of requested amenities and automatically include compulsory amenities
+    # Build a map of requested amenities (from date_amenity_allocations or flat requested_amenities)
+    date_amenity_alloc_map: Dict[date, Dict[uuid.UUID, int]] = {}
+    if date_amenity_allocations and isinstance(date_amenity_allocations, dict):
+        for d_str, a_map in date_amenity_allocations.items():
+            try:
+                d_obj = date.fromisoformat(str(d_str)) if isinstance(d_str, str) else d_str
+                date_amenity_alloc_map[d_obj] = {}
+                if isinstance(a_map, dict):
+                    for aid_str, q in a_map.items():
+                        try:
+                            aid_obj = uuid.UUID(str(aid_str))
+                            date_amenity_alloc_map[d_obj][aid_obj] = int(q)
+                        except Exception:
+                            pass
+            except Exception:
+                pass
+
     req_amenity_dict: Dict[uuid.UUID, int] = {}
-    for req in requested_amenities:
-        try:
-            aid = uuid.UUID(str(req["amenity_id"]))
-            qty = int(req.get("quantity", 1))
-            if qty > 0:
-                req_amenity_dict[aid] = qty
-        except (ValueError, KeyError):
-            continue
+    if date_amenity_alloc_map:
+        active_amen_ids: Set[uuid.UUID] = set()
+        for d_obj, a_dict in date_amenity_alloc_map.items():
+            for aid_obj, q in a_dict.items():
+                if q > 0:
+                    active_amen_ids.add(aid_obj)
+        for aid_obj in active_amen_ids:
+            max_q = max((date_amenity_alloc_map.get(d, {}).get(aid_obj, 0) for d in date_amenity_alloc_map), default=0)
+            if max_q > 0:
+                req_amenity_dict[aid_obj] = max_q
+    else:
+        for req in requested_amenities:
+            try:
+                aid = uuid.UUID(str(req["amenity_id"]))
+                qty = int(req.get("quantity", 1))
+                if qty > 0:
+                    req_amenity_dict[aid] = qty
+            except (ValueError, KeyError):
+                continue
 
     # Automatically add active compulsory amenities if not explicitly provided
     for aid, amenity in amenity_map.items():
@@ -416,36 +594,60 @@ async def calculate_quote(
                 blockers.append(to_public_message("AMENITY_NOT_ALLOWED", amenity.name))
                 break
 
-        if amenity.available_quantity is not None and not amenity.allow_over_request:
-            for ds in day_states:
-                committed = committed_amen.get(ds.date, {}).get(aid, 0)
-                avail_stock = amenity.available_quantity - committed
-                if qty > avail_stock:
-                    blockers.append(to_public_message("INSUFFICIENT_STOCK", amenity.name))
-                    break
-
         ptype = amenity.pricing_type
+        ptype_str = ptype.value if hasattr(ptype, "value") else str(ptype)
         price = amenity.price
-        line_total = Decimal("0.00")
-        desc = ""
+        billing_days = max(nights, 1)
 
-        if ptype == AmenityPricingType.PER_UNIT:
-            line_total = price * qty
-            desc = f"{qty} × ₹{price}"
-        elif ptype == AmenityPricingType.PER_DAY:
-            line_total = price * qty * days
-            desc = f"{qty} unit(s) · {days} day(s) · ₹{price}/day"
-        elif ptype == AmenityPricingType.PER_NIGHT:
-            line_total = price * qty * nights
-            desc = f"{qty} unit(s) · {nights} night(s) · ₹{price}/night"
-        elif ptype == AmenityPricingType.PER_BOOKING or ptype == AmenityPricingType.ONE_TIME:
-            line_total = price
-            desc = f"Flat charge · ₹{price}"
+        if date_amenity_alloc_map:
+            amenity_total_cost = Decimal("0.00")
+            total_amenity_units_across_days = 0
+            for ds in day_states:
+                day_qty = date_amenity_alloc_map.get(ds.date, {}).get(aid, 0)
+                if amenity.available_quantity is not None and not amenity.allow_over_request:
+                    committed = committed_amen.get(ds.date, {}).get(aid, 0)
+                    avail_stock = amenity.available_quantity - committed
+                    if day_qty > avail_stock:
+                        blockers.append(
+                            f"Requested {amenity.name} ({day_qty}) exceeds available stock ({avail_stock}) on {ds.date.strftime('%b %d')}."
+                        )
+
+                if ptype_str in ("per_booking", "one_time"):
+                    pass
+                else:
+                    amenity_total_cost += price * Decimal(str(day_qty))
+                    total_amenity_units_across_days += day_qty
+
+            if ptype_str in ("per_booking", "one_time"):
+                max_q = max((date_amenity_alloc_map.get(ds.date, {}).get(aid, 0) for ds in day_states), default=0)
+                line_total = price * Decimal(str(max_q))
+                desc = f"{max_q} unit(s) · Flat charge · ₹{price}"
+            else:
+                line_total = amenity_total_cost
+                desc = f"{total_amenity_units_across_days} total unit-day(s) (@ ₹{price}/day)"
+
+            if line_total == 0 and total_amenity_units_across_days == 0 and ptype_str not in ("per_booking", "one_time"):
+                continue
+        else:
+            if amenity.available_quantity is not None and not amenity.allow_over_request:
+                for ds in day_states:
+                    committed = committed_amen.get(ds.date, {}).get(aid, 0)
+                    avail_stock = amenity.available_quantity - committed
+                    if qty > avail_stock:
+                        blockers.append(to_public_message("INSUFFICIENT_STOCK", amenity.name))
+                        break
+
+            if ptype_str in ("per_booking", "one_time"):
+                line_total = price * qty
+                desc = f"{qty} unit(s) · Flat charge · ₹{price}"
+            else:
+                line_total = price * qty * Decimal(str(billing_days))
+                desc = f"{qty} unit(s) · {billing_days} day(s) · ₹{price}/day"
 
         amenity_quote_lines.append(AmenityQuoteLine(
             amenity_id=aid,
             amenity_name=amenity.name,
-            pricing_type=ptype.value if hasattr(ptype, "value") else str(ptype),
+            pricing_type=ptype_str,
             quantity=qty,
             unit_price=price,
             multiplier_description=desc,
@@ -546,6 +748,11 @@ async def calculate_quote(
             }
             for line in amenity_quote_lines
         ],
+        "allocations": computed_allocations if computed_allocations else None,
+        "date_allocations": {
+            str(k): {str(tid): q for tid, q in type_dict.items()}
+            for k, type_dict in date_type_alloc_map.items()
+        } if date_type_alloc_map else None,
     }
 
     return QuoteResult(
@@ -566,6 +773,7 @@ async def calculate_quote(
         blocked_type_ids=blocked_type_ids if blocked_type_ids else None,
         effective_type_prices=effective_type_prices if effective_type_prices else None,
         available_units=available_units_dict,
+        allocations=computed_allocations if computed_allocations else None,
         rules_snapshot=rules_snapshot,
         quote_snapshot=quote_snapshot,
     )

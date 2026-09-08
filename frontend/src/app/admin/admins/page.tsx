@@ -146,8 +146,6 @@ export default function AdminManagementPage() {
         </button>
       </div>
 
-      {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4">{error}</div>}
-
       {showForm && (
         <form onSubmit={createAdmin} className="bg-white border border-zinc-200 rounded-2xl p-5 mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
           <input required placeholder="First name" value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} className="border border-zinc-200 rounded-xl px-3 py-2 text-sm" />
@@ -156,14 +154,17 @@ export default function AdminManagementPage() {
           <input placeholder="Mobile (optional)" value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} className="border border-zinc-200 rounded-xl px-3 py-2 text-sm" />
           <input required type="text" placeholder="Password (min 6 chars)" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="border border-zinc-200 rounded-xl px-3 py-2 text-sm" />
           <input placeholder="Notes (optional)" value={form.admin_notes} onChange={(e) => setForm({ ...form, admin_notes: e.target.value })} className="border border-zinc-200 rounded-xl px-3 py-2 text-sm" />
+          {error && <div className="md:col-span-2 bg-red-50 text-red-600 p-3 rounded-xl text-sm border border-red-100">{error}</div>}
           <div className="md:col-span-2 flex justify-end gap-2">
-            <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 rounded-xl text-sm border border-zinc-200">Cancel</button>
+            <button type="button" onClick={() => { setShowForm(false); setError(""); }} className="px-4 py-2 rounded-xl text-sm border border-zinc-200">Cancel</button>
             <button type="submit" disabled={submitting} className="px-4 py-2 rounded-xl text-sm bg-amber-600 text-white flex items-center gap-2">
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />} Create Admin
             </button>
           </div>
         </form>
       )}
+
+      {error && !showForm && <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm mb-4 border border-red-100">{error}</div>}
 
       {loading ? (
         <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-zinc-400" /></div>

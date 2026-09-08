@@ -7,9 +7,10 @@ Data privacy guarantee: Zero leakage of internal rule names, priorities, or admi
 """
 
 import uuid
-from datetime import date, datetime
+import calendar as py_calendar
+from datetime import date, datetime, timedelta
 from decimal import Decimal
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Header, status
 from pydantic import BaseModel, ConfigDict, Field
@@ -21,9 +22,12 @@ from app.dependencies import get_db
 from app.models.bhavan import (
     BhavanAccommodationType, BhavanAmenity, BhavanEnquiry,
     BhavanEnquiryAccommodation, BhavanEnquiryAmenity, BhavanPurpose,
+    BhavanRuleAssignment, BhavanRuleAssignmentDate,
     BhavanSettings, BhavanTermsVersion, BhavanVoucher, EnquirySource, EnquiryStatus,
 )
-from app.services.bhavan_availability import get_accommodation_capacities
+from app.services.bhavan_availability import (
+    get_accommodation_capacities, get_committed_accommodations,
+)
 from app.services.bhavan_otp import (
     request_bhavan_otp, validate_enquiry_token, verify_bhavan_otp,
 )
@@ -99,6 +103,18 @@ class PublicConfigResponse(BaseModel):
     required_fields: dict = {}
 
 
+class DateAllocationRange(BaseModel):
+    from_date: date = Field(alias="from")
+    to_date: date = Field(alias="to")
+    rooms: int = Field(ge=0)
+    max_available: Optional[int] = None
+    nights: Optional[int] = None
+    line_total: Optional[str] = None
+    type_id: Optional[uuid.UUID] = None
+    type_name: Optional[str] = None
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
+
+
 class QuoteRequestItem(BaseModel):
     type_id: uuid.UUID
     quantity: int = Field(ge=1)
@@ -118,6 +134,9 @@ class QuoteRequest(BaseModel):
     guests_total: int = Field(default=1, ge=1)
     voucher_code: Optional[str] = None
     voucher_id: Optional[uuid.UUID] = None
+    allocations: Optional[List[DateAllocationRange]] = None
+    date_allocations: Optional[Dict[str, Any]] = None
+    date_amenity_allocations: Optional[Dict[str, Any]] = None
 
 
 class PublicAccommodationLine(BaseModel):
@@ -156,6 +175,9 @@ class PublicQuoteResponse(BaseModel):
     blocked_type_ids: Optional[List[str]] = None
     effective_type_prices: Optional[dict] = None
     available_units: Optional[Dict[str, Optional[int]]] = None
+    allocations: Optional[List[dict]] = None
+    date_allocations: Optional[Dict[str, Any]] = None
+    date_amenity_allocations: Optional[Dict[str, Any]] = None
 
 
 class OTPRequestPayload(BaseModel):
@@ -187,6 +209,9 @@ class EnquirySubmitRequest(BaseModel):
     amenities: List[QuoteAmenityRequestItem] = []
     voucher_code: Optional[str] = None
     voucher_id: Optional[uuid.UUID] = None
+    allocations: Optional[List[DateAllocationRange]] = None
+    date_allocations: Optional[Dict[str, Any]] = None
+    date_amenity_allocations: Optional[Dict[str, Any]] = None
     terms_accepted: bool
 
 
@@ -253,6 +278,19 @@ async def get_public_config(db: AsyncSession = Depends(get_db)):
 
 @router.post("/quote", response_model=PublicQuoteResponse)
 async def get_public_quote(req: QuoteRequest, db: AsyncSession = Depends(get_db)):
+    alloc_list = None
+    if req.allocations:
+        alloc_list = [
+            {
+                "from": item.from_date.isoformat(),
+                "to": item.to_date.isoformat(),
+                "rooms": item.rooms,
+                "type_id": str(item.type_id) if item.type_id else None,
+                "max_available": item.max_available,
+            }
+            for item in req.allocations
+        ]
+
     res = await calculate_quote(
         db=db,
         check_in=req.check_in,
@@ -263,6 +301,9 @@ async def get_public_quote(req: QuoteRequest, db: AsyncSession = Depends(get_db)
         guests_total=req.guests_total,
         voucher_code=req.voucher_code,
         voucher_id=req.voucher_id,
+        allocations=alloc_list,
+        date_allocations=req.date_allocations,
+        date_amenity_allocations=req.date_amenity_allocations,
     )
 
     acc_lines = [
@@ -307,9 +348,161 @@ async def get_public_quote(req: QuoteRequest, db: AsyncSession = Depends(get_db)
         blocked_type_ids=getattr(res, "blocked_type_ids", None),
         effective_type_prices=getattr(res, "effective_type_prices", None),
         available_units=getattr(res, "available_units", None),
+        allocations=res.allocations,
+        date_allocations=req.date_allocations,
+        date_amenity_allocations=req.date_amenity_allocations,
     )
 
 
+@router.get("/calendar")
+async def get_public_calendar(
+    month: Optional[str] = None,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    today = date.today()
+    if start_date and end_date:
+        start = start_date
+        end = end_date
+    elif month:
+        try:
+            parts = month.strip().split("-")
+            year, m = int(parts[0]), int(parts[1])
+            _, last_day = py_calendar.monthrange(year, m)
+            start = date(year, m, 1)
+            end = date(year, m, last_day)
+        except Exception:
+            start = date(today.year, today.month, 1)
+            _, last_day = py_calendar.monthrange(today.year, today.month)
+            end = date(today.year, today.month, last_day)
+    else:
+        start = date(today.year, today.month, 1)
+        end = today + timedelta(days=60)
+
+    # 1. Fetch accommodation types
+    res_types = await db.execute(
+        select(BhavanAccommodationType)
+        .where(BhavanAccommodationType.is_active == True)
+        .order_by(BhavanAccommodationType.sort_order)
+    )
+    types = res_types.scalars().all()
+    unit_capacities = await get_accommodation_capacities(db)
+
+    # 2. Fetch committed units from approved enquiries
+    committed_acc = await get_committed_accommodations(db, start, end + timedelta(days=1))
+
+    # 3. Fetch active rule assignments
+    stmt_dates = (
+        select(BhavanRuleAssignmentDate.date, BhavanRuleAssignment)
+        .join(BhavanRuleAssignment, BhavanRuleAssignmentDate.assignment_id == BhavanRuleAssignment.id)
+        .where(
+            BhavanRuleAssignment.is_active == True,
+            BhavanRuleAssignmentDate.date >= start,
+            BhavanRuleAssignmentDate.date <= end,
+        )
+        .order_by(BhavanRuleAssignmentDate.date, BhavanRuleAssignment.applied_at.asc())
+    )
+    res_rules = await db.execute(stmt_dates)
+    rule_rows = res_rules.all()
+
+    rules_by_date: Dict[date, List[BhavanRuleAssignment]] = {}
+    for r_date, assignment in rule_rows:
+        rules_by_date.setdefault(r_date, []).append(assignment)
+
+    days_result = []
+    curr = start
+    while curr <= end:
+        date_str = curr.isoformat()
+        is_past = curr < today
+
+        # Check rule assignments for this date
+        day_rules = rules_by_date.get(curr, [])
+        is_closed = False
+        blocked_types = set()
+        price_overrides = {}
+        closure_msg = None
+
+        for a in day_rules:
+            cfg = a.config_snapshot or {}
+            if cfg.get("is_closure") or cfg.get("availability", {}).get("closed"):
+                is_closed = True
+                closure_msg = cfg.get("block_reason") or "Bhavan is closed on this date."
+
+            avail_acc = cfg.get("availability", {}).get("accommodation", {})
+            for tid_str, status_val in avail_acc.items():
+                if status_val == "blocked":
+                    blocked_types.add(tid_str)
+                elif status_val == "allowed" and tid_str in blocked_types:
+                    blocked_types.remove(tid_str)
+
+            pricing_map = cfg.get("accommodations", {})
+            for tid_str, t_cfg in pricing_map.items():
+                if isinstance(t_cfg, dict) and "price" in t_cfg:
+                    price_overrides[tid_str] = Decimal(str(t_cfg["price"]))
+
+        # Build room types availability for this date
+        total_rooms_avail = 0
+        total_rooms_cap = 0
+        room_types_info = []
+        lowest_price = None
+
+        for t in types:
+            tid_str = str(t.id)
+            total_cap = unit_capacities.get(t.id) if t.id in unit_capacities else 10
+            committed_qty = committed_acc.get(curr, {}).get(t.id, 0)
+            avail_units = max(0, total_cap - committed_qty) if total_cap > 0 else 0
+            is_allowed = not is_closed and tid_str not in blocked_types
+            effective_price = price_overrides.get(tid_str, t.base_price_per_night)
+
+            if is_allowed and avail_units > 0:
+                total_rooms_avail += avail_units
+                if lowest_price is None or effective_price < lowest_price:
+                    lowest_price = effective_price
+
+            total_rooms_cap += total_cap
+
+            room_types_info.append({
+                "type_id": tid_str,
+                "name": t.name,
+                "kind": t.kind,
+                "total_units": total_cap,
+                "available_units": avail_units if is_allowed else 0,
+                "is_allowed": is_allowed,
+                "price": float(effective_price),
+            })
+
+        # Calculate overall day status
+        if is_closed:
+            day_status = "closed"
+        elif is_past:
+            day_status = "past"
+        elif total_rooms_avail == 0:
+            day_status = "sold_out"
+        elif total_rooms_avail <= 2:
+            day_status = "limited"
+        else:
+            day_status = "available"
+
+        days_result.append({
+            "date": date_str,
+            "status": day_status,
+            "closed": is_closed,
+            "is_past": is_past,
+            "closure_reason": closure_msg,
+            "available_rooms": total_rooms_avail,
+            "total_rooms": total_rooms_cap,
+            "min_price": float(lowest_price) if lowest_price is not None else float(types[0].base_price_per_night if types else 0),
+            "room_types": room_types_info,
+        })
+
+        curr += timedelta(days=1)
+
+    return {
+        "start_date": start.isoformat(),
+        "end_date": end.isoformat(),
+        "days": days_result,
+    }
 
 
 @router.get("/terms")
@@ -362,6 +555,19 @@ async def submit_enquiry(
             detail="Mobile number verification required before submitting enquiry.",
         )
 
+    alloc_list = None
+    if req.allocations:
+        alloc_list = [
+            {
+                "from": item.from_date.isoformat(),
+                "to": item.to_date.isoformat(),
+                "rooms": item.rooms,
+                "type_id": str(item.type_id) if item.type_id else None,
+                "max_available": item.max_available,
+            }
+            for item in req.allocations
+        ]
+
     quote_res = await calculate_quote(
         db=db,
         check_in=req.check_in,
@@ -372,6 +578,9 @@ async def submit_enquiry(
         guests_total=req.guests_total,
         voucher_code=req.voucher_code,
         voucher_id=req.voucher_id,
+        allocations=alloc_list,
+        date_allocations=req.date_allocations,
+        date_amenity_allocations=req.date_amenity_allocations,
     )
 
     if quote_res.blockers:

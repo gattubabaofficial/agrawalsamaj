@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import joinedload
 from typing import List, Optional
 from datetime import datetime
+from pathlib import Path
 import uuid
 from pydantic import BaseModel, Field
 
@@ -17,6 +19,7 @@ from app.models.event import (
 from app.models.receipt import ReceiptType
 from app.services.whatsapp_service import generate_and_send_passes
 from app.services.receipt_service import create_receipt
+from app.services.voucher_service import apply_voucher, redeem_voucher
 
 
 async def _issue_event_receipt(db, registration, *, is_offline, issuer=None):
@@ -58,62 +61,73 @@ def _can_view_members_only(user: Optional[User]) -> bool:
         return True
     return user.role == UserRole.MEMBER or user.is_member or user.role == UserRole.VOLUNTEER
 
-# Schemas
-class EventCreate(BaseModel):
-    title: str = Field(..., max_length=300)
+
+# Pydantic Schemas
+class EventBase(BaseModel):
+    title: str = Field(..., max_length=200)
     description: Optional[str] = None
-    banner_url: Optional[str] = None
-    venue: Optional[str] = None
-    category: EventCategory = EventCategory.OTHER
+    category: EventCategory
+    venue: str = Field(..., max_length=300)
     start_datetime: datetime
     end_datetime: datetime
-    pass_price: float = 0.0
-    total_passes: Optional[int] = None
-    max_per_user: int = 5
+    registration_start_datetime: Optional[datetime] = None
+    registration_end_datetime: Optional[datetime] = None
+    capacity: Optional[int] = None
+    max_passes_per_user: int = 1
     visibility: EventVisibility = EventVisibility.OPEN_TO_ALL
     pricing_type: EventPricingType = EventPricingType.FREE
-    timeline: Optional[list] = None
+    payment_mode: EventPaymentMode = EventPaymentMode.PAY_ONLINE
+    member_price: float = 0.0
+    guest_price: float = 0.0
+    status: EventStatus = EventStatus.DRAFT
+    banner_image_url: Optional[str] = None
+    chief_guest: Optional[str] = None
+    rules_and_regulations: Optional[str] = None
+    contact_person_name: Optional[str] = None
+    contact_person_phone: Optional[str] = None
+
+
+class EventCreate(EventBase):
+    pass
+
 
 class EventUpdate(BaseModel):
-    title: Optional[str] = Field(None, max_length=300)
+    title: Optional[str] = None
     description: Optional[str] = None
-    banner_url: Optional[str] = None
-    venue: Optional[str] = None
     category: Optional[EventCategory] = None
+    venue: Optional[str] = None
     start_datetime: Optional[datetime] = None
     end_datetime: Optional[datetime] = None
-    pass_price: Optional[float] = None
-    total_passes: Optional[int] = None
-    max_per_user: Optional[int] = None
+    registration_start_datetime: Optional[datetime] = None
+    registration_end_datetime: Optional[datetime] = None
+    capacity: Optional[int] = None
+    max_passes_per_user: Optional[int] = None
     visibility: Optional[EventVisibility] = None
     pricing_type: Optional[EventPricingType] = None
-    timeline: Optional[list] = None
+    payment_mode: Optional[EventPaymentMode] = None
+    member_price: Optional[float] = None
+    guest_price: Optional[float] = None
+    status: Optional[EventStatus] = None
+    banner_image_url: Optional[str] = None
+    chief_guest: Optional[str] = None
+    rules_and_regulations: Optional[str] = None
+    contact_person_name: Optional[str] = None
+    contact_person_phone: Optional[str] = None
 
-class EventResponse(BaseModel):
+
+class EventResponse(EventBase):
     event_id: uuid.UUID
-    title: str
-    description: Optional[str]
-    banner_url: Optional[str] = None
-    venue: Optional[str]
-    category: EventCategory
-    start_datetime: datetime
-    end_datetime: datetime
-    pass_price: float
-    total_passes: Optional[int]
     passes_sold: int
-    max_per_user: int
-    status: EventStatus
-    is_featured: bool
-    visibility: EventVisibility
-    pricing_type: EventPricingType
-    timeline: Optional[list]
+    created_at: datetime
+    updated_at: datetime
+    created_by: Optional[uuid.UUID] = None
 
     class Config:
         from_attributes = True
-        use_enum_values = True
 
-class EventRegistrationRequest(BaseModel):
-    pass_count: int = Field(default=1, gt=0)
+
+class EventRegistrationCreate(BaseModel):
+    pass_count: int = Field(1, ge=1)
     guest_name: Optional[str] = None
     guest_phone: Optional[str] = None
     guest_email: Optional[str] = None
@@ -126,6 +140,48 @@ class PaymentVerifyRequest(BaseModel):
     razorpay_signature: Optional[str] = None
 
 # Routes
+@router.post("/upload")
+async def upload_event_image(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    if not is_admin_level(current_user):
+        raise HTTPException(status_code=403, detail="Only admins can upload event images")
+    
+    ALLOWED_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg"}
+    ext = Path(file.filename or "").suffix.lower()
+    if ext not in ALLOWED_EXT:
+        raise HTTPException(status_code=400, detail="Invalid file format. Allowed: JPG, PNG, WEBP, GIF, SVG.")
+    
+    events_dir = Path("uploads/events")
+    events_dir.mkdir(parents=True, exist_ok=True)
+    
+    unique_name = f"{uuid.uuid4().hex}{ext}"
+    file_path = events_dir / unique_name
+    
+    contents = await file.read()
+    if len(contents) > 20 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="File too large. Max 20 MB.")
+        
+    with open(file_path, "wb") as f:
+        f.write(contents)
+        
+    try:
+        from app.models.blog import UploadedFile
+        db_file = UploadedFile(
+            filename=unique_name,
+            mimetype=file.content_type or "application/octet-stream",
+            data=contents
+        )
+        db.add(db_file)
+        await db.commit()
+    except Exception as e:
+        print(f"Warning saving uploaded event image to DB: {e}")
+        
+    return {"url": f"/uploads/events/{unique_name}", "filename": unique_name}
+
+
 @router.post("", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
 async def create_event(
     event_data: EventCreate,

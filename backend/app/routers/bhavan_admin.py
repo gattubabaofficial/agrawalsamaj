@@ -84,6 +84,16 @@ async def record_audit(
     elif admin_or_id and hasattr(admin_or_id, "id") and isinstance(getattr(admin_or_id, "id"), uuid.UUID):
         admin_id = getattr(admin_or_id, "id")
 
+    if not admin_id:
+        return
+
+    try:
+        res_check = await db.execute(select(User.user_id).where(User.user_id == admin_id))
+        if not res_check.scalar_one_or_none():
+            return
+    except Exception:
+        return
+
     audit = AuditLog(
         admin_id=admin_id,
         action=action,
@@ -802,15 +812,31 @@ async def create_rule_profile(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_bhavan_admin),
 ):
+    cat_val = (payload.category or "custom").lower()
+    cat_enum = RuleCategory.CUSTOM
+    for member in RuleCategory:
+        if member.value == cat_val:
+            cat_enum = member
+            break
+
+    admin_uid = getattr(admin, "user_id", None)
+    if admin_uid:
+        try:
+            res_u = await db.execute(select(User.user_id).where(User.user_id == admin_uid))
+            if not res_u.scalar_one_or_none():
+                admin_uid = None
+        except Exception:
+            admin_uid = None
+
     profile = BhavanRuleProfile(
         name=payload.name,
-        category=payload.category,
+        category=cat_enum,
         description=payload.description,
-        config=payload.config,
+        config=payload.config or {},
         is_template=payload.is_template,
         is_public_visible=payload.is_public_visible,
-        created_by=admin.user_id,
-        updated_by=admin.user_id,
+        created_by=admin_uid,
+        updated_by=admin_uid,
     )
     db.add(profile)
     await db.flush()
@@ -830,8 +856,9 @@ async def create_rule_profile(
             profile_id=profile.id,
             label=profile.name,
             config_snapshot=profile.config or {},
+            applied_at=datetime.utcnow(),
+            applied_by=admin_uid,
             is_active=True,
-            created_by=admin.user_id,
         )
         db.add(assignment)
         await db.flush()
@@ -857,10 +884,30 @@ async def update_rule_profile(
         raise HTTPException(status_code=404, detail="Rule profile not found")
 
     old_val = {"name": profile.name, "category": str(profile.category)}
-    for k, v in payload.dict(exclude_unset=True, exclude={"dates", "date_ranges"}).items():
+    
+    update_data = payload.dict(exclude_unset=True, exclude={"dates", "date_ranges"})
+    if "category" in update_data and update_data["category"]:
+        cat_val = str(update_data["category"]).lower()
+        cat_enum = RuleCategory.CUSTOM
+        for member in RuleCategory:
+            if member.value == cat_val:
+                cat_enum = member
+                break
+        update_data["category"] = cat_enum
+
+    admin_uid = getattr(admin, "user_id", None)
+    if admin_uid:
+        try:
+            res_u = await db.execute(select(User.user_id).where(User.user_id == admin_uid))
+            if not res_u.scalar_one_or_none():
+                admin_uid = None
+        except Exception:
+            admin_uid = None
+
+    for k, v in update_data.items():
         setattr(profile, k, v)
 
-    profile.updated_by = getattr(admin, "user_id", None)
+    profile.updated_by = admin_uid
     profile.updated_at = datetime.utcnow()
 
     # Always update existing assignments' config_snapshot and label to match updated profile
@@ -888,8 +935,9 @@ async def update_rule_profile(
                 profile_id=profile.id,
                 label=profile.name,
                 config_snapshot=profile.config or {},
+                applied_at=datetime.utcnow(),
+                applied_by=admin_uid,
                 is_active=True,
-                created_by=admin.user_id,
             )
             db.add(assignment)
             await db.flush()

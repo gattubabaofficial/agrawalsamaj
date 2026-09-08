@@ -5,14 +5,14 @@ import { useEffect, useState, useMemo } from "react";
 import {
   Settings, Plus, Calendar, Trash2, X, Lock, CheckCircle2, ShieldAlert,
   ArrowLeft, Edit, Eye, AlertTriangle, Check, Globe, Layers, Zap,
-  PartyPopper, Tag, Filter, Search, Loader2, Sparkles, Wrench, Gift, Percent
+  Tag, Filter, Search, Loader2, Sparkles, Gift, Percent, Building2
 } from "lucide-react";
 import { getApiBaseUrl, safeFetch } from "@/utils/api";
 
 interface RuleProfile {
   id: string;
   name: string;
-  category: string; // "wedding" | "closure"
+  category: string;
   description?: string;
   config: any;
   is_template: boolean;
@@ -62,13 +62,11 @@ export default function AdminRulesAndVouchersPage() {
   const [showRuleModal, setShowRuleModal] = useState(false);
   const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
   const [ruleName, setRuleName] = useState("");
-  const [ruleCategory, setRuleCategory] = useState<"wedding" | "closure">("wedding");
   const [ruleDescription, setRuleDescription] = useState("");
   const [ruleDateRanges, setRuleDateRanges] = useState<{ start: string; end: string }[]>([
     { start: new Date().toISOString().slice(0, 10), end: new Date().toISOString().slice(0, 10) }
   ]);
   const [blockedVoucherIds, setBlockedVoucherIds] = useState<string[]>([]);
-  const [closureNotice, setClosureNotice] = useState("Bhavan is temporarily closed for maintenance.");
   const [typeConfig, setTypeConfig] = useState<{ [id: string]: { allowed: boolean; price: number } }>({});
   const [isSavingRule, setIsSavingRule] = useState(false);
   const [ruleError, setRuleError] = useState<string | null>(null);
@@ -138,7 +136,6 @@ export default function AdminRulesAndVouchersPage() {
       const q = searchQuery.toLowerCase();
       return (
         p.name.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
         (p.description && p.description.toLowerCase().includes(q))
       );
     });
@@ -188,19 +185,17 @@ export default function AdminRulesAndVouchersPage() {
   };
 
   // Handle Open Create Rule
-  const handleOpenCreateRule = (category: "wedding" | "closure" = "wedding") => {
+  const handleOpenCreateRule = () => {
     setEditingProfileId(null);
-    setRuleName(category === "wedding" ? "Wedding Peak Dates" : "Maintenance Closure");
-    setRuleCategory(category);
+    setRuleName("");
     setRuleDescription("");
     const today = new Date().toISOString().slice(0, 10);
     setRuleDateRanges([{ start: today, end: today }]);
     setBlockedVoucherIds([]);
-    setClosureNotice("Bhavan is temporarily closed for maintenance on these dates.");
 
     const initCfg: any = {};
     accTypes.forEach((t) => {
-      initCfg[t.id] = { allowed: category !== "closure", price: t.base_price_per_night };
+      initCfg[t.id] = { allowed: true, price: t.base_price_per_night };
     });
     setTypeConfig(initCfg);
 
@@ -213,7 +208,6 @@ export default function AdminRulesAndVouchersPage() {
     setViewingProfile(null);
     setEditingProfileId(p.id);
     setRuleName(p.name);
-    setRuleCategory((p.category as any) || "wedding");
     setRuleDescription(p.description || "");
 
     const dates = p.assigned_dates || [];
@@ -240,7 +234,6 @@ export default function AdminRulesAndVouchersPage() {
     }
 
     setBlockedVoucherIds(p.config?.blocked_vouchers || []);
-    setClosureNotice(p.config?.block_reason || "Bhavan is temporarily closed for maintenance on these dates.");
 
     const initCfg: any = {};
     accTypes.forEach((t) => {
@@ -292,10 +285,10 @@ export default function AdminRulesAndVouchersPage() {
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
     const config: any = {
-      is_closure: ruleCategory === "closure",
-      block_reason: ruleCategory === "closure" ? closureNotice : null,
+      is_closure: false,
+      block_reason: null,
       availability: {
-        closed: ruleCategory === "closure",
+        closed: false,
         accommodation: {},
       },
       accommodations: {},
@@ -305,26 +298,17 @@ export default function AdminRulesAndVouchersPage() {
       },
     };
 
-    if (ruleCategory === "wedding") {
-      accTypes.forEach((t) => {
-        const isAllowed = typeConfig[t.id]?.allowed !== false;
-        const rate = parseFloat(typeConfig[t.id]?.price as any) || t.base_price_per_night;
-        config.availability.accommodation[t.id] = isAllowed ? "allowed" : "blocked";
-        config.accommodations[t.id] = { allowed: isAllowed, price: rate };
-        config.pricing.per_type[t.id] = { mode: "fixed", value: rate };
-      });
-    } else {
-      // Closure blocks all accommodations
-      accTypes.forEach((t) => {
-        config.availability.accommodation[t.id] = "blocked";
-        config.accommodations[t.id] = { allowed: false, price: 0 };
-        config.pricing.per_type[t.id] = { mode: "fixed", value: 0 };
-      });
-    }
+    accTypes.forEach((t) => {
+      const isAllowed = typeConfig[t.id]?.allowed !== false;
+      const rate = parseFloat(typeConfig[t.id]?.price as any) || t.base_price_per_night;
+      config.availability.accommodation[t.id] = isAllowed ? "allowed" : "blocked";
+      config.accommodations[t.id] = { allowed: isAllowed, price: rate };
+      config.pricing.per_type[t.id] = { mode: "fixed", value: rate };
+    });
 
     const payload = {
       name: ruleName.trim(),
-      category: ruleCategory,
+      category: "custom",
       description: ruleDescription.trim() || null,
       config,
       is_public_visible: true,
@@ -510,26 +494,18 @@ export default function AdminRulesAndVouchersPage() {
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">Rules & 1-Click Vouchers</h1>
           <p className="text-xs text-zinc-500">
-            Manage Wedding Peak dates, Maintenance closures, and 1-click discount vouchers applied at checkout
+            Manage custom booking rules, room permissions, peak rates, and 1-click discount vouchers applied at checkout
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           {activeTab === "rules" ? (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleOpenCreateRule("wedding")}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
-              >
-                <PartyPopper className="w-4 h-4" /> Add Wedding Rule
-              </button>
-              <button
-                onClick={() => handleOpenCreateRule("closure")}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
-              >
-                <Wrench className="w-4 h-4" /> Add Maintenance
-              </button>
-            </div>
+            <button
+              onClick={handleOpenCreateRule}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> Add Rule
+            </button>
           ) : (
             <button
               onClick={handleOpenCreateVoucher}
@@ -552,7 +528,7 @@ export default function AdminRulesAndVouchersPage() {
           }`}
         >
           <Calendar className="w-4 h-4 text-amber-500" />
-          Wedding & Maintenance Rules ({profiles.length})
+          Booking Rules ({profiles.length})
         </button>
         <button
           onClick={() => setActiveTab("vouchers")}
@@ -575,7 +551,7 @@ export default function AdminRulesAndVouchersPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={activeTab === "rules" ? "Search rules by name or type..." : "Search vouchers by code or title..."}
+            placeholder={activeTab === "rules" ? "Search rules by name..." : "Search vouchers by code or title..."}
             className="w-full pl-9 pr-3 py-2 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:border-amber-500 bg-zinc-50/50"
           />
         </div>
@@ -593,7 +569,7 @@ export default function AdminRulesAndVouchersPage() {
             <div className="p-12 text-center space-y-3">
               <Calendar className="w-10 h-10 text-zinc-300 mx-auto" />
               <p className="text-sm font-bold text-zinc-700">No rules configured</p>
-              <p className="text-xs text-zinc-400">Click "Add Wedding Rule" or "Add Maintenance" above to create one.</p>
+              <p className="text-xs text-zinc-400">Click "Add Rule" above to create one.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -601,8 +577,7 @@ export default function AdminRulesAndVouchersPage() {
                 <thead>
                   <tr className="bg-zinc-50/80 border-b border-zinc-200 text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
                     <th className="py-3.5 px-4 w-12 text-center">#</th>
-                    <th className="py-3.5 px-4">Rule Name & Details</th>
-                    <th className="py-3.5 px-4">Type</th>
+                    <th className="py-3.5 px-4">Rule Name & Description</th>
                     <th className="py-3.5 px-4">Assigned Dates (In-Form)</th>
                     <th className="py-3.5 px-4">Status</th>
                     <th className="py-3.5 px-4 text-right">Actions</th>
@@ -610,7 +585,6 @@ export default function AdminRulesAndVouchersPage() {
                 </thead>
                 <tbody className="divide-y divide-zinc-100 text-xs">
                   {filteredProfiles.map((p, index) => {
-                    const isWed = p.category === "wedding";
                     const dates = p.assigned_dates || [];
                     return (
                       <tr key={p.id} className="hover:bg-amber-50/30 transition-colors group">
@@ -621,21 +595,8 @@ export default function AdminRulesAndVouchersPage() {
                           </span>
                           {p.description ? (
                             <p className="text-xs text-zinc-500 line-clamp-1">{p.description}</p>
-                          ) : isWed ? (
-                            <p className="text-xs text-amber-600/80 font-medium">Wedding peak rates & priority</p>
                           ) : (
-                            <p className="text-xs text-rose-600/80 font-medium">Maintenance closure & blocking</p>
-                          )}
-                        </td>
-                        <td className="py-4 px-4">
-                          {isWed ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 uppercase tracking-wider">
-                              <PartyPopper className="w-3 h-3" /> Wedding Peak
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300 uppercase tracking-wider">
-                              <Wrench className="w-3 h-3" /> Maintenance
-                            </span>
+                            <p className="text-xs text-zinc-400 font-normal">Custom peak rates & room permissions</p>
                           )}
                         </td>
                         <td className="py-4 px-4 font-mono text-zinc-700">
@@ -796,20 +757,12 @@ export default function AdminRulesAndVouchersPage() {
 
         <div className="flex items-center gap-2">
           {activeTab === "rules" ? (
-            <>
-              <button
-                onClick={() => handleOpenCreateRule("wedding")}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
-              >
-                <PartyPopper className="w-4 h-4" /> Add Wedding Rule
-              </button>
-              <button
-                onClick={() => handleOpenCreateRule("closure")}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
-              >
-                <Wrench className="w-4 h-4" /> Add Maintenance
-              </button>
-            </>
+            <button
+              onClick={handleOpenCreateRule}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> Add Rule
+            </button>
           ) : (
             <button
               onClick={handleOpenCreateVoucher}
@@ -821,13 +774,13 @@ export default function AdminRulesAndVouchersPage() {
         </div>
       </div>
 
-      {/* MODAL: Create / Edit Rule (With In-Form Dates) */}
+      {/* MODAL: Create / Edit Rule (With In-Form Dates, Room Permissions & Peak Rates, Voucher Restrictions) */}
       {showRuleModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto shadow-xl">
             <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
               <h3 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
-                {ruleCategory === "wedding" ? <PartyPopper className="w-5 h-5 text-amber-500" /> : <Wrench className="w-5 h-5 text-zinc-700" />}
+                <Settings className="w-5 h-5 text-amber-500" />
                 {editingProfileId ? "Edit Rule" : "Create Rule"}
               </h3>
               <button
@@ -838,50 +791,6 @@ export default function AdminRulesAndVouchersPage() {
               </button>
             </div>
 
-            {ruleError && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0" />
-                <span>{ruleError}</span>
-              </div>
-            )}
-
-            {/* Rule Type Picker */}
-            <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1.5">Rule Type *</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setRuleCategory("wedding")}
-                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
-                    ruleCategory === "wedding"
-                      ? "border-amber-500 bg-amber-50/50 text-amber-900 shadow-sm"
-                      : "border-zinc-200 hover:bg-zinc-50 text-zinc-600"
-                  }`}
-                >
-                  <PartyPopper className="w-5 h-5 text-amber-500 shrink-0" />
-                  <div>
-                    <span className="text-xs font-bold block">Wedding Peak</span>
-                    <span className="text-[10px] text-zinc-500 block">Custom rates for wedding dates</span>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRuleCategory("closure")}
-                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
-                    ruleCategory === "closure"
-                      ? "border-rose-500 bg-rose-50/50 text-rose-900 shadow-sm"
-                      : "border-zinc-200 hover:bg-zinc-50 text-zinc-600"
-                  }`}
-                >
-                  <Wrench className="w-5 h-5 text-rose-500 shrink-0" />
-                  <div>
-                    <span className="text-xs font-bold block">Maintenance</span>
-                    <span className="text-[10px] text-zinc-500 block">Block dates & show notice</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-
             {/* Rule Name */}
             <div>
               <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Rule Name *</label>
@@ -889,8 +798,20 @@ export default function AdminRulesAndVouchersPage() {
                 type="text"
                 value={ruleName}
                 onChange={(e) => setRuleName(e.target.value)}
-                placeholder="e.g. Wedding Season Peak, Hall Painting Work"
+                placeholder="e.g. Peak Season Rates, Hall Booking Rule"
                 className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-amber-500"
+              />
+            </div>
+
+            {/* Rule Description */}
+            <div>
+              <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Description / Note</label>
+              <textarea
+                rows={2}
+                value={ruleDescription}
+                onChange={(e) => setRuleDescription(e.target.value)}
+                placeholder="Optional description of this booking rule..."
+                className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-xs resize-none focus:outline-none focus:border-amber-500"
               />
             </div>
 
@@ -898,7 +819,7 @@ export default function AdminRulesAndVouchersPage() {
             <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200/80 space-y-2.5">
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-bold text-zinc-800 uppercase">
-                  📅 Rule Applicable Dates (Multiple Ranges Supported) *
+                  📅 Applicable Dates (Multiple Ranges Supported) *
                 </label>
                 <button
                   type="button"
@@ -951,92 +872,78 @@ export default function AdminRulesAndVouchersPage() {
               </div>
             </div>
 
-            {/* Closure Notice (if Maintenance) */}
-            {ruleCategory === "closure" ? (
-              <div>
-                <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Public Closure Notice Message</label>
-                <textarea
-                  rows={2}
-                  value={closureNotice}
-                  onChange={(e) => setClosureNotice(e.target.value)}
-                  placeholder="e.g. Bhavan is temporarily closed for maintenance on these dates."
-                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-xs resize-none focus:outline-none focus:border-rose-500"
-                />
+            {/* Accommodation Permissions & Custom Peak Rates */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-semibold text-zinc-500 uppercase">
+                  Room Booking Permissions on These Dates
+                </label>
+                <span className="text-[10px] text-zinc-400">Select which rooms can be booked & custom peak rates</span>
               </div>
-            ) : (
-              /* Wedding Accommodation Permissions & Peak Rates */
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-semibold text-zinc-500 uppercase">
-                    Room Booking Permissions on These Dates
-                  </label>
-                  <span className="text-[10px] text-zinc-400">Select which rooms can be booked & peak rates</span>
-                </div>
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  {accTypes.map((t) => {
-                    const isAllowed = typeConfig[t.id]?.allowed !== false;
-                    return (
-                      <div
-                        key={t.id}
-                        className={`p-2.5 rounded-xl border transition-all ${
-                          isAllowed
-                            ? "border-amber-200 bg-amber-50/30"
-                            : "border-zinc-200 bg-zinc-100/60 opacity-60"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <label className="flex items-center gap-2 cursor-pointer select-none">
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {accTypes.map((t) => {
+                  const isAllowed = typeConfig[t.id]?.allowed !== false;
+                  return (
+                    <div
+                      key={t.id}
+                      className={`p-2.5 rounded-xl border transition-all ${
+                        isAllowed
+                          ? "border-amber-200 bg-amber-50/30"
+                          : "border-zinc-200 bg-zinc-100/60 opacity-60"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={isAllowed}
+                            onChange={(e) => {
+                              const allowed = e.target.checked;
+                              setTypeConfig((prev) => ({
+                                ...prev,
+                                [t.id]: {
+                                  allowed,
+                                  price: prev[t.id]?.price ?? t.base_price_per_night,
+                                },
+                              }));
+                            }}
+                            className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-zinc-300"
+                          />
+                          <div>
+                            <span className={`text-xs font-bold block ${isAllowed ? "text-zinc-900" : "text-zinc-400 line-through"}`}>
+                              {t.name}
+                            </span>
+                            <span className="text-[10px] text-zinc-400">Base: ₹{t.base_price_per_night}/night</span>
+                          </div>
+                        </label>
+
+                        {isAllowed ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-amber-700 font-bold uppercase">Peak Rate: ₹</span>
                             <input
-                              type="checkbox"
-                              checked={isAllowed}
+                              type="number"
+                              value={typeConfig[t.id]?.price ?? t.base_price_per_night}
                               onChange={(e) => {
-                                const allowed = e.target.checked;
+                                const val = parseFloat(e.target.value) || 0;
                                 setTypeConfig((prev) => ({
                                   ...prev,
-                                  [t.id]: {
-                                    allowed,
-                                    price: prev[t.id]?.price ?? t.base_price_per_night,
-                                  },
+                                  [t.id]: { allowed: true, price: val },
                                 }));
                               }}
-                              className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-zinc-300"
+                              className="w-20 px-2 py-1 border border-zinc-200 rounded-lg text-xs font-bold text-amber-700 text-right bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
-                            <div>
-                              <span className={`text-xs font-bold block ${isAllowed ? "text-zinc-900" : "text-zinc-400 line-through"}`}>
-                                {t.name}
-                              </span>
-                              <span className="text-[10px] text-zinc-400">Base: ₹{t.base_price_per_night}/night</span>
-                            </div>
-                          </label>
-
-                          {isAllowed ? (
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[10px] text-amber-700 font-bold uppercase">Peak Rate: ₹</span>
-                              <input
-                                type="number"
-                                value={typeConfig[t.id]?.price ?? t.base_price_per_night}
-                                onChange={(e) => {
-                                  const val = parseFloat(e.target.value) || 0;
-                                  setTypeConfig((prev) => ({
-                                    ...prev,
-                                    [t.id]: { allowed: true, price: val },
-                                  }));
-                                }}
-                                className="w-20 px-2 py-1 border border-zinc-200 rounded-lg text-xs font-bold text-amber-700 text-right bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                              />
-                            </div>
-                          ) : (
-                            <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 uppercase">
-                              Blocked
-                            </span>
-                          )}
-                        </div>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 uppercase">
+                            Blocked
+                          </span>
+                        )}
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
-            )}
+            </div>
 
             {/* VOUCHER RESTRICTIONS / BLOCKING SELECTOR */}
             {vouchers.length > 0 && (
@@ -1051,7 +958,7 @@ export default function AdminRulesAndVouchersPage() {
                   </span>
                 </div>
                 <p className="text-[11px] text-zinc-500">
-                  Select which discount vouchers to block on these dates (e.g. disable high discounts on peak wedding days):
+                  Select which discount vouchers to block on these dates (e.g. disable high discounts on peak days):
                 </p>
                 <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto pr-1">
                   {vouchers.map((v) => {
@@ -1102,6 +1009,14 @@ export default function AdminRulesAndVouchersPage() {
               </div>
             )}
 
+            {/* Error Message Placed at Bottom */}
+            {ruleError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{ruleError}</span>
+              </div>
+            )}
+
             <div className="flex justify-end gap-2 pt-3 border-t border-zinc-100">
               <button
                 type="button"
@@ -1141,13 +1056,6 @@ export default function AdminRulesAndVouchersPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-
-            {voucherError && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0" />
-                <span>{voucherError}</span>
-              </div>
-            )}
 
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -1222,6 +1130,13 @@ export default function AdminRulesAndVouchersPage() {
               />
             </div>
 
+            {voucherError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{voucherError}</span>
+              </div>
+            )}
+
             <div className="flex justify-end gap-2 pt-3 border-t border-zinc-100">
               <button
                 type="button"
@@ -1250,10 +1165,8 @@ export default function AdminRulesAndVouchersPage() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto shadow-xl">
             <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-              <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg border ${
-                viewingProfile.category === "wedding" ? "bg-amber-100 text-amber-800 border-amber-300" : "bg-rose-100 text-rose-800 border-rose-300"
-              }`}>
-                {viewingProfile.category === "wedding" ? "Wedding Peak Rule" : "Maintenance Closure"}
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg border bg-amber-100 text-amber-800 border-amber-300">
+                Booking Rule
               </span>
               <button onClick={() => setViewingProfile(null)} className="text-zinc-400 hover:text-zinc-700 cursor-pointer">
                 <X className="w-5 h-5" />
@@ -1268,7 +1181,9 @@ export default function AdminRulesAndVouchersPage() {
 
               {/* Assigned Dates */}
               <div className="mt-3 p-3 bg-zinc-50 rounded-xl border border-zinc-200">
-                <span className="text-[10px] font-bold text-zinc-400 block uppercase mb-1">Assigned Dates ({viewingProfile.assigned_dates?.length || 0} days)</span>
+                <span className="text-[10px] font-bold text-zinc-400 block uppercase mb-1">
+                  Assigned Dates ({viewingProfile.assigned_dates?.length || 0} days)
+                </span>
                 {viewingProfile.assigned_dates && viewingProfile.assigned_dates.length > 0 ? (
                   <div className="flex flex-wrap gap-1 mt-1 font-mono text-xs text-zinc-700 max-h-28 overflow-y-auto pr-1">
                     {viewingProfile.assigned_dates.map((d) => (
@@ -1280,32 +1195,30 @@ export default function AdminRulesAndVouchersPage() {
                 )}
               </div>
 
-              {/* Accommodations on These Dates */}
-              {viewingProfile.category === "wedding" && (
-                <div className="mt-3 p-3 bg-amber-50/50 rounded-xl border border-amber-200/80">
-                  <span className="text-[10px] font-bold text-amber-800 block uppercase mb-1.5">
-                    Room Permissions & Peak Rates
-                  </span>
-                  <div className="space-y-1.5 text-xs">
-                    {accTypes.map((t) => {
-                      const tCfg = viewingProfile.config?.accommodations?.[t.id];
-                      const availCfg = viewingProfile.config?.availability?.accommodation?.[t.id];
-                      const isAllowed = availCfg !== undefined ? availCfg === "allowed" : (tCfg ? tCfg.allowed !== false : true);
-                      const price = tCfg?.price ?? t.base_price_per_night;
-                      return (
-                        <div key={t.id} className="flex items-center justify-between py-1 border-b border-amber-100 last:border-0">
-                          <span className={isAllowed ? "font-semibold text-zinc-800" : "text-zinc-400 line-through"}>{t.name}</span>
-                          {isAllowed ? (
-                            <span className="font-mono font-bold text-amber-700">₹{price}/night</span>
-                          ) : (
-                            <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">Blocked</span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+              {/* Accommodations & Peak Rates on These Dates */}
+              <div className="mt-3 p-3 bg-amber-50/50 rounded-xl border border-amber-200/80">
+                <span className="text-[10px] font-bold text-amber-800 block uppercase mb-1.5">
+                  Room Permissions & Peak Rates
+                </span>
+                <div className="space-y-1.5 text-xs">
+                  {accTypes.map((t) => {
+                    const tCfg = viewingProfile.config?.accommodations?.[t.id];
+                    const availCfg = viewingProfile.config?.availability?.accommodation?.[t.id];
+                    const isAllowed = availCfg !== undefined ? availCfg === "allowed" : (tCfg ? tCfg.allowed !== false : true);
+                    const price = tCfg?.price ?? t.base_price_per_night;
+                    return (
+                      <div key={t.id} className="flex items-center justify-between py-1 border-b border-amber-100 last:border-0">
+                        <span className={isAllowed ? "font-semibold text-zinc-800" : "text-zinc-400 line-through"}>{t.name}</span>
+                        {isAllowed ? (
+                          <span className="font-mono font-bold text-amber-700">₹{price}/night</span>
+                        ) : (
+                          <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">Blocked</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
 
               {/* Blocked Vouchers on These Dates */}
               {viewingProfile.config?.blocked_vouchers && viewingProfile.config.blocked_vouchers.length > 0 && (

@@ -617,11 +617,6 @@ export default function EventDetailsPage() {
                       +
                     </button>
                   </div>
-                  <p className="text-xs text-zinc-500">
-                    {attendeeType === "member"
-                      ? "Registered members can buy maximum 10 tickets."
-                      : "General users can buy maximum 4 tickets."}
-                  </p>
                 </div>
 
                 {event.pricing_type === "paid" && (
@@ -685,11 +680,6 @@ export default function EventDetailsPage() {
                         <span>₹{payableAmount}</span>
                       </div>
                     )}
-
-                    <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/80 flex items-center justify-between text-xs font-semibold text-amber-900">
-                      <span>Online Payment &amp; Instant Pass</span>
-                      <span className="bg-amber-500 text-white px-2 py-0.5 rounded-md text-[10px] font-bold uppercase">Online Only</span>
-                    </div>
                   </div>
                 )}
                 
@@ -698,6 +688,12 @@ export default function EventDetailsPage() {
                     <div className="p-3 bg-emerald-50 text-emerald-700 text-sm font-semibold rounded-xl border border-emerald-100 flex items-center justify-center">
                       Free Event
                     </div>
+                  </div>
+                )}
+
+                {error && (
+                  <div className="p-3 bg-rose-50 text-rose-600 text-sm rounded-xl border border-rose-100">
+                    {error}
                   </div>
                 )}
 
