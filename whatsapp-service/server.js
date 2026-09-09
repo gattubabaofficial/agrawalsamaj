@@ -220,8 +220,37 @@ process.on("uncaughtException", (err) => {
   console.error("[whatsapp] Uncaught exception (server staying up):", err);
 });
 
+async function clearAndRestartSession() {
+  console.log("[whatsapp] Clearing stored session details and restarting socket...");
+  if (sock) {
+    try {
+      sock.ev.removeAllListeners("connection.update");
+      sock.ev.removeAllListeners("creds.update");
+      sock.end(undefined);
+    } catch (_) {}
+    sock = null;
+  }
+
+  // Remove auth folder completely
+  try {
+    await fs.promises.rm(AUTH_DIR, { recursive: true, force: true });
+    console.log("[whatsapp] Stored authentication directory wiped.");
+  } catch (err) {
+    console.warn("[whatsapp] Error wiping AUTH_DIR:", err.message);
+  }
+
+  state.status = "starting";
+  state.qrString = null;
+  state.lastError = null;
+  state.readyAt = null;
+  state.me = null;
+
+  await startSocket();
+}
+
 // ─────────────────────────── HTTP API ───────────────────────────
 const app = express();
+app.use(express.urlencoded({ extended: true }));
 // Pass QR PNGs are a few KB, but allow headroom for larger media.
 app.use(express.json({ limit: "15mb" }));
 
@@ -250,33 +279,228 @@ app.get("/qr.png", async (req, res) => {
   }
 });
 
+app.all("/reset", async (req, res) => {
+  try {
+    await clearAndRestartSession();
+    if (req.headers.accept && req.headers.accept.includes("text/html")) {
+      return res.redirect("/qr");
+    }
+    return res.json({ success: true, message: "Stored session deleted. Fresh pairing QR generated." });
+  } catch (e) {
+    console.error("[whatsapp] Reset session failed:", e);
+    if (req.headers.accept && req.headers.accept.includes("text/html")) {
+      return res.redirect("/qr?error=" + encodeURIComponent(e.message));
+    }
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.all("/logout", async (req, res) => {
+  try {
+    await clearAndRestartSession();
+    if (req.headers.accept && req.headers.accept.includes("text/html")) {
+      return res.redirect("/qr");
+    }
+    return res.json({ success: true, message: "Logged out and deleted stored session." });
+  } catch (e) {
+    console.error("[whatsapp] Logout failed:", e);
+    if (req.headers.accept && req.headers.accept.includes("text/html")) {
+      return res.redirect("/qr?error=" + encodeURIComponent(e.message));
+    }
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 app.get("/qr", (req, res) => {
-  if (state.status === "ready") {
-    return res.send(
-      `<html><body style="font-family:sans-serif;text-align:center;padding:60px">
-         <h2>✅ WhatsApp is linked and ready</h2>
-         <p>Sending as <b>+${state.me}</b></p>
-       </body></html>`
-    );
-  }
-  if (!state.qrString) {
-    return res.send(
-      `<html><head><meta http-equiv="refresh" content="3"></head>
-       <body style="font-family:sans-serif;text-align:center;padding:60px">
-         <h2>Waiting for pairing QR…</h2>
-         <p>Status: <b>${state.status}</b> — this page refreshes automatically.</p>
-       </body></html>`
-    );
-  }
-  res.send(
-    `<html><head><meta http-equiv="refresh" content="20"></head>
-     <body style="font-family:sans-serif;text-align:center;padding:40px">
-       <h2>Link the sending WhatsApp account</h2>
-       <p>WhatsApp → Settings → Linked devices → Link a device</p>
-       <img src="/qr.png?t=${Date.now()}" width="400" height="400" alt="Pairing QR" />
-       <p style="color:#888;font-size:13px">This code rotates; the page refreshes every 20s.</p>
-     </body></html>`
-  );
+  const isReady = state.status === "ready";
+  const hasQr = !!state.qrString;
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  ${!isReady ? '<meta http-equiv="refresh" content="' + (hasQr ? "15" : "3") + '">' : ""}
+  <title>WhatsApp Service — Mansrovar Agrawal Samaj</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #f4f4f5;
+      color: #18181b;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .card {
+      background: white;
+      border-radius: 24px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e4e4e7;
+      max-width: 480px;
+      width: 100%;
+      padding: 32px;
+      text-align: center;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .badge-ready { background: #dcfce7; color: #166534; }
+    .badge-qr { background: #fef3c7; color: #92400e; }
+    .badge-starting { background: #e0f2fe; color: #0369a1; }
+    .badge-error { background: #fee2e2; color: #991b1b; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .dot-ready { background: #22c55e; }
+    .dot-qr { background: #f59e0b; }
+    .dot-starting { background: #0ea5e9; }
+    .dot-error { background: #ef4444; }
+    h1 { font-size: 22px; font-weight: 700; color: #09090b; margin-bottom: 8px; }
+    p.subtitle { font-size: 14px; color: #71717a; margin-bottom: 24px; line-height: 1.5; }
+    .qr-container {
+      background: #fafafa;
+      border: 2px dashed #d4d4d8;
+      border-radius: 16px;
+      padding: 20px;
+      margin: 0 auto 24px auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 320px;
+    }
+    .qr-container img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+    }
+    .instructions {
+      text-align: left;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 16px 20px;
+      font-size: 13px;
+      color: #334155;
+      margin-bottom: 24px;
+    }
+    .instructions ol { margin-left: 18px; line-height: 1.6; }
+    .instructions li { margin-bottom: 4px; }
+    .btn {
+      display: inline-block;
+      width: 100%;
+      padding: 12px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: none;
+    }
+    .btn-danger {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+    .btn-danger:hover {
+      background: #fecaca;
+      color: #7f1d1d;
+    }
+    .btn-primary {
+      background: #f59e0b;
+      color: white;
+      margin-top: 10px;
+    }
+    .btn-primary:hover {
+      background: #d97706;
+    }
+    .connected-info {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 16px;
+      padding: 24px 20px;
+      margin-bottom: 24px;
+    }
+    .phone-number {
+      font-size: 24px;
+      font-weight: 700;
+      color: #15803d;
+      margin-top: 8px;
+      letter-spacing: 0.5px;
+    }
+    .auto-refresh-text {
+      font-size: 12px;
+      color: #a1a1aa;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    ${isReady ? `
+      <div class="badge badge-ready"><span class="dot dot-ready"></span> Connected & Active</div>
+      <h1>WhatsApp Connected</h1>
+      <p class="subtitle">Mansrovar Agrawal Samaj Jaipur message delivery service is linked and sending live messages.</p>
+      
+      <div class="connected-info">
+        <div style="font-size: 13px; color: #166534; font-weight: 600;">SENDING AS</div>
+        <div class="phone-number">+${state.me || "Active"}</div>
+      </div>
+
+      <form action="/logout" method="POST" onsubmit="return confirm('Are you sure you want to unlink and delete this WhatsApp session?');">
+        <button type="submit" class="btn btn-danger">🗑️ Unlink & Delete WhatsApp Session</button>
+      </form>
+    ` : hasQr ? `
+      <div class="badge badge-qr"><span class="dot dot-qr"></span> Scan QR to Link</div>
+      <h1>Link WhatsApp Account</h1>
+      <p class="subtitle">Scan the QR code below using the sender WhatsApp phone.</p>
+
+      <div class="instructions">
+        <ol>
+          <li>Open WhatsApp on the sender phone</li>
+          <li>Tap <b>Menu (⋮)</b> or <b>Settings</b> &rarr; <b>Linked Devices</b></li>
+          <li>Tap <b>Link a device</b> and scan this QR code</li>
+        </ol>
+      </div>
+
+      <div class="qr-container">
+        <img src="/qr.png?t=${Date.now()}" alt="Pairing QR Code" width="300" height="300" />
+      </div>
+
+      <form action="/reset" method="POST" onsubmit="return confirm('Clear previous session cache and generate a new QR code?');">
+        <button type="submit" class="btn btn-danger">🔄 Delete Old Details & Get Fresh QR</button>
+      </form>
+      <div class="auto-refresh-text">Auto-refreshing every 15 seconds</div>
+    ` : `
+      <div class="badge badge-starting"><span class="dot dot-starting"></span> ${state.status.toUpperCase()}</div>
+      <h1>Waiting for Pairing QR…</h1>
+      <p class="subtitle">Initializing WhatsApp client. If this screen does not change, clear the previous session data below.</p>
+
+      <div class="qr-container">
+        <div style="color: #71717a; font-size: 14px;">
+          <div style="font-size: 28px; margin-bottom: 8px;">⏳</div>
+          Generating fresh QR code…
+        </div>
+      </div>
+
+      <form action="/reset" method="POST">
+        <button type="submit" class="btn btn-danger">🗑️ Delete Stored Details & Reset Session</button>
+      </form>
+      <div class="auto-refresh-text">Auto-refreshing every 3 seconds</div>
+    `}
+  </div>
+</body>
+</html>`;
+
+  res.send(html);
 });
 
 /**

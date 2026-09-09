@@ -7,7 +7,8 @@
   "type": "commonjs",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "reset-auth": "node reset_session.js"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.16",
