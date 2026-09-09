@@ -687,7 +687,7 @@ export default function BlogPage() {
                         type="text"
                         required
                         maxLength={6}
-                        placeholder="e.g. 123456"
+                        placeholder=""
                         value={blogOtp}
                         onChange={(e) => setBlogOtp(e.target.value)}
                         className="w-full px-4 py-3 border border-amber-300 rounded-xl text-center text-lg font-mono font-bold tracking-widest focus:ring-2 focus:ring-amber-500 focus:outline-none bg-amber-50/30"

@@ -883,7 +883,7 @@ export default function PublicMembersPage() {
                       <input
                         type="text"
                         maxLength={6}
-                        placeholder="123456"
+                        placeholder=""
                         value={editOtp}
                         onChange={(e) => setEditOtp(e.target.value)}
                         className="w-full px-4 py-3 border border-zinc-300 rounded-xl text-center text-xl font-mono tracking-widest focus:ring-2 focus:ring-amber-500 focus:outline-none"
@@ -1510,7 +1510,7 @@ export default function PublicMembersPage() {
                         type="text"
                         required
                         maxLength={6}
-                        placeholder="e.g. 123456"
+                        placeholder=""
                         value={msgOtp}
                         onChange={(e) => setMsgOtp(e.target.value)}
                         className="w-full px-3.5 py-3 border border-amber-300 rounded-xl text-center text-lg font-mono font-bold tracking-widest focus:ring-2 focus:ring-amber-500 focus:outline-none bg-amber-50/30"
@@ -1853,7 +1853,7 @@ export default function PublicMembersPage() {
                       <input
                         type="text"
                         maxLength={6}
-                        placeholder="123456"
+                        placeholder=""
                         value={regOtp}
                         onChange={(e) => setRegOtp(e.target.value)}
                         className="w-full px-4 py-3 border border-zinc-300 rounded-xl text-center text-xl font-mono tracking-widest focus:ring-2 focus:ring-amber-500 focus:outline-none"

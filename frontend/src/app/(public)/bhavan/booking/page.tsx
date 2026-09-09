@@ -2422,7 +2422,7 @@ export default function BhavanBookingPage() {
                               maxLength={6}
                               value={otp}
                               onChange={(e) => setOtp(e.target.value)}
-                              placeholder="123456"
+                              placeholder=""
                               className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-center text-2xl tracking-widest font-mono text-white focus:border-emerald-500 focus:outline-none"
                             />
                           </div>
