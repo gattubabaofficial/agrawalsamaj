@@ -63,8 +63,8 @@ export default function Footer() {
         <div className="grid grid-cols-2 gap-x-8 gap-y-12 sm:grid-cols-3 lg:grid-cols-12 lg:gap-x-12">
           {/* Identity */}
           <div className="col-span-2 sm:col-span-3 lg:col-span-4">
-            <p className="deva text-lg text-vermilion">अग्रवाल समाज</p>
-            <p className="display mt-2 text-2xl">Agrawal Samaj Mansrovar Jaipur</p>
+            <p className="deva text-lg text-vermilion">मानसरोवर अग्रवाल समाज</p>
+            <p className="display mt-2 text-2xl">Mansrovar Agrawal Samaj Jaipur</p>
             <p className="mt-5 max-w-xs text-sm leading-relaxed text-ink-2">
               One brick, one rupee — the covenant that built Agroha, kept by the
               households of Jaipur.
@@ -149,7 +149,7 @@ export default function Footer() {
 
         <div className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="eyebrow !tracking-[0.18em]">
-            © {new Date().getFullYear()} Agrawal Samaj Mansrovar Jaipur
+            © {new Date().getFullYear()} Mansrovar Agrawal Samaj Jaipur
           </p>
           <div className="flex gap-6">
             <Link href="#" title="Read our privacy policy" className="eyebrow !tracking-[0.18em] transition-colors hover:text-vermilion">

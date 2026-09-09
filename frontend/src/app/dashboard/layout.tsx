@@ -124,7 +124,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             role === "ADMIN" ? "border-zinc-800" : "border-zinc-200"
           }`}>
             <Link href="/" title="Return to the home page" className="text-xl font-bold text-gradient-vivid">
-              Agrawal Samaj Mansrovar Jaipur
+              Mansrovar Agrawal Samaj Jaipur
             </Link>
             <button
               onClick={() => setIsMobileNavOpen(false)}

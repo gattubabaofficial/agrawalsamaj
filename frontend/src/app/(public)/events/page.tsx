@@ -71,7 +71,7 @@ export default function EventsPage() {
             Samaj <span className="text-amber-500">Events </span> &amp; Gatherings
           </h1>
           <p className="text-sm sm:text-base text-zinc-500 leading-relaxed">
-            Join and participate in cultural, religious, sports, and educational functions organized by Agrawal Samaj Mansrovar Jaipur. Book passes online instantly.
+            Join and participate in cultural, religious, sports, and educational functions organized by Mansrovar Agrawal Samaj Jaipur. Book passes online instantly.
           </p>
         </div>
 

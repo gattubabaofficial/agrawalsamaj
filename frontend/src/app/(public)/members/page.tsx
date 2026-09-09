@@ -393,7 +393,7 @@ export default function PublicMembersPage() {
         return;
       }
 
-      setEditSuccessMsg("Your profile updates have been submitted to Agrawal Samaj Mansrovar Jaipur Admin for verification! Once approved by Admin, your updated details will appear on the live website.");
+      setEditSuccessMsg("Your profile updates have been submitted to Mansrovar Agrawal Samaj Jaipur Admin for verification! Once approved by Admin, your updated details will appear on the live website.");
     } catch (err: any) {
       setOtpError(formatErrorMessage(err?.message, "Failed to submit profile update request."));
     } finally {
@@ -561,10 +561,10 @@ export default function PublicMembersPage() {
                 <ShieldCheck className="w-4 h-4" /> Verified Samaj Directory
               </span>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight">
-                Agrawal Samaj Mansrovar Jaipur Members Directory
+                Mansrovar Agrawal Samaj Jaipur Members Directory
               </h1>
               <p className="text-amber-100 text-sm sm:text-base leading-relaxed">
-                Explore, search, and connect with registered members of Agrawal Samaj Mansrovar Jaipur. Search by name, phone number, member ID, address, or profession.
+                Explore, search, and connect with registered members of Mansrovar Agrawal Samaj Jaipur. Search by name, phone number, member ID, address, or profession.
               </p>
             </div>
 
@@ -628,7 +628,7 @@ export default function PublicMembersPage() {
               </p>
             </div>
             <div className="pt-2">
-              <p className="text-xs text-zinc-400 mb-3 font-semibold uppercase tracking-wider">Are you a member of Agrawal Samaj Mansrovar Jaipur?</p>
+              <p className="text-xs text-zinc-400 mb-3 font-semibold uppercase tracking-wider">Are you a member of Mansrovar Agrawal Samaj Jaipur?</p>
               <button
                 onClick={() => {
                   setShowRegisterModal(true);
@@ -1561,7 +1561,7 @@ export default function PublicMembersPage() {
               <div className="px-6 py-5 bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 text-white flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <UserPlus className="w-5 h-5" />
-                  <h3 className="font-bold text-lg">Apply for Agrawal Samaj Mansrovar Jaipur Membership</h3>
+                  <h3 className="font-bold text-lg">Apply for Mansrovar Agrawal Samaj Jaipur Membership</h3>
                 </div>
                 <button
                   onClick={() => setShowRegisterModal(false)}
@@ -1590,12 +1590,12 @@ export default function PublicMembersPage() {
                   <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
                     <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-2 text-xs text-amber-900">
                       <p className="font-bold text-amber-800 flex items-center gap-1.5 text-sm">
-                        <AlertCircle className="w-4 h-4 text-amber-600" /> Agrawal Samaj Mansrovar Jaipur Membership Criteria & Rules:
+                        <AlertCircle className="w-4 h-4 text-amber-600" /> Mansrovar Agrawal Samaj Jaipur Membership Criteria & Rules:
                       </p>
                       <ul className="list-disc list-inside space-y-1 leading-relaxed text-amber-900/90 pl-1">
                         <li>Applicant must belong to the Agrawal / Vaishya community.</li>
                         <li>Valid mobile number and address are compulsory for identification.</li>
-                        <li>All applications are cross-verified by the Agrawal Samaj Mansrovar Jaipur Executive Committee prior to approval.</li>
+                        <li>All applications are cross-verified by the Mansrovar Agrawal Samaj Jaipur Executive Committee prior to approval.</li>
                       </ul>
                     </div>
 

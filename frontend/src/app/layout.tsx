@@ -47,11 +47,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Agrawal Samaj Mansrovar Jaipur — One brick, one rupee",
-    template: "%s · Agrawal Samaj Mansrovar Jaipur",
+    default: "Mansrovar Agrawal Samaj Jaipur — One brick, one rupee",
+    template: "%s · Mansrovar Agrawal Samaj Jaipur",
   },
   description:
-    "The community portal for Agrawal Samaj Mansrovar Jaipur. Book the Bhavan, register for gatherings, find a household in the directory, and support the welfare schemes.",
+    "The community portal for Mansrovar Agrawal Samaj Jaipur. Book the Bhavan, register for gatherings, find a household in the directory, and support the welfare schemes.",
 };
 
 import ScrollToTop from "@/components/layout/ScrollToTop";

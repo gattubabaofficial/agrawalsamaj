@@ -113,7 +113,7 @@ export default function Padadhikari() {
       <div className="mx-auto max-w-[78rem] px-5 sm:px-8 lg:px-12">
         {/* ── Masthead ─────────────────────────────────────────────── */}
         <Reveal>
-          <Eyebrow tone="accent">Agrawal Samaj Mansrovar Jaipur Samiti</Eyebrow>
+          <Eyebrow tone="accent">Mansrovar Agrawal Samaj Jaipur Samiti</Eyebrow>
         </Reveal>
 
         <Reveal className="mt-5 max-w-2xl">
@@ -122,8 +122,8 @@ export default function Padadhikari() {
           </h2>
           <p className="mt-2 text-lg text-ink-3">Office bearers</p>
           <p className="mt-5 max-w-xl text-[0.9375rem] leading-relaxed text-ink-2">
-            The members serving on the executive committee of Mansarovar
-            Agrawal Samaj Mansrovar Jaipur Samiti.
+            The members serving on the executive committee of
+            Mansrovar Agrawal Samaj Jaipur Samiti.
           </p>
         </Reveal>
 

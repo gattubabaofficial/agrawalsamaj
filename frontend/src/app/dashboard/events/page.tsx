@@ -575,7 +575,7 @@ export default function UserEventsPage() {
           <div className="bg-white rounded-3xl shadow-xl max-w-xl w-full overflow-hidden border border-zinc-200 flex flex-col max-h-[90vh] animate-scale-up">
             <div className="px-6 py-5 bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 text-white flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-extrabold uppercase tracking-widest text-amber-200">Agrawal Samaj Mansrovar Jaipur</p>
+                <p className="text-[10px] font-extrabold uppercase tracking-widest text-amber-200">Mansrovar Agrawal Samaj Jaipur</p>
                 <h3 className="font-bold text-lg leading-tight">Official Event Entry Tickets</h3>
               </div>
               <button 

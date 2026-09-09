@@ -128,7 +128,7 @@ EVENTS = [
     {
         "title": "Maharaja Agrasen Jayanti Mahotsav 2026",
         "description": "Annual grand celebration of Maharaja Agrasen Jayanti featuring procession, cultural performances, youth awards, and community feast at Agrasen Bhawan Mansarovar.",
-        "organizer_name": "Agrawal Samaj Mansrovar Jaipur Samiti",
+        "organizer_name": "Mansrovar Agrawal Samaj Jaipur Samiti",
         "venue": "Agrasen Bhawan Main Ground & Hall",
         "address": "Rajat Path, Mansarovar, Jaipur, Rajasthan 302020",
         "category": EventCategory.CULTURAL,
@@ -184,7 +184,7 @@ EVENTS = [
     },
     {
         "title": "Agrawal Youth Premier League (Cricket Tournament)",
-        "description": "Annual inter-colony T20 cricket tournament for Agrawal Samaj Mansrovar Jaipur youth teams. Trophy, medals, and refreshments provided.",
+        "description": "Annual inter-colony T20 cricket tournament for Mansrovar Agrawal Samaj Jaipur youth teams. Trophy, medals, and refreshments provided.",
         "organizer_name": "Agrawal Yuva Sangathan",
         "venue": "Mansarovar Sports Academy Ground",
         "address": "Mansarovar, Jaipur",

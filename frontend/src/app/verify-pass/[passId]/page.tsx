@@ -115,7 +115,7 @@ export default function VerifyPassPage() {
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-widest text-amber-200">Agrawal Samaj Mansrovar Jaipur</p>
+              <p className="text-[10px] font-extrabold uppercase tracking-widest text-amber-200">Mansrovar Agrawal Samaj Jaipur</p>
               <h1 className="font-bold text-lg leading-tight">Official Event Entry Ticket</h1>
             </div>
           </div>
@@ -253,7 +253,7 @@ export default function VerifyPassPage() {
                     </div>
                   )}
                   <div className="col-span-2 flex items-center justify-between pt-2 border-t border-zinc-200/60 text-[11px] text-zinc-500">
-                    <span>Issued By: Agrawal Samaj Mansrovar</span>
+                    <span>Issued By: Mansrovar Agrawal Samaj</span>
                     <span className="font-mono text-[10px] select-all">Ticket ID: {passData.pass_id?.slice(0, 13)}...</span>
                   </div>
                 </div>

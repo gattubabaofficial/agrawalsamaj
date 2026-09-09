@@ -564,7 +564,7 @@ export default function AdminRequestsPage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-lg leading-tight">Approve Membership</h3>
-                  <p className="text-xs text-amber-100 mt-0.5">Agrawal Samaj Mansrovar Jaipur</p>
+                  <p className="text-xs text-amber-100 mt-0.5">Mansrovar Agrawal Samaj Jaipur</p>
                 </div>
               </div>
               <button

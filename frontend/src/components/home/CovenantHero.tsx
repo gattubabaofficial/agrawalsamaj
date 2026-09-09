@@ -151,9 +151,9 @@ export default function CovenantHero() {
 
             <Reveal delay={0.38}>
               <div className="mt-6 text-center sm:mt-8">
-                <p className="deva text-lg text-vermilion">अग्रवाल समाज</p>
+                <p className="deva text-lg text-vermilion">मानसरोवर अग्रवाल समाज</p>
                 <h2 className="display mt-2 text-[clamp(1.75rem,4.5vw,2.75rem)]">
-                  Agrawal Samaj Mansrovar Jaipur
+                  Mansrovar Agrawal Samaj Jaipur
                 </h2>
                 <Eyebrow className="mt-4 justify-center">Jaipur · Est. 1985</Eyebrow>
               </div>

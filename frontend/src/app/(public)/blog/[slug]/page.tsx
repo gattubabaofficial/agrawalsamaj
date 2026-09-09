@@ -353,7 +353,7 @@ export default function BlogReaderPage() {
               {likeCount}
             </button>
             <a
-              href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`*${blog?.title}*\nRead more on Agrawal Samaj Mansrovar Jaipur Portal: ${typeof window !== "undefined" ? window.location.href : ""}`)}`}
+              href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`*${blog?.title}*\nRead more on Mansrovar Agrawal Samaj Jaipur Portal: ${typeof window !== "undefined" ? window.location.href : ""}`)}`}
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-sm font-semibold transition-all"

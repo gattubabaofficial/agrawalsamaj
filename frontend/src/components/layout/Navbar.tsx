@@ -135,10 +135,10 @@ export default function Navbar() {
           {/* Wordmark */}
           <Link href="/" title="Return to the home page" className="group flex shrink-0 flex-col leading-none">
             <span className="display text-xl tracking-[-0.01em] text-ink sm:text-[1.375rem]">
-              Agrawal Samaj Mansrovar Jaipur
+              Mansrovar Agrawal Samaj Jaipur
             </span>
             <span className="deva mt-0.5 text-[0.625rem] tracking-wide text-vermilion transition-opacity duration-300 group-hover:opacity-70">
-              अग्रवाल समाज · जयपुर
+              मानसरोवर अग्रवाल समाज · जयपुर
             </span>
           </Link>
 

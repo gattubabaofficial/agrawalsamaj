@@ -581,19 +581,19 @@ async def contact_member(
         from app.services.sms_service import send_sms
 
         formatted_msg = (
-            f"📩 *New Contact Request from Agrawal Samaj Mansrovar Jaipur Portal*\n\n"
+            f"📩 *New Contact Request from Mansrovar Agrawal Samaj Jaipur Portal*\n\n"
             f"👤 *Sender Name:* {payload.sender_name}\n"
             f"📞 *Sender Mobile:* {payload.sender_mobile}\n"
             f"📧 *Sender Email:* {payload.sender_email or 'Not provided'}\n"
             f"📋 *Reason:* {payload.reason}\n\n"
             f"💬 *Message Details:*\n{payload.message}\n\n"
-            f"— Agrawal Samaj Mansrovar Jaipur Community Portal"
+            f"— Mansrovar Agrawal Samaj Jaipur Community Portal"
         )
         res_sid = send_whatsapp_text(recipient.mobile, formatted_msg)
         
         # Fallback to SMS if WhatsApp sidecar is unlinked or failed
         if res_sid in ("failed_sid", None):
-            await send_sms(recipient.mobile, f"Agrawal Samaj Mansrovar Jaipur: New contact request from {payload.sender_name} ({payload.sender_mobile}): {payload.message}")
+            await send_sms(recipient.mobile, f"Mansrovar Agrawal Samaj Jaipur: New contact request from {payload.sender_name} ({payload.sender_mobile}): {payload.message}")
 
     return {
         "status": "success",
@@ -698,7 +698,7 @@ async def send_member_edit_otp(
     # the member waited for a message that did not exist and every code they
     # tried came back "Invalid or expired verification code."
     message = (
-        f"Your Agrawal Samaj Mansrovar Jaipur verification code is {otp_code}. "
+        f"Your Mansrovar Agrawal Samaj Jaipur verification code is {otp_code}. "
         f"Valid for 5 minutes. Do not share this with anyone."
     )
     channel = await send_otp_message(target_mobile, message)

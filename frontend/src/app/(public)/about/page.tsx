@@ -17,7 +17,7 @@ export default function AboutPage() {
             animate={{ opacity: 1, y: 0 }}
             className="text-4xl font-bold bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 bg-clip-text text-transparent"
           >
-            About Agrawal Samaj Mansrovar Jaipur
+            About Mansrovar Agrawal Samaj Jaipur
           </motion.h1>
           <p className="max-w-2xl mx-auto text-zinc-600">
             Dedicated to community welfare, heritage preservation, and building a stronger network for the Agrawal family.
@@ -32,7 +32,7 @@ export default function AboutPage() {
             </div>
             <h2 className="text-2xl font-bold text-zinc-900">Our Vision</h2>
             <p className="text-sm text-zinc-500 leading-relaxed">
-              To unite the Agrawal Samaj Mansrovar Jaipur globally, facilitating social solidarity, educational growth, and sustainable support programs based on the principles of Maharaja Agrasen.
+              To unite the Mansrovar Agrawal Samaj Jaipur globally, facilitating social solidarity, educational growth, and sustainable support programs based on the principles of Maharaja Agrasen.
             </p>
           </div>
 

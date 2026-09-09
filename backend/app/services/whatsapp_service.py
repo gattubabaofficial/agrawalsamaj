@@ -76,7 +76,7 @@ def send_whatsapp_web_qr(
             f"🎟️ *{event_name}*\n\n"
             f"Your entry pass {pass_number} of {total_passes} is attached.\n"
             f"Please show this QR code at the venue entrance.\n\n"
-            f"— Agrawal Samaj Mansrovar Jaipur"
+            f"— Mansrovar Agrawal Samaj Jaipur"
         )
 
     try:
@@ -417,7 +417,7 @@ async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = Fal
                 desc_snippet = f"\n📝 *Event Description:* {desc_clean[:180]}..." if len(desc_clean) > 180 else (f"\n📝 *Event Description:* {desc_clean}" if desc_clean else "")
 
                 caption = (
-                    f"🚩 *Agrawal Samaj Mansrovar Jaipur* 🚩\n\n"
+                    f"🚩 *Mansrovar Agrawal Samaj Jaipur* 🚩\n\n"
                     f"Hello *{event_pass.guest_name or attendee_name}*,\n\n"
                     f"This is your official entry ticket for *{event.title}*! 🎟️\n\n"
                     f"📅 *Date & Time:* {event_date_str}\n"
@@ -426,7 +426,7 @@ async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = Fal
                     f"👤 *Attendee Name:* {event_pass.guest_name or attendee_name}"
                     f"{desc_snippet}\n\n"
                     f"📌 *Gate Entry Notice:* This ticket will be scanned at the venue entrance gate for entry verification. Please keep this digital QR pass ready on your phone.\n\n"
-                    f"— *Agrawal Samaj Mansrovar Jaipur Samiti*"
+                    f"— *Mansrovar Agrawal Samaj Jaipur Samiti*"
                 )
 
                 message_sid = await asyncio.to_thread(
@@ -522,7 +522,7 @@ async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = Fal
             desc_snippet = f"\n📝 *Event Description:* {desc_clean[:180]}..." if len(desc_clean) > 180 else (f"\n📝 *Event Description:* {desc_clean}" if desc_clean else "")
 
             caption = (
-                f"🚩 *Agrawal Samaj Mansrovar Jaipur* 🚩\n\n"
+                f"🚩 *Mansrovar Agrawal Samaj Jaipur* 🚩\n\n"
                 f"Hello *{ticket_guest_name}*,\n\n"
                 f"This is your official entry ticket for *{event.title}*! 🎟️\n\n"
                 f"📅 *Date & Time:* {event_date_str}\n"
@@ -531,7 +531,7 @@ async def generate_and_send_passes(registration_id: uuid.UUID, force: bool = Fal
                 f"👤 *Attendee Name:* {ticket_guest_name}"
                 f"{desc_snippet}\n\n"
                 f"📌 *Gate Entry Notice:* This ticket will be scanned at the venue entrance gate for entry verification. Please keep this digital QR pass ready on your phone.\n\n"
-                f"— *Agrawal Samaj Mansrovar Jaipur Samiti*"
+                f"— *Mansrovar Agrawal Samaj Jaipur Samiti*"
             )
 
             message_sid = await asyncio.to_thread(

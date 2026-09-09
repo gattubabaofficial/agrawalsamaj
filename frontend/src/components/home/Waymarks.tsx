@@ -20,7 +20,7 @@ const NAV_GUIDE = [
   { name: "कार्यक्रम", href: "/events", icon: Calendar, description: "आगामी आयोजनों की जानकारी और पास बुक करने की सुविधा।" },
   { name: "ब्लॉग", href: "/blog", icon: BookOpen, description: "समाज की कहानियाँ पढ़ें, या फ़ोन सत्यापन के बाद स्वयं लिखें।" },
   { name: "दान", href: "/donate", icon: Heart, description: "समाज के कार्यों में सीधे योगदान देने का माध्यम।" },
-  { name: "सदस्यता आवेदन", href: "/members?apply=true", icon: UserPlus, description: "अग्रवाल समाज मानसरोवर की नई सदस्यता हेतु ऑनलाइन आवेदन करें।" },
+  { name: "सदस्यता आवेदन", href: "/members?apply=true", icon: UserPlus, description: "मानसरोवर अग्रवाल समाज की नई सदस्यता हेतु ऑनलाइन आवेदन करें।" },
 ];
 
 export default function Waymarks() {

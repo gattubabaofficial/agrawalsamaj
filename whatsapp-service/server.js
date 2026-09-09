@@ -1,5 +1,5 @@
 /**
- * WhatsApp delivery sidecar for the Agrawal Samaj Mansrovar Jaipur portal.
+ * WhatsApp delivery sidecar for the Mansrovar Agrawal Samaj Jaipur portal.
  *
  * Uses @whiskeysockets/baileys — a pure WebSocket WhatsApp Web client that
  * does NOT need a headless Chrome browser. This lets it run comfortably on

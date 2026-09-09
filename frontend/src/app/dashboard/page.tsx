@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 const NAV_CARDS = [
   {
     title: "Samaj Directory",
-    desc: "Browse and search verified members of Agrawal Samaj Mansrovar Jaipur.",
+    desc: "Browse and search verified members of Mansrovar Agrawal Samaj Jaipur.",
     href: "/dashboard/members",
     icon: Contact,
     badge: "Directory",

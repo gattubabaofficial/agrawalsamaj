@@ -292,7 +292,7 @@ export default function BlogPage() {
               <span className="text-gradient-vivid">Stories, News &amp; Insights</span>
             </h1>
             <p className="text-zinc-400 text-lg max-w-xl mx-auto mb-8">
-              Discover stories, announcements, and wisdom shared by our Agrawal Samaj Mansrovar Jaipur community.
+              Discover stories, announcements, and wisdom shared by our Mansrovar Agrawal Samaj Jaipur community.
             </p>
 
             {/* Search & Filter Controls */}

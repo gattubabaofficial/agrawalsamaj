@@ -22,7 +22,7 @@ from app.routers.bhavan_admin import router as bhavan_admin_router
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="Backend API for Agrawal Samaj Mansrovar Jaipur Management Portal",
+    description="Backend API for Mansrovar Agrawal Samaj Jaipur Management Portal",
     version="1.0.0",
 )
 

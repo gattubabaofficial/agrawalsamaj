@@ -316,7 +316,7 @@ async def phone_send_otp(payload: PhoneOtpSendRequest, db: AsyncSession = Depend
     await db.commit()
 
     # 3. Deliver the code — WhatsApp first, SMS if that does not land.
-    message = f"Your Agrawal Samaj Mansrovar Jaipur verification code is {otp_code}. Valid for {expiry_minutes} minutes. Do not share this with anyone."
+    message = f"Your Mansrovar Agrawal Samaj Jaipur verification code is {otp_code}. Valid for {expiry_minutes} minutes. Do not share this with anyone."
     channel = await send_otp_message(normalized_mobile, message)
 
     return _otp_send_response(channel, otp_code, "OTP sent by SMS.")
@@ -567,7 +567,7 @@ async def send_otp(
     await db.commit()
 
     # Deliver the code — WhatsApp first, SMS if that does not land.
-    message = f"Your Agrawal Samaj Mansrovar Jaipur registration verification code is {otp_code}. Valid for 10 minutes."
+    message = f"Your Mansrovar Agrawal Samaj Jaipur registration verification code is {otp_code}. Valid for 10 minutes."
     channel = await send_otp_message(normalized_val, message)
 
     return _otp_send_response(
