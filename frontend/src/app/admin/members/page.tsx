@@ -666,7 +666,7 @@ export default function AdminMembersPage() {
             ) : (
               <form onSubmit={handleMessageSubmit} className="p-6 space-y-4">
                 <p className="text-xs text-zinc-500 leading-relaxed bg-amber-50/50 p-3 rounded-lg border border-amber-100">
-                  ✉️ This will send a WhatsApp/SMS alert directly to <strong>{messageMember.first_name} {messageMember.surname}</strong> with your contact information.
+                  ✉️ This will send a WhatsApp message directly to <strong>{messageMember.first_name} {messageMember.surname}</strong> with your contact information.
                 </p>
 
                 {msgError && (

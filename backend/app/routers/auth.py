@@ -196,23 +196,13 @@ def hash_otp(otp: str) -> str:
     return hashlib.sha256(otp.encode()).hexdigest()
 
 
-def _otp_send_response(channel: str, otp_code: str, sms_message: str) -> dict:
-    """Turn a delivery channel into the endpoint's response.
-
-    The rule this enforces: never report success over a code that did not
-    reach a device. A console-only "send" counts as delivered ONLY when
-    someone has explicitly switched on OTP_DEBUG_RETURN_CODE, and in that case
-    the code comes back in the body so it is usable without reading logs.
-    """
+def _otp_send_response(channel: str, otp_code: str, custom_message: str | None = None) -> dict:
+    """Turn a delivery channel into the endpoint's response."""
     if channel in DELIVERED_CHANNELS:
         return {
             "status": "success",
             "channel": channel,
-            "message": (
-                "OTP sent to your WhatsApp."
-                if channel == CHANNEL_WHATSAPP
-                else sms_message
-            ),
+            "message": custom_message or "OTP sent to your WhatsApp.",
         }
 
     if channel == CHANNEL_CONSOLE and settings.OTP_DEBUG_RETURN_CODE:
@@ -319,7 +309,7 @@ async def phone_send_otp(payload: PhoneOtpSendRequest, db: AsyncSession = Depend
     message = f"Your Mansrovar Agrawal Samaj Jaipur verification code is {otp_code}. Valid for {expiry_minutes} minutes. Do not share this with anyone."
     channel = await send_otp_message(normalized_mobile, message)
 
-    return _otp_send_response(channel, otp_code, "OTP sent by SMS.")
+    return _otp_send_response(channel, otp_code, "OTP sent to your WhatsApp.")
 
 @router.post("/phone/verify-otp")
 async def phone_verify_otp(payload: PhoneOtpVerifyRequest, db: AsyncSession = Depends(get_db)):

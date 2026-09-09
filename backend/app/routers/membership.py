@@ -718,11 +718,7 @@ async def send_member_edit_otp(
         "samaj_id": user.samaj_id,
         "member_name": f"{user.first_name} {user.surname}",
         "masked_phone": mask_phone_number(target_mobile),
-        "message": (
-            f"Verification code sent on WhatsApp to the number ending in ...{target_mobile[-3:]}"
-            if channel == CHANNEL_WHATSAPP
-            else f"Verification code sent by SMS to the number ending in ...{target_mobile[-3:]}"
-        ),
+        "message": f"Verification code sent on WhatsApp to the number ending in ...{target_mobile[-3:]}",
     }
 
 

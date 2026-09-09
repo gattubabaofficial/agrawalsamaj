@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.models.user import PhoneOTPRequest
-from app.services.otp_delivery import send_otp_message
+from app.services.whatsapp_service import send_whatsapp_text
 from app.utils.security import hash_password, verify_password, create_access_token
 
 
@@ -72,12 +72,22 @@ def request_bhavan_otp(db: Session, mobile: str) -> dict:
 
     db.commit()
 
-    # Deliver via WhatsApp/SMS
-    channel, provider = send_otp_message(clean_mobile, otp, purpose=BHAVAN_OTP_PURPOSE)
+    # Deliver exclusively via WhatsApp
+    message = (
+        f"Your Mansrovar Agrawal Samaj Jaipur Bhavan booking verification code is {otp}. "
+        f"Valid for 10 minutes. Do not share this with anyone."
+    )
+    res = send_whatsapp_text(clean_mobile, message, timeout=12)
+    if not res or res == "failed_sid":
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Could not send OTP to WhatsApp. Please verify your WhatsApp number and try again.",
+        )
 
     return {
-        "message": f"OTP sent successfully via {channel.upper()}.",
-        "channel": channel,
+        "status": "success",
+        "message": "OTP sent successfully to your WhatsApp.",
+        "channel": "whatsapp",
         "expires_in_seconds": 600,
     }
 
