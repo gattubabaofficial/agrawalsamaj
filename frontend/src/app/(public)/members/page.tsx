@@ -278,7 +278,7 @@ export default function PublicMembersPage() {
         return;
       }
 
-      setOtpSentMessage(data.message || `Verification code sent to registered mobile number.`);
+      setOtpSentMessage(data.message || `Verification code sent to registered mobile no (whatsapp no).`);
       
       if (data.user_id) {
         const found = members.find(m => m.user_id === data.user_id);
@@ -468,7 +468,7 @@ export default function PublicMembersPage() {
   // Registration Modal - Send OTP
   const handleRegSendOtp = async () => {
     if (!regFirstName.trim() || !regSurname.trim() || !regMobile.trim()) {
-      setRegError("First name, Surname, and Mobile number are required.");
+      setRegError("First name, Surname, and Mobile no (whatsapp no) are required.");
       return;
     }
     setRegSendingOtp(true);
@@ -1101,7 +1101,7 @@ export default function PublicMembersPage() {
                     {/* Mobile Field + Privacy Toggle */}
                     <div className="space-y-1.5 p-3 bg-zinc-50 rounded-2xl border border-zinc-200">
                       <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-zinc-700">Mobile / Phone Number *</label>
+                        <label className="text-xs font-bold text-zinc-700">Mobile no (whatsapp no) *</label>
                         <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-zinc-600">
                           <input
                             type="checkbox"
@@ -1416,7 +1416,7 @@ export default function PublicMembersPage() {
                 ) : msgStep === "form" ? (
                   <div className="space-y-4">
                     <div className="p-3 bg-amber-50 text-amber-900 rounded-2xl text-xs font-medium border border-amber-200/70">
-                      📩 Enter your contact details below. An OTP will be requested on your mobile number to verify your request to <strong>{messageMemberModal.first_name} {messageMemberModal.surname}</strong>.
+                      📩 Enter your contact details below. An OTP will be requested on your mobile no (whatsapp no) to verify your request to <strong>{messageMemberModal.first_name} {messageMemberModal.surname}</strong>.
                     </div>
 
                     <div className="space-y-1">
@@ -1433,7 +1433,7 @@ export default function PublicMembersPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <label className="text-xs font-bold text-zinc-700">Your Phone Number *</label>
+                        <label className="text-xs font-bold text-zinc-700">Mobile no (whatsapp no) *</label>
                         <input
                           type="tel"
                           required
@@ -1594,7 +1594,7 @@ export default function PublicMembersPage() {
                       </p>
                       <ul className="list-disc list-inside space-y-1 leading-relaxed text-amber-900/90 pl-1">
                         <li>Applicant must belong to the Agrawal / Vaishya community.</li>
-                        <li>Valid mobile number and address are compulsory for identification.</li>
+                        <li>Valid mobile no (whatsapp no) and address are compulsory for identification.</li>
                         <li>All applications are cross-verified by the Mansrovar Agrawal Samaj Jaipur Executive Committee prior to approval.</li>
                       </ul>
                     </div>
@@ -1760,7 +1760,7 @@ export default function PublicMembersPage() {
                     {/* Mobile Number + Privacy Toggle */}
                     <div className="space-y-1.5 p-3 bg-zinc-50 rounded-2xl border border-zinc-200">
                       <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-zinc-700">Mobile Number *</label>
+                        <label className="text-xs font-bold text-zinc-700">Mobile no (whatsapp no) *</label>
                         <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-zinc-600 select-none">
                           <input
                             type="checkbox"
@@ -1774,7 +1774,7 @@ export default function PublicMembersPage() {
                       <input
                         type="tel"
                         required
-                        placeholder="10-digit mobile number"
+                        placeholder="10-digit mobile no (whatsapp no)"
                         value={regMobile}
                         onChange={(e) => setRegMobile(e.target.value)}
                         className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none bg-white font-mono"

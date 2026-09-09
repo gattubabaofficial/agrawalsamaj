@@ -106,7 +106,7 @@ export default function DonatePage() {
     if (!amt || amt <= 0) { setError("Please enter a valid amount."); return; }
     if (amt < 1) { setError("Minimum donation amount is ₹1."); return; }
     if (!isLoggedIn && (!guestName.trim() || !guestMobile.trim() || !guestEmail.trim())) {
-      setError("Please fill in your name, email, and mobile number.");
+      setError("Please fill in your name, email, and mobile no (whatsapp no).");
       return;
     }
     setShowPayment(true);
@@ -331,7 +331,7 @@ export default function DonatePage() {
                   <input
                     required
                     type="tel"
-                    placeholder="Mobile *"
+                    placeholder="Mobile no (whatsapp no) *"
                     value={guestMobile}
                     onChange={e => setGuestMobile(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-300"

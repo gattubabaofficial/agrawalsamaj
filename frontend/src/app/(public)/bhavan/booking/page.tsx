@@ -684,7 +684,7 @@ export default function BhavanBookingPage() {
 
   const handleRequestOtp = async () => {
     if (!mobile || mobile.trim().length < 10) {
-      setOtpError("Please enter a valid 10-digit mobile number.");
+      setOtpError("Please enter a valid 10-digit mobile no (whatsapp no).");
       return;
     }
     setOtpError("");
@@ -2268,12 +2268,12 @@ export default function BhavanBookingPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1">Mobile Number (WhatsApp) *</label>
+                      <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1">Mobile no (whatsapp no) *</label>
                       <input
                         type="tel"
                         value={mobile}
                         onChange={(e) => setMobile(e.target.value)}
-                        placeholder="10-digit mobile number"
+                        placeholder="10-digit mobile no (whatsapp no)"
                         className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
                       />
                     </div>
@@ -2380,12 +2380,12 @@ export default function BhavanBookingPage() {
               <div className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-bold text-white mb-1">Step 5: Mobile OTP Verification</h2>
-                  <p className="text-sm text-zinc-400">Verify your mobile number via WhatsApp code</p>
+                  <p className="text-sm text-zinc-400">Verify your mobile no (whatsapp no) via WhatsApp code</p>
                 </div>
 
                 <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 space-y-6">
                   <div>
-                    <p className="text-xs text-zinc-400 mb-1 uppercase tracking-wider font-semibold">Mobile Number</p>
+                    <p className="text-xs text-zinc-400 mb-1 uppercase tracking-wider font-semibold">Mobile no (whatsapp no)</p>
                     <p className="text-xl font-bold text-white">{mobile}</p>
                   </div>
 

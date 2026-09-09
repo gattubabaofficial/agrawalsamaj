@@ -165,7 +165,7 @@ export default function ProfilePage() {
                 
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider flex items-center justify-between">
-                    <span className="flex items-center gap-2"><Phone className="w-3.5 h-3.5" /> Mobile Number</span>
+                    <span className="flex items-center gap-2"><Phone className="w-3.5 h-3.5" /> Mobile no (whatsapp no)</span>
                     {profile.mobile_private ? <span title="Private"><Lock className="w-3 h-3 text-rose-500" /></span> : <span title="Public"><Unlock className="w-3 h-3 text-emerald-500" /></span>}
                   </label>
                   <p className="text-zinc-900 font-medium">{profile.mobile || "Not provided"}</p>
@@ -236,7 +236,7 @@ export default function ProfilePage() {
 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <label className="text-sm font-semibold text-zinc-700">Mobile Number</label>
+                    <label className="text-sm font-semibold text-zinc-700">Mobile no (whatsapp no)</label>
                     <label className="flex items-center gap-1.5 text-xs text-zinc-500 cursor-pointer">
                       <input type="checkbox" checked={formData.mobile_private} onChange={e => setFormData({...formData, mobile_private: e.target.checked})} className="rounded text-amber-500 focus:ring-amber-500 border-zinc-300" />
                       Keep Private

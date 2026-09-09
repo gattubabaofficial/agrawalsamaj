@@ -75,7 +75,7 @@ export default function BlogPage() {
       return;
     }
     if (!guestPhone.trim()) {
-      alert("Mobile number is required for OTP verification when writing a blog.");
+      alert("Mobile no (whatsapp no) is required for OTP verification when writing a blog.");
       return;
     }
     setBlogSendingOtp(true);
@@ -550,7 +550,7 @@ export default function BlogPage() {
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] font-semibold text-zinc-600 block mb-1">Phone *</label>
+                      <label className="text-[11px] font-semibold text-zinc-600 block mb-1">Mobile no (whatsapp no) *</label>
                       <input
                         type="tel"
                         required

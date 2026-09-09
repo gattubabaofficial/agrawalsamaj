@@ -158,7 +158,7 @@ export default function FamilyPage() {
     const isStudent = memberFormData.profession.trim().toLowerCase() === "student";
     if (!isStudent) {
       if (!memberFormData.mobile.trim() || !memberFormData.email.trim()) {
-        alert("Mobile number and Email address are compulsory for non-student members.");
+        alert("Mobile no (whatsapp no) and Email address are compulsory for non-student members.");
         return;
       }
     }
@@ -404,7 +404,7 @@ export default function FamilyPage() {
     const isStudent = newMemberProfession.trim().toLowerCase() === "student";
     if (!isStudent) {
       if (!newMemberMobile.trim() || !newMemberEmail.trim()) {
-        alert("Mobile number and Email address are compulsory for non-student family members.");
+        alert("Mobile no (whatsapp no) and Email address are compulsory for non-student family members.");
         return;
       }
     }
@@ -446,7 +446,7 @@ export default function FamilyPage() {
       const isStudent = createProfession.trim().toLowerCase() === "student";
       if (!isStudent) {
         if (!createMobile.trim() || !createEmail.trim()) {
-          alert("Mobile number and Email address are compulsory for non-student heads.");
+          alert("Mobile no (whatsapp no) and Email address are compulsory for non-student heads.");
           setIsSubmittingCreate(false);
           return;
         }
@@ -730,14 +730,14 @@ export default function FamilyPage() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                         <div className="space-y-1.5">
                           <label className="font-semibold text-zinc-700 flex justify-between">
-                            <span>Phone Number {!(createProfession.trim().toLowerCase() === "student") && <span className="text-rose-500">*</span>}</span>
+                            <span>Mobile no (whatsapp no) {!(createProfession.trim().toLowerCase() === "student") && <span className="text-rose-500">*</span>}</span>
                           </label>
                           <input
                             type="tel"
                             value={createMobile}
                             onChange={(e) => setCreateMobile(e.target.value)}
                             className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-500"
-                            placeholder="Phone Number"
+                            placeholder="Mobile no (whatsapp no)"
                           />
                         </div>
 
@@ -890,9 +890,9 @@ export default function FamilyPage() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="space-y-1">
                               <label className="text-zinc-700">
-                                Phone Number {!(newMemberProfession.trim().toLowerCase() === "student") && "*"}
+                                Mobile no (whatsapp no) {!(newMemberProfession.trim().toLowerCase() === "student") && "*"}
                               </label>
-                              <input type="tel" value={newMemberMobile} onChange={e => setNewMemberMobile(e.target.value)} placeholder="Phone" className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white" />
+                              <input type="tel" value={newMemberMobile} onChange={e => setNewMemberMobile(e.target.value)} placeholder="Mobile no (whatsapp no)" className="w-full px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white" />
                             </div>
                             <div className="space-y-1">
                               <label className="text-zinc-700">
@@ -1215,7 +1215,7 @@ export default function FamilyPage() {
 
                 <div className="space-y-1.5">
                   <label className="font-semibold text-zinc-700 flex justify-between">
-                    <span>Phone Number {!isStudent && <span className="text-rose-500">*</span>}</span>
+                    <span>Mobile no (whatsapp no) {!isStudent && <span className="text-rose-500">*</span>}</span>
                     <span className="text-[10px] text-zinc-400 font-normal">{isStudent ? "(Optional for student)" : "(Compulsory)"}</span>
                   </label>
                   <input
@@ -1223,7 +1223,7 @@ export default function FamilyPage() {
                     value={memberFormData.mobile}
                     onChange={(e) => setMemberFormData({ ...memberFormData, mobile: e.target.value })}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-500"
-                    placeholder="Phone Number"
+                    placeholder="Mobile no (whatsapp no)"
                   />
                   <label className="flex items-center gap-2 mt-1 cursor-pointer">
                     <input 

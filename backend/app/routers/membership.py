@@ -563,7 +563,7 @@ async def contact_member(
     # Verify OTP on sender_mobile
     otp_valid = await verify_otp_internal(db, payload.sender_mobile, payload.otp)
     if not otp_valid:
-        raise HTTPException(status_code=400, detail="Invalid or expired OTP code for your mobile number.")
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP code for your mobile no (whatsapp no).")
 
     try:
         u_uuid = uuid.UUID(payload.recipient_user_id)
@@ -674,7 +674,7 @@ async def send_member_edit_otp(
         raise HTTPException(status_code=404, detail="Member account not found in Samaj database.")
 
     if not user.mobile:
-        raise HTTPException(status_code=400, detail="No registered mobile number on record for this member. Please contact Samaj Admin.")
+        raise HTTPException(status_code=400, detail="No registered mobile no (whatsapp no) on record for this member. Please contact Samaj Admin.")
 
     target_mobile = user.mobile.strip()
 

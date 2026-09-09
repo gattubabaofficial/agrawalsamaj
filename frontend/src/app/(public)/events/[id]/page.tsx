@@ -548,8 +548,8 @@ export default function EventDetailsPage() {
                       <p className="text-xs text-zinc-600 font-bold">Contact & Attendee Details:</p>
                       
                       <div className="space-y-1">
-                        <label className="text-xs font-semibold text-zinc-700 block">Primary Contact Mobile *</label>
-                        <input required type="tel" pattern="[0-9+]{10,13}" placeholder="Your Mobile Number" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white focus:outline-none focus:border-amber-500" />
+                        <label className="text-xs font-semibold text-zinc-700 block">Mobile no (whatsapp no) *</label>
+                        <input required type="tel" pattern="[0-9+]{10,13}" placeholder="Mobile no (whatsapp no)" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white focus:outline-none focus:border-amber-500" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-xs font-semibold text-zinc-700 block">Primary Contact Email *</label>

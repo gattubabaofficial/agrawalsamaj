@@ -28,7 +28,7 @@ def request_bhavan_otp(db: Session, mobile: str) -> dict:
     if not clean_mobile:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Mobile number is required.",
+            detail="Mobile no (whatsapp no) is required.",
         )
 
     # Cooldown & rate limiting check
@@ -97,7 +97,7 @@ def verify_bhavan_otp(db: Session, mobile: str, otp: str) -> dict:
     if not otp_req:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No OTP request found for this mobile number. Please request a new OTP.",
+            detail="No OTP request found for this mobile no (whatsapp no). Please request a new OTP.",
         )
 
     if otp_req.expires_at and datetime.utcnow() > otp_req.expires_at:

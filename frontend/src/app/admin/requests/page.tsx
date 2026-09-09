@@ -363,7 +363,7 @@ export default function AdminRequestsPage() {
 
                         {/* Phone */}
                         <tr>
-                          <td className="py-2.5 px-4 font-bold text-zinc-700">Mobile Number</td>
+                          <td className="py-2.5 px-4 font-bold text-zinc-700">Mobile no (whatsapp no)</td>
                           <td className="py-2.5 px-4 text-zinc-600">
                             {oldD.mobile || "—"} {oldD.mobile_private ? "(🔒 Private)" : "(Public)"}
                           </td>
@@ -474,7 +474,7 @@ export default function AdminRequestsPage() {
 
               <div className="grid grid-cols-2 gap-4 pt-3">
                 <div>
-                  <p className="text-xs text-zinc-400 font-semibold uppercase">Mobile Number</p>
+                  <p className="text-xs text-zinc-400 font-semibold uppercase">Mobile no (whatsapp no)</p>
                   <p className="font-mono font-semibold text-zinc-800 mt-0.5">
                     {viewApplication.user?.mobile || "N/A"} {viewApplication.user?.mobile_private && <span className="text-[10px] text-zinc-400">(🔒 kept private)</span>}
                   </p>

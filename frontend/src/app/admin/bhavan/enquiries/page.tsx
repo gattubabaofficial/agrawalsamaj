@@ -406,7 +406,7 @@ export default function AdminEnquiriesPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Mobile Number *</label>
+              <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Mobile no (whatsapp no) *</label>
               <input type="tel" value={manualMobile} onChange={(e) => setManualMobile(e.target.value)} placeholder="10-digit mobile" className="w-full px-3 py-2 border rounded-lg text-sm" />
             </div>
 

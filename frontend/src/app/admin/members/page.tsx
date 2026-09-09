@@ -768,7 +768,7 @@ export default function AdminMembersPage() {
 
               <div className="grid grid-cols-2 gap-4 pt-3">
                 <div>
-                  <p className="text-xs text-zinc-400 font-semibold uppercase">Mobile Number</p>
+                  <p className="text-xs text-zinc-400 font-semibold uppercase">Mobile no (whatsapp no)</p>
                   <p className="font-mono font-semibold text-zinc-800 mt-0.5">{viewMemberModal.mobile || "N/A"}</p>
                 </div>
                 <div>

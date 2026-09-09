@@ -254,7 +254,7 @@ export default function LoginPage() {
           ) : (
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <label className="font-semibold text-zinc-700">Mobile Number</label>
+                <label className="font-semibold text-zinc-700">Mobile no (whatsapp no)</label>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <Phone className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
