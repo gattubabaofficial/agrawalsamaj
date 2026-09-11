@@ -14,6 +14,8 @@ import {
   LogOut,
   UserPlus,
   Shield,
+  ShieldCheck,
+  Key,
   ChevronDown,
   ChevronRight,
   Contact,
@@ -111,6 +113,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const managementItems = [
     ...((isSuperAdmin || isAdmin || permissions.length > 0) ? [{ name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard, description: "Overview of the Samaj's activity" }] : []),
     ...(isSuperAdmin ? [{ name: "Admin Management", href: "/admin/admins", icon: Shield, description: "Add, edit, or remove admin accounts" }] : []),
+    ...((isSuperAdmin || isAdmin || hasPermission("manage_roles")) ? [{ name: "Custom Roles", href: "/admin/roles", icon: ShieldCheck, description: "Create and assign custom roles & permissions" }] : []),
     ...((isSuperAdmin || isAdmin || hasPermission("manage_members")) ? [
       { name: "Directory Requests", href: "/admin/requests", icon: UserPlus, description: "Review pending member directory requests" },
       { name: "Manage Directory", href: "/admin/members", icon: Contact, description: "Edit and manage the member directory" },

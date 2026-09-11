@@ -58,17 +58,16 @@ export default function AdminCustomRolesPage() {
   const [assignRoleId, setAssignRoleId] = useState<string>("");
   const [assigning, setAssigning] = useState(false);
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
   const fetchRoles = async () => {
     setLoading(true);
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const res = await fetch(`${getApiBaseUrl()}/roles/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
-        setRoles(data.items);
+        setRoles(data.items || []);
       }
     } finally {
       setLoading(false);
@@ -77,6 +76,7 @@ export default function AdminCustomRolesPage() {
 
   const fetchMembers = async () => {
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const res = await fetch(`${getApiBaseUrl()}/membership/members`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -123,6 +123,7 @@ export default function AdminCustomRolesPage() {
     if (!roleName.trim()) return;
     setIsSubmitting(true);
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const url = editingRole
         ? `${getApiBaseUrl()}/roles/${editingRole.role_id}`
         : `${getApiBaseUrl()}/roles/`;
@@ -158,6 +159,7 @@ export default function AdminCustomRolesPage() {
   const handleDeleteRole = async (roleId: string, roleName: string) => {
     if (!confirm(`Are you sure you want to delete role '${roleName}'?`)) return;
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const res = await fetch(`${getApiBaseUrl()}/roles/${roleId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
@@ -177,6 +179,7 @@ export default function AdminCustomRolesPage() {
     if (!selectedMember) return;
     setAssigning(true);
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const res = await fetch(`${getApiBaseUrl()}/roles/assign`, {
         method: "POST",
         headers: {

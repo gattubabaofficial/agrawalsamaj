@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Mail, Phone, MapPin, ShieldAlert, Award, FileUser, MessageSquare, HandHeart, Undo2, Edit, X, Trash2, Camera, Upload, RefreshCw, Eye } from "lucide-react";
+import Link from "next/link";
+import { Search, Mail, Phone, MapPin, ShieldAlert, Award, FileUser, MessageSquare, HandHeart, Undo2, Edit, X, Trash2, Camera, Upload, RefreshCw, Eye, ShieldCheck, Key } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
 import { formatParentage } from "@/utils/member";
@@ -35,6 +36,13 @@ interface Member {
   bio_private?: boolean;
   role: string;
   is_member: boolean;
+  custom_role_id?: string | null;
+}
+
+interface CustomRole {
+  role_id: string;
+  name: string;
+  permissions: string[];
 }
 
 const MEMBER_STATUS_BADGE: Record<string, { label: string; className: string }> = {
@@ -53,6 +61,7 @@ function getStatusBadge(status: string | null | undefined) {
 export default function AdminMembersPage() {
   const router = useRouter();
   const [members, setMembers] = useState<Member[]>([]);
+  const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
@@ -110,10 +119,16 @@ export default function AdminMembersPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get(`${getApiBaseUrl()}/membership/members`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setMembers(res.data);
+      const [resMembers, resRoles] = await Promise.all([
+        axios.get(`${getApiBaseUrl()}/membership/members`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${getApiBaseUrl()}/roles/`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => ({ data: { items: [] } }))
+      ]);
+      setMembers(resMembers.data);
+      setCustomRoles(resRoles.data?.items || []);
     } catch (error) {
       console.error("Failed to fetch members", error);
     } finally {
@@ -158,6 +173,7 @@ export default function AdminMembersPage() {
       native_place: m.native_place || "",
       bio: m.bio || "",
       profile_photo: m.profile_photo || "",
+      custom_role_id: m.custom_role_id || "",
     });
     setEditError("");
   };
@@ -170,6 +186,7 @@ export default function AdminMembersPage() {
     try {
       const token = localStorage.getItem("token");
       const payload: any = { ...editForm };
+      delete payload.custom_role_id;
       if (payload.lm_no === "" || payload.lm_no === null || payload.lm_no === undefined) {
         payload.lm_no = null;
       } else {
@@ -181,6 +198,19 @@ export default function AdminMembersPage() {
         payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      // Assign custom role if changed
+      if ((editForm.custom_role_id || "") !== (editingMember.custom_role_id || "")) {
+        await axios.post(
+          `${getApiBaseUrl()}/roles/assign`,
+          {
+            user_id: editingMember.user_id,
+            custom_role_id: editForm.custom_role_id || null,
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      }
+
       setEditingMember(null);
       fetchMembers();
     } catch (err: any) {
@@ -275,8 +305,17 @@ export default function AdminMembersPage() {
           <h1 className="text-2xl font-bold text-zinc-900">Manage Directory</h1>
           <p className="text-sm text-zinc-500 mt-1">Full view of Samaj members, including contact details and address details.</p>
         </div>
-        <div className="px-4 py-2 bg-amber-50 text-amber-700 text-sm font-semibold rounded-xl border border-amber-200">
-          Total Members: {filteredMembers.length}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/roles"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors cursor-pointer"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            Custom Roles &amp; Permissions
+          </Link>
+          <div className="px-4 py-2 bg-amber-50 text-amber-700 text-sm font-semibold rounded-xl border border-amber-200">
+            Total Members: {filteredMembers.length}
+          </div>
         </div>
       </div>
 
@@ -433,12 +472,20 @@ export default function AdminMembersPage() {
                         </button>
                       ) : null}
                     </div>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
-                      m.role === 'volunteer' ? 'bg-sky-50 text-sky-700 border border-sky-100' :
-                      'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                    }`}>
-                      {m.role === 'volunteer' ? 'Volunteer' : 'Active Member'}
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
+                        m.role === 'volunteer' ? 'bg-sky-50 text-sky-700 border border-sky-100' :
+                        'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                      }`}>
+                        {m.role === 'volunteer' ? 'Volunteer' : 'Active Member'}
+                      </span>
+                      {m.custom_role_id && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                          <ShieldCheck className="w-3 h-3 text-amber-600" />
+                          {customRoles.find(r => r.role_id === m.custom_role_id)?.name || "Custom Role"}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -627,6 +674,37 @@ export default function AdminMembersPage() {
                 </div>
               </div>
 
+              {/* Custom Role & Permissions Assignment */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Administrative Custom Role</h4>
+                <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-200/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-amber-600" />
+                      <label className="text-xs font-bold text-zinc-800">Assign Custom Role</label>
+                    </div>
+                    <Link href="/admin/roles" className="text-xs text-amber-700 font-semibold hover:underline">
+                      Manage Roles &rarr;
+                    </Link>
+                  </div>
+                  <select
+                    value={editForm.custom_role_id || ""}
+                    onChange={e => setEditForm({...editForm, custom_role_id: e.target.value})}
+                    className="w-full px-3.5 py-2.5 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white cursor-pointer"
+                  >
+                    <option value="">-- No Custom Role (Regular Member) --</option>
+                    {customRoles.map(r => (
+                      <option key={r.role_id} value={r.role_id}>
+                        {r.name} ({r.permissions?.length || 0} permissions)
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] text-zinc-500">
+                    Assigning a custom role gives this member administrative capabilities according to the selected role permissions.
+                  </p>
+                </div>
+              </div>
+
               <div className="pt-4 border-t flex justify-end gap-3 sticky bottom-0 bg-white z-10 py-3">
                 <button type="button" onClick={() => setEditingMember(null)} className="px-5 py-2 border border-zinc-200 rounded-xl text-sm font-semibold hover:bg-zinc-50 cursor-pointer">
                   Cancel
@@ -763,6 +841,12 @@ export default function AdminMembersPage() {
                 <div>
                   <p className="text-xs text-zinc-400 font-semibold uppercase">LM No.</p>
                   <p className="font-medium text-zinc-800 mt-0.5">{viewMemberModal.lm_no || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-400 font-semibold uppercase">Custom Role</p>
+                  <p className="font-semibold text-amber-800 mt-0.5">
+                    {customRoles.find(r => r.role_id === viewMemberModal.custom_role_id)?.name || "Regular Member"}
+                  </p>
                 </div>
               </div>
 
