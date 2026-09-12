@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Calendar, MapPin, Clock, Search, Info, Ticket } from "lucide-react";
@@ -31,11 +33,21 @@ export default function EventsPage() {
   const fetchEvents = async () => {
     setLoading(true);
     try {
-      const res = await safeFetch(`${getApiBaseUrl()}/events`);
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      const res = await safeFetch(`${getApiBaseUrl()}/events`, {
+        cache: "no-store",
+        headers,
+      });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
           setEvents(sortEventsDesc(data));
+        } else if (data && Array.isArray(data.items) && data.items.length > 0) {
+          setEvents(sortEventsDesc(data.items));
         } else {
           setEvents(sortEventsDesc(mockEvents));
         }

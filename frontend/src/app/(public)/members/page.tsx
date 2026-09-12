@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect } from "react";
 import { 
   Search, Phone, MapPin, Lock, Award, Edit3, UserPlus,
@@ -153,13 +155,33 @@ export default function PublicMembersPage() {
   const fetchMembers = async () => {
     setLoading(true);
     try {
-      const res = await safeFetch(`${getApiBaseUrl()}/membership/members`);
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      const res = await safeFetch(`${getApiBaseUrl()}/membership/members`, {
+        cache: "no-store",
+        headers,
+      });
       if (res.ok) {
         const data = await res.json();
-        setMembers(Array.isArray(data) ? data : []);
+        if (Array.isArray(data)) {
+          setMembers(data);
+        } else if (data && Array.isArray(data.items)) {
+          setMembers(data.items);
+        } else if (data && Array.isArray(data.members)) {
+          setMembers(data.members);
+        } else {
+          setMembers([]);
+        }
+      } else {
+        console.error("Failed to fetch members directory, status:", res.status);
+        setMembers([]);
       }
     } catch (error) {
       console.error("Failed to fetch members directory", error);
+      setMembers([]);
     } finally {
       setLoading(false);
     }
