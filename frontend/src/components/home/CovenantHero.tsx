@@ -161,7 +161,10 @@ export default function CovenantHero() {
 
             <Reveal delay={0.46}>
               <div className="mt-7 flex flex-wrap items-center justify-center gap-3 sm:mt-9 sm:gap-4 max-w-2xl mx-auto">
-                <ActionLink href="/bhavan" title="Book a stay at Agrasen Bhawan">Bhavan Booking</ActionLink>
+                <ActionLink href="/members?apply=true" title="मानसरोवर अग्रवाल समाज सदस्यता हेतु ऑनलाइन आवेदन करें">
+                  <span className="deva font-medium">सदस्यता आवेदन</span> (Apply)
+                </ActionLink>
+                <ActionLink href="/bhavan" variant="outline" title="Book a stay at Agrasen Bhawan">Bhavan Booking</ActionLink>
                 <ActionLink href="/members" variant="outline" title="Search the member directory">Directory</ActionLink>
                 <ActionLink href="/events" variant="outline" title="See upcoming events and passes">Events</ActionLink>
               </div>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Menu, X, Heart, Calendar, Building, Info, Home,
-  BookOpen, LayoutDashboard, LogOut, User, QrCode, Users, History
+  BookOpen, LayoutDashboard, LogOut, User, QrCode, Users, History, UserPlus
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getApiBaseUrl } from "@/utils/api";
@@ -162,9 +162,18 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Right — auth aware */}
-          {authChecked && authUser && (
-            <div className="hidden shrink-0 items-center gap-4 lg:flex">
+          {/* Right — auth aware & membership CTA */}
+          <div className="hidden shrink-0 items-center gap-3 lg:flex">
+            <Link
+              href="/members?apply=true"
+              title="मानसरोवर अग्रवाल समाज सदस्यता हेतु ऑनलाइन आवेदन करें"
+              className="inline-flex items-center gap-1.5 rounded-full border border-vermilion/50 bg-vermilion/10 px-3.5 py-1.5 text-xs font-semibold text-vermilion transition-all hover:border-vermilion hover:bg-vermilion hover:text-white shadow-sm"
+            >
+              <UserPlus className="h-3.5 w-3.5" />
+              <span className="deva font-medium">सदस्यता आवेदन</span>
+            </Link>
+
+            {authChecked && authUser ? (
               <div className="flex items-center gap-3">
                 {isVolunteer && (
                   <Link
@@ -230,11 +239,27 @@ export default function Navbar() {
                   </AnimatePresence>
                 </div>
               </div>
-            </div>
-          )}
+            ) : (
+              <Link
+                href="/login"
+                title="Sign in to your member account"
+                className="inline-flex items-center gap-1.5 border border-rule-strong px-3.5 py-1.5 text-xs font-medium uppercase tracking-wider text-ink transition-colors hover:border-ink hover:text-vermilion"
+              >
+                <User className="h-3.5 w-3.5" /> Sign In
+              </Link>
+            )}
+          </div>
 
           {/* Mobile trigger */}
           <div className="flex items-center gap-3 lg:hidden">
+            <Link
+              href="/members?apply=true"
+              title="सदस्यता आवेदन"
+              className="inline-flex items-center gap-1 rounded-full border border-vermilion/50 bg-vermilion/10 px-2.5 py-1 text-[0.6875rem] font-semibold text-vermilion"
+            >
+              <UserPlus className="h-3 w-3" />
+              <span className="deva font-medium">आवेदन</span>
+            </Link>
             {authChecked && authUser && (
               <Link
                 href={getDashboardHref()}
@@ -302,6 +327,16 @@ export default function Navbar() {
                 transition={{ duration: 0.5, delay: 0.4, ease: EASE }}
                 className="mt-8 flex flex-col gap-3"
               >
+                <Link
+                  href="/members?apply=true"
+                  onClick={() => setIsOpen(false)}
+                  title="मानसरोवर अग्रवाल समाज सदस्यता हेतु ऑनलाइन आवेदन करें"
+                  className="flex items-center justify-center gap-2 border-2 border-vermilion bg-vermilion/10 px-6 py-3.5 text-[0.8125rem] font-bold text-vermilion transition-colors hover:bg-vermilion hover:text-white"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  <span className="deva text-base font-semibold">सदस्यता आवेदन</span> (Apply for Membership)
+                </Link>
+
                 {authUser ? (
                   <>
                     <Link

@@ -602,7 +602,8 @@ export default function PublicMembersPage() {
               }}
               className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-5 py-3 text-sm font-bold text-white shadow-md transition-all hover:from-amber-600 hover:to-orange-700 sm:w-auto"
             >
-              <UserPlus className="w-4 h-4" /> Apply for New Membership
+              <UserPlus className="w-4 h-4" />
+              <span>सदस्यता आवेदन / Apply for Membership</span>
             </button>
           </div>
         </div>
@@ -638,7 +639,7 @@ export default function PublicMembersPage() {
                 }}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold text-sm shadow-md transition-all"
               >
-                <UserPlus className="w-4 h-4" /> Member Not Listed? Apply for New Membership
+                <UserPlus className="w-4 h-4" /> नई सदस्यता हेतु आवेदन करें (Apply for Membership)
               </button>
             </div>
           </div>
@@ -1560,8 +1561,11 @@ export default function PublicMembersPage() {
             >
               <div className="px-6 py-5 bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 text-white flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <UserPlus className="w-5 h-5" />
-                  <h3 className="font-bold text-lg">Apply for Mansrovar Agrawal Samaj Jaipur Membership</h3>
+                  <UserPlus className="w-5 h-5 shrink-0" />
+                  <div>
+                    <h3 className="font-bold text-base sm:text-lg leading-snug">मानसरोवर अग्रवाल समाज जयपुर — सदस्यता आवेदन</h3>
+                    <p className="text-xs text-white/80 font-normal">Apply for Mansrovar Agrawal Samaj Jaipur Membership</p>
+                  </div>
                 </div>
                 <button
                   onClick={() => setShowRegisterModal(false)}
