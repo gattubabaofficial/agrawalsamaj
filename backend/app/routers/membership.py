@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Response
 import shutil
 from pathlib import Path
 from app.services.otp_delivery import (
@@ -6,6 +6,7 @@ from app.services.otp_delivery import (
     CHANNEL_WHATSAPP,
     DELIVERED_CHANNELS,
 )
+from app.services.membership_pdf_service import generate_membership_application_pdf
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from pydantic import BaseModel
@@ -644,7 +645,12 @@ async def apply_for_membership_with_otp(
     )
     db.add(new_req)
     await db.commit()
-    return {"message": "Membership application submitted successfully. Pending admin approval."}
+    return {
+        "status": "success",
+        "message": "Membership application submitted successfully. Pending admin approval.",
+        "request_id": str(new_req.request_id),
+        "user_id": str(user.user_id),
+    }
 
 
 @router.post("/send-member-edit-otp")
@@ -1158,5 +1164,265 @@ async def delete_member(
     await db.delete(user)
     await db.commit()
     return None
+
+
+class AdminCreateMemberPayload(BaseModel):
+    first_name: str
+    surname: str
+    father_name: Optional[str] = None
+    parent_relation: Optional[str] = "S/o"
+    mobile: Optional[str] = None
+    email: Optional[str] = None
+    lm_no: Optional[int] = None
+    samaj_id: Optional[str] = None
+    zone: Optional[str] = None
+    house_no: Optional[str] = None
+    member_status: Optional[str] = "active"
+    profession: Optional[str] = None
+    native_place: Optional[str] = None
+    bio: Optional[str] = None
+    address: Optional[str] = None
+    profile_photo: Optional[str] = None
+    role: Optional[str] = "member"
+    is_member: bool = True
+    mobile_private: bool = False
+    email_private: bool = False
+    address_private: bool = False
+    profession_private: bool = False
+    native_place_private: bool = False
+    bio_private: bool = False
+
+
+@router.post("/admin-create-member", status_code=status.HTTP_201_CREATED)
+async def admin_create_member(
+    payload: AdminCreateMemberPayload,
+    current_admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """
+    Allows an administrator to directly create a new member in the database
+    without requiring any OTP or login verification.
+    """
+    if not payload.first_name.strip() or not payload.surname.strip():
+        raise HTTPException(status_code=400, detail="First name and surname are required.")
+
+    mobile_val = payload.mobile.strip() if payload.mobile and payload.mobile.strip() else None
+    email_val = payload.email.strip().lower() if payload.email and payload.email.strip() else None
+
+    # Check email uniqueness if provided
+    if email_val:
+        e_check = await db.execute(select(User).where(User.email == email_val))
+        if e_check.scalars().first() is not None:
+            raise HTTPException(status_code=400, detail="A member with this email address already exists.")
+
+    # Determine user role
+    role_enum = UserRole.MEMBER
+    if payload.role:
+        r_lower = payload.role.strip().lower()
+        if r_lower in ("admin", "super_admin"):
+            role_enum = UserRole.ADMIN
+        elif r_lower == "volunteer":
+            role_enum = UserRole.VOLUNTEER
+        elif r_lower == "guest":
+            role_enum = UserRole.GUEST
+
+    new_user = User(
+        first_name=payload.first_name.strip(),
+        surname=payload.surname.strip(),
+        father_name=payload.father_name.strip() if payload.father_name else None,
+        parent_relation=payload.parent_relation.strip() if payload.parent_relation else None,
+        mobile=mobile_val,
+        contact_mobile=mobile_val,
+        email=email_val,
+        lm_no=payload.lm_no,
+        samaj_id=payload.samaj_id.strip() if payload.samaj_id else (f"LM-{payload.lm_no}" if payload.lm_no else None),
+        zone=payload.zone.strip() if payload.zone else None,
+        house_no=payload.house_no.strip() if payload.house_no else None,
+        member_status=payload.member_status.strip() if payload.member_status else "active",
+        profession=payload.profession.strip() if payload.profession else None,
+        native_place=payload.native_place.strip() if payload.native_place else None,
+        bio=payload.bio.strip() if payload.bio else None,
+        address=payload.address.strip() if payload.address else None,
+        profile_photo=payload.profile_photo.strip() if payload.profile_photo else None,
+        mobile_private=payload.mobile_private,
+        email_private=payload.email_private,
+        address_private=payload.address_private,
+        profession_private=payload.profession_private,
+        native_place_private=payload.native_place_private,
+        bio_private=payload.bio_private,
+        role=role_enum,
+        is_active=True,
+        is_member=payload.is_member
+    )
+    db.add(new_user)
+    await db.commit()
+    await db.refresh(new_user)
+
+    return {
+        "status": "success",
+        "message": "New member created successfully.",
+        "user_id": str(new_user.user_id),
+        "samaj_id": new_user.samaj_id,
+        "lm_no": new_user.lm_no,
+        "name": f"{new_user.first_name} {new_user.surname}"
+    }
+
+
+@router.get("/requests/{request_id}/pdf")
+async def get_membership_request_pdf(
+    request_id: str,
+    db: AsyncSession = Depends(get_db_session)
+):
+    """
+    Download official application PDF for any membership request (admin & applicant).
+    """
+    try:
+        req_uuid = uuid.UUID(request_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid request ID format.")
+
+    # 1. Try MembershipRequest
+    res = await db.execute(
+        select(MembershipRequest, User)
+        .join(User, MembershipRequest.user_id == User.user_id)
+        .where(MembershipRequest.request_id == req_uuid)
+    )
+    row = res.first()
+    if row:
+        req, user = row
+        data = {
+            "application_id": str(req.request_id),
+            "created_at": req.created_at,
+            "first_name": user.first_name,
+            "surname": user.surname,
+            "father_name": user.father_name,
+            "parent_relation": user.parent_relation,
+            "mobile": user.mobile or user.contact_mobile,
+            "email": user.email,
+            "profession": user.profession,
+            "native_place": user.native_place,
+            "address": user.address,
+            "bio": user.bio,
+            "profile_photo": user.profile_photo,
+            "message": req.message,
+            "lm_no": user.lm_no,
+            "samaj_id": user.samaj_id,
+        }
+        pdf_bytes = generate_membership_application_pdf(data)
+        safe_name = f"Application_{user.first_name}_{user.surname}_{str(req.request_id)[:8]}.pdf"
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{safe_name}"'}
+        )
+
+    # 2. Try FamilyCreationRequest
+    fc_res = await db.execute(
+        select(FamilyCreationRequest, User)
+        .join(User, FamilyCreationRequest.user_id == User.user_id)
+        .where(FamilyCreationRequest.request_id == req_uuid)
+    )
+    fc_row = fc_res.first()
+    if fc_row:
+        fc_req, user = fc_row
+        data = {
+            "application_id": str(fc_req.request_id),
+            "created_at": fc_req.created_at,
+            "first_name": fc_req.head_first_name or user.first_name,
+            "surname": fc_req.head_surname or user.surname,
+            "mobile": fc_req.head_mobile or user.mobile,
+            "email": fc_req.head_email or user.email,
+            "profession": fc_req.head_profession or user.profession,
+            "address": fc_req.head_address or user.address,
+            "profile_photo": fc_req.head_profile_photo or user.profile_photo,
+            "message": f"Family Creation: {fc_req.family_name}",
+        }
+        pdf_bytes = generate_membership_application_pdf(data)
+        safe_name = f"Family_Application_{str(fc_req.request_id)[:8]}.pdf"
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{safe_name}"'}
+        )
+
+    raise HTTPException(status_code=404, detail="Membership application request not found.")
+
+
+@router.get("/members/{user_id}/application-pdf")
+async def get_member_profile_pdf(
+    user_id: str,
+    db: AsyncSession = Depends(get_db_session)
+):
+    """
+    Download official member record / application PDF for any registered member.
+    """
+    try:
+        u_uuid = uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid user ID format.")
+
+    res = await db.execute(select(User).where(User.user_id == u_uuid))
+    user = res.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Member not found.")
+
+    data = {
+        "application_id": str(user.user_id),
+        "created_at": user.created_at or datetime.now(),
+        "first_name": user.first_name,
+        "surname": user.surname,
+        "father_name": user.father_name,
+        "parent_relation": user.parent_relation,
+        "mobile": user.mobile or user.contact_mobile,
+        "email": user.email,
+        "profession": user.profession,
+        "native_place": user.native_place,
+        "address": user.address,
+        "bio": user.bio,
+        "profile_photo": user.profile_photo,
+        "lm_no": user.lm_no,
+        "samaj_id": user.samaj_id,
+        "member_status": user.member_status or "active",
+        "role": user.role.value if hasattr(user.role, "value") else str(user.role),
+    }
+    pdf_bytes = generate_membership_application_pdf(data)
+    safe_name = f"Member_{user.first_name}_{user.surname}_{user.lm_no or user.samaj_id or 'record'}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}"'}
+    )
+
+
+class DirectPdfGeneratePayload(BaseModel):
+    first_name: str
+    surname: str
+    father_name: Optional[str] = None
+    parent_relation: Optional[str] = None
+    mobile: Optional[str] = None
+    email: Optional[str] = None
+    profession: Optional[str] = None
+    native_place: Optional[str] = None
+    address: Optional[str] = None
+    bio: Optional[str] = None
+    profile_photo: Optional[str] = None
+    request_id: Optional[str] = None
+
+
+@router.post("/generate-application-pdf")
+async def generate_direct_application_pdf(payload: DirectPdfGeneratePayload):
+    """
+    Generates and returns an application PDF directly from form data.
+    """
+    data = payload.dict()
+    data["created_at"] = datetime.now()
+    pdf_bytes = generate_membership_application_pdf(data)
+    safe_name = f"Membership_Application_{payload.first_name}_{payload.surname}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}"'}
+    )
+
 
 

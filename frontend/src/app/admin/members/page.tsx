@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Search, Mail, Phone, MapPin, ShieldAlert, Award, FileUser, MessageSquare, HandHeart, Undo2, Edit, X, Trash2, Camera, Upload, RefreshCw, Eye, ShieldCheck, Key } from "lucide-react";
+import { 
+  Search, Mail, Phone, MapPin, ShieldAlert, Award, FileUser, MessageSquare, HandHeart, 
+  Undo2, Edit, X, Trash2, Camera, Upload, RefreshCw, Eye, ShieldCheck, Key, UserPlus, 
+  FileText, CheckCircle2, AlertCircle, Loader2 
+} from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
 import { formatParentage } from "@/utils/member";
@@ -97,6 +101,57 @@ export default function AdminMembersPage() {
       setEditError("Failed to upload photo. Please try again.");
     } finally {
       setUploadingPhoto(false);
+    }
+  };
+
+  // Add Member Modal State (Direct creation without OTP)
+  const [addMemberModalOpen, setAddMemberModalOpen] = useState(false);
+  const [addMemberForm, setAddMemberForm] = useState<Partial<Member>>({
+    first_name: "",
+    surname: "",
+    father_name: "",
+    mobile: "",
+    email: "",
+    address: "",
+    family_relation: "Self",
+    samaj_id: "",
+    lm_no: undefined,
+    zone: "",
+    house_no: "",
+    member_status: "active",
+    profession: "",
+    native_place: "",
+    bio: "",
+    profile_photo: "",
+    role: "member",
+    is_member: true,
+  });
+  const [addMemberSubmitting, setAddMemberSubmitting] = useState(false);
+  const [addMemberError, setAddMemberError] = useState("");
+  const [addMemberSuccess, setAddMemberSuccess] = useState("");
+  const [uploadingAddPhoto, setUploadingAddPhoto] = useState(false);
+
+  const handleAddPhotoFileUpload = async (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setAddMemberError("Please select a valid image file (JPG, PNG, WEBP).");
+      return;
+    }
+    setUploadingAddPhoto(true);
+    setAddMemberError("");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await axios.post(`${getApiBaseUrl()}/membership/upload-photo`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const baseUrl = getApiBaseUrl().replace(/\/api\/v1\/?$/, "");
+      setAddMemberForm(prev => ({ ...prev, profile_photo: `${baseUrl}${res.data.url}` }));
+    } catch (err: any) {
+      console.error("Photo upload failed", err);
+      setAddMemberError("Failed to upload photo. Please try again.");
+    } finally {
+      setUploadingAddPhoto(false);
     }
   };
 
@@ -220,6 +275,58 @@ export default function AdminMembersPage() {
     }
   };
 
+  const handleAddMemberSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addMemberForm.first_name?.trim() || !addMemberForm.surname?.trim()) {
+      setAddMemberError("First name and surname are required.");
+      return;
+    }
+    setAddMemberSubmitting(true);
+    setAddMemberError("");
+    setAddMemberSuccess("");
+    try {
+      const token = localStorage.getItem("token");
+      const payload: any = { ...addMemberForm };
+      delete payload.custom_role_id;
+      if (payload.lm_no === "" || payload.lm_no === null || payload.lm_no === undefined) {
+        payload.lm_no = null;
+      } else {
+        payload.lm_no = Number(payload.lm_no);
+      }
+
+      const res = await axios.post(
+        `${getApiBaseUrl()}/membership/admin-create-member`,
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const createdUserId = res.data.user_id;
+
+      // Assign custom role if selected
+      if (addMemberForm.custom_role_id && createdUserId) {
+        await axios.post(
+          `${getApiBaseUrl()}/roles/assign`,
+          {
+            user_id: createdUserId,
+            custom_role_id: addMemberForm.custom_role_id,
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        ).catch(() => {});
+      }
+
+      setAddMemberSuccess("Member created successfully without OTP!");
+      setTimeout(() => {
+        setAddMemberModalOpen(false);
+        setAddMemberSuccess("");
+        fetchMembers();
+      }, 1000);
+    } catch (err: any) {
+      setAddMemberError(err.response?.data?.detail || "Failed to create member.");
+    } finally {
+      setAddMemberSubmitting(false);
+    }
+  };
+
   const handleOpenMessageModal = (m: Member) => {
     setMessageMember(m);
     setMessageText("");
@@ -305,7 +412,39 @@ export default function AdminMembersPage() {
           <h1 className="text-2xl font-bold text-zinc-900">Manage Directory</h1>
           <p className="text-sm text-zinc-500 mt-1">Full view of Samaj members, including contact details and address details.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setAddMemberModalOpen(true);
+              setAddMemberForm({
+                first_name: "",
+                surname: "",
+                father_name: "",
+                mobile: "",
+                email: "",
+                address: "",
+                family_relation: "Self",
+                samaj_id: "",
+                lm_no: undefined,
+                zone: "",
+                house_no: "",
+                member_status: "active",
+                profession: "",
+                native_place: "",
+                bio: "",
+                profile_photo: "",
+                role: "member",
+                is_member: true,
+              });
+              setAddMemberError("");
+              setAddMemberSuccess("");
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-sm font-bold rounded-xl shadow-md transition-all cursor-pointer"
+          >
+            <UserPlus className="w-4 h-4" />
+            + Add New Member
+          </button>
           <Link
             href="/admin/roles"
             className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors cursor-pointer"
@@ -429,13 +568,22 @@ export default function AdminMembersPage() {
                   </div>
 
                   <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <button
                         onClick={() => setViewMemberModal(m)}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold rounded-lg transition-colors cursor-pointer"
                       >
                         <Eye className="w-3.5 h-3.5 text-zinc-600" /> View Details
                       </button>
+                      <a
+                        href={`${getApiBaseUrl()}/membership/members/${m.user_id}/application-pdf`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Download Official Member Record / Application PDF"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-semibold rounded-lg border border-amber-200 transition-colors cursor-pointer"
+                      >
+                        <FileText className="w-3.5 h-3.5" /> PDF
+                      </a>
                       <button
                         onClick={() => handleOpenMessageModal(m)}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
@@ -893,7 +1041,15 @@ export default function AdminMembersPage() {
               )}
             </div>
 
-            <div className="p-4 bg-zinc-50 border-t border-zinc-200 flex justify-end">
+            <div className="p-4 bg-zinc-50 border-t border-zinc-200 flex items-center justify-between">
+              <a
+                href={`${getApiBaseUrl()}/membership/members/${viewMemberModal.user_id}/application-pdf`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
+              >
+                <FileText className="w-4 h-4" /> Download Application PDF
+              </a>
               <button
                 onClick={() => setViewMemberModal(null)}
                 className="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold rounded-xl transition-colors"
@@ -901,6 +1057,313 @@ export default function AdminMembersPage() {
                 Close Details
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: Add New Member (Admin Direct Creation without OTP) */}
+      {addMemberModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto backdrop-blur-sm">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-zinc-200 flex flex-col animate-in fade-in zoom-in-95 duration-200 my-6">
+            <div className="p-6 bg-gradient-to-r from-emerald-600 via-teal-700 to-cyan-800 text-white flex items-center justify-between sticky top-0 z-10">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-xl">
+                  <UserPlus className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg leading-tight">Add New Member (Admin Portal)</h3>
+                  <p className="text-xs text-emerald-100">Create new membership directly without OTP verification</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAddMemberModalOpen(false)}
+                className="p-1.5 rounded-full hover:bg-white/20 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddMemberSubmit} className="p-6 space-y-6">
+              {addMemberSuccess && (
+                <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold rounded-2xl flex items-center gap-2.5">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                  <span>{addMemberSuccess}</span>
+                </div>
+              )}
+
+              {addMemberError && (
+                <div className="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-sm font-semibold rounded-2xl flex items-center gap-2.5">
+                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                  <span>{addMemberError}</span>
+                </div>
+              )}
+
+              {/* Photo Upload */}
+              <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-200/80">
+                <label className="text-xs font-bold text-zinc-700 block mb-2">Member Profile Photo (Optional)</label>
+                <div className="flex items-center gap-4">
+                  {addMemberForm.profile_photo ? (
+                    <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-emerald-500/40 shadow-sm shrink-0">
+                      <img src={addMemberForm.profile_photo} alt="" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setAddMemberForm(prev => ({ ...prev, profile_photo: "" }))}
+                        className="absolute top-1 right-1 bg-black/60 text-white p-1 rounded-full hover:bg-black/80"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-20 h-20 rounded-2xl bg-emerald-100/70 border border-dashed border-emerald-400 flex flex-col items-center justify-center text-emerald-700 shrink-0">
+                      <Camera className="w-7 h-7" />
+                    </div>
+                  )}
+                  <div className="flex-1 space-y-1.5">
+                    <label className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors shadow-sm">
+                      {uploadingAddPhoto ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                      {addMemberForm.profile_photo ? "Change Photo" : "Upload Photo"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={uploadingAddPhoto}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleAddPhotoFileUpload(file);
+                        }}
+                      />
+                    </label>
+                    <p className="text-[11px] text-zinc-500">JPG, PNG, WEBP (Max 5MB)</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Core Information */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">1. Basic Details</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">First Name *</label>
+                    <input
+                      required
+                      type="text"
+                      placeholder="e.g. Ramesh"
+                      value={addMemberForm.first_name || ""}
+                      onChange={e => setAddMemberForm({ ...addMemberForm, first_name: e.target.value })}
+                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">Surname *</label>
+                    <input
+                      required
+                      type="text"
+                      placeholder="e.g. Agrawal / Gupta / Mittal"
+                      value={addMemberForm.surname || ""}
+                      onChange={e => setAddMemberForm({ ...addMemberForm, surname: e.target.value })}
+                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">Father's / Husband's Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Late Shri S.N. Agrawal"
+                      value={addMemberForm.father_name || ""}
+                      onChange={e => setAddMemberForm({ ...addMemberForm, father_name: e.target.value })}
+                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">Relation</label>
+                    <select
+                      value={addMemberForm.family_relation || "Self"}
+                      onChange={e => setAddMemberForm({ ...addMemberForm, family_relation: e.target.value })}
+                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                    >
+                      <option value="Self">Self / स्वयं (Head)</option>
+                      <option value="Spouse">Spouse / पति-पत्नी</option>
+                      <option value="Son">Son / पुत्र</option>
+                      <option value="Daughter">Daughter / पुत्री</option>
+                      <option value="Father">Father / पिता</option>
+                      <option value="Mother">Mother / माता</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Information */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">2. Contact &amp; Membership ID</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">Mobile no (whatsapp no)</label>
+                    <input
+                      type="tel"
+                      placeholder="e.g. 9829012345"
+                      value={addMemberForm.mobile || ""}
+                      onChange={e => setAddMemberForm({ ...addMemberForm, mobile: e.target.value })}
+                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">Email Address</label>
+                    <input
+                      type="email"
+                      placeholder="e.g. member@gmail.com"
+                      value={addMemberForm.email || ""}
+                      onChange={e => setAddMemberForm({ ...addMemberForm, email: e.target.value })}
+                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">Life Member No (LM No)</label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 1502"
+                      value={addMemberForm.lm_no === undefined ? "" : addMemberForm.lm_no ?? ""}
+                      onChange={e => setAddMemberForm({ ...addMemberForm, lm_no: e.target.value ? Number(e.target.value) : null })}
+                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">Samaj ID</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. LM-1502 or custom"
+                      value={addMemberForm.samaj_id || ""}
+                      onChange={e => setAddMemberForm({ ...addMemberForm, samaj_id: e.target.value })}
+                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">Member Status</label>
+                    <select
+                      value={addMemberForm.member_status || "active"}
+                      onChange={e => setAddMemberForm({ ...addMemberForm, member_status: e.target.value })}
+                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                    >
+                      <option value="active">Active Member</option>
+                      <option value="shifted">Shifted</option>
+                      <option value="expired">Expired</option>
+                      <option value="sold_out">Sold Out</option>
+                      <option value="shifted_sold_out">Shifted · Sold Out</option>
+                      <option value="double_name">Double Name</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">Assign Custom Role</label>
+                    <select
+                      value={addMemberForm.custom_role_id || ""}
+                      onChange={e => setAddMemberForm({ ...addMemberForm, custom_role_id: e.target.value })}
+                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                    >
+                      <option value="">None (Regular Member)</option>
+                      {customRoles.map(role => (
+                        <option key={role.role_id} value={role.role_id}>{role.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Location & Address */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">3. Location, Profession &amp; Address</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">Profession / Business</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. CA / Business / Engineer"
+                      value={addMemberForm.profession || ""}
+                      onChange={e => setAddMemberForm({ ...addMemberForm, profession: e.target.value })}
+                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">Native Place / Origin (मूल निवास)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Agroha / Jhunjhunu / Alwar"
+                      value={addMemberForm.native_place || ""}
+                      onChange={e => setAddMemberForm({ ...addMemberForm, native_place: e.target.value })}
+                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">Zone</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Zone 1 / Ward 27"
+                      value={addMemberForm.zone || ""}
+                      onChange={e => setAddMemberForm({ ...addMemberForm, zone: e.target.value })}
+                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">House No.</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 52/120"
+                      value={addMemberForm.house_no || ""}
+                      onChange={e => setAddMemberForm({ ...addMemberForm, house_no: e.target.value })}
+                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-zinc-700">Residential Address</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Full residential address in Mansarovar, Jaipur"
+                    value={addMemberForm.address || ""}
+                    onChange={e => setAddMemberForm({ ...addMemberForm, address: e.target.value })}
+                    className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-zinc-700">Bio / Notes</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Brief family note or introduction"
+                    value={addMemberForm.bio || ""}
+                    onChange={e => setAddMemberForm({ ...addMemberForm, bio: e.target.value })}
+                    className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="pt-4 border-t border-zinc-100 flex items-center justify-end gap-3 sticky bottom-0 bg-white p-2">
+                <button
+                  type="button"
+                  disabled={addMemberSubmitting}
+                  onClick={() => setAddMemberModalOpen(false)}
+                  className="px-5 py-2.5 text-zinc-600 text-sm font-semibold hover:bg-zinc-100 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addMemberSubmitting}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-sm font-bold rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {addMemberSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Creating Member...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" /> Create Member
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

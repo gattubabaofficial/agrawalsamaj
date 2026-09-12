@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { 
   Search, Phone, MapPin, Lock, Award, Edit3, UserPlus,
-  CheckCircle2, AlertCircle, ShieldCheck, X, Send, KeyRound, UserCheck, RefreshCw, Eye, MessageSquare, User, Camera, Upload, Globe
+  CheckCircle2, AlertCircle, ShieldCheck, X, Send, KeyRound, UserCheck, RefreshCw, Eye, MessageSquare, User, Camera, Upload, Globe, FileText
 } from "lucide-react";
 import { getApiBaseUrl, safeFetch, formatErrorMessage } from "@/utils/api";
 import { formatParentage } from "@/utils/member";
@@ -135,6 +135,7 @@ export default function PublicMembersPage() {
   const [regSubmitting, setRegSubmitting] = useState(false);
   const [regError, setRegError] = useState("");
   const [regSuccessMsg, setRegSuccessMsg] = useState("");
+  const [lastSubmittedRequestId, setLastSubmittedRequestId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMembers();
@@ -530,6 +531,7 @@ export default function PublicMembersPage() {
         setRegError(formatErrorMessage(data?.detail, "Failed to submit membership application."));
         return;
       }
+      setLastSubmittedRequestId(data?.request_id || null);
       setRegSuccessMsg("Registration application submitted successfully! Our executive committee will verify your details and approve your membership.");
     } catch (err: any) {
       setRegError(formatErrorMessage(err?.message, "Failed to submit membership application."));
@@ -1583,12 +1585,62 @@ export default function PublicMembersPage() {
                     </div>
                     <h4 className="text-xl font-bold text-zinc-900">Application Submitted!</h4>
                     <p className="text-sm text-zinc-600 leading-relaxed px-4">{regSuccessMsg}</p>
-                    <button
-                      onClick={() => setShowRegisterModal(false)}
-                      className="px-6 py-2.5 bg-zinc-900 text-white text-sm font-bold rounded-xl hover:bg-zinc-800 transition-colors"
-                    >
-                      Close
-                    </button>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                      {lastSubmittedRequestId ? (
+                        <a
+                          href={`${getApiBaseUrl()}/membership/requests/${lastSubmittedRequestId}/pdf`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold rounded-xl transition-all shadow-md cursor-pointer"
+                        >
+                          <FileText className="w-4 h-4" /> Download Application Form (PDF)
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const pdfRes = await fetch(`${getApiBaseUrl()}/membership/generate-application-pdf`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  first_name: regFirstName.trim(),
+                                  surname: regSurname.trim(),
+                                  father_name: regFatherName.trim() || null,
+                                  parent_relation: regParentRelation.trim() || null,
+                                  mobile: regMobile.trim(),
+                                  email: regEmail.trim() || null,
+                                  profession: regProfession.trim() || null,
+                                  native_place: regNativePlace.trim() || null,
+                                  address: regAddress.trim() || null,
+                                  bio: regBio.trim() || null,
+                                  profile_photo: regPhotoUrl.trim() || null,
+                                }),
+                              });
+                              if (pdfRes.ok) {
+                                const blob = await pdfRes.blob();
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement("a");
+                                a.href = url;
+                                a.download = `Membership_Application_${regFirstName}_${regSurname}.pdf`;
+                                a.click();
+                              }
+                            } catch (e) {
+                              console.error(e);
+                            }
+                          }}
+                          className="inline-flex items-center gap-2 px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold rounded-xl transition-all shadow-md cursor-pointer"
+                        >
+                          <FileText className="w-4 h-4" /> Download Application Form (PDF)
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setShowRegisterModal(false)}
+                        className="px-6 py-2.5 bg-zinc-900 text-white text-sm font-bold rounded-xl hover:bg-zinc-800 transition-colors"
+                      >
+                        Close
+                      </button>
+                    </div>
                   </div>
                 ) : regStep === "details" ? (
                   <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">

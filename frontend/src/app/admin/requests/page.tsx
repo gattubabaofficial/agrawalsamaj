@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, XCircle, Search, UserPlus, Home, Users, Edit3, ArrowRight, ShieldCheck, Eye, X, Award, Hash, AlertCircle, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Search, UserPlus, Home, Users, Edit3, ArrowRight, ShieldCheck, Eye, X, Award, Hash, AlertCircle, Loader2, FileText } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
@@ -238,13 +238,22 @@ export default function AdminRequestsPage() {
                       </td>
 
                       <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end items-center gap-2">
                           <button
                             onClick={() => setViewApplication(req)}
                             className="px-3 py-1.5 bg-zinc-100 text-zinc-700 hover:bg-zinc-200 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1"
                           >
                             <Eye className="w-3.5 h-3.5" /> View Details
                           </button>
+                          <a
+                            href={`${getApiBaseUrl()}/membership/requests/${req.request_id}/pdf`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Download Application PDF"
+                            className="px-2.5 py-1.5 bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            <FileText className="w-3.5 h-3.5" /> PDF
+                          </a>
                           <button
                             onClick={() => openApproveModal(req)}
                             className="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1"
@@ -534,19 +543,29 @@ export default function AdminRequestsPage() {
               </div>
             </div>
 
-            <div className="p-4 bg-zinc-50 border-t border-zinc-200 flex justify-end gap-2">
-              <button
-                onClick={() => handleMembershipReject(viewApplication.request_id)}
-                className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5"
+            <div className="p-4 bg-zinc-50 border-t border-zinc-200 flex items-center justify-between gap-2 flex-wrap">
+              <a
+                href={`${getApiBaseUrl()}/membership/requests/${viewApplication.request_id}/pdf`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow-sm"
               >
-                <XCircle className="w-4 h-4" /> Reject
-              </button>
-              <button
-                onClick={() => openApproveModal(viewApplication)}
-                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow-sm"
-              >
-                <CheckCircle className="w-4 h-4" /> Approve
-              </button>
+                <FileText className="w-4 h-4" /> Download Application PDF
+              </a>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleMembershipReject(viewApplication.request_id)}
+                  className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5"
+                >
+                  <XCircle className="w-4 h-4" /> Reject
+                </button>
+                <button
+                  onClick={() => openApproveModal(viewApplication)}
+                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow-sm"
+                >
+                  <CheckCircle className="w-4 h-4" /> Approve
+                </button>
+              </div>
             </div>
           </div>
         </div>
