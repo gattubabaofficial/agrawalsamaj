@@ -34,6 +34,8 @@ engine = create_async_engine(
     connect_args=connect_args,
     future=True,
     echo=settings.ENVIRONMENT == "development",
+    pool_pre_ping=True,
+    pool_recycle=300,
 )
 
 # Configure async session factory
