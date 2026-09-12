@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Heart, Calendar, Building, Info, Home, BookOpen, Users, History, UserPlus } from "lucide-react";
+import { Heart, Calendar, Building, Info, Home, BookOpen, Users, History, UserPlus, LogIn } from "lucide-react";
 import { Eyebrow, Rule, Section } from "@/components/ui/primitives";
 import { Reveal, RevealGroup, RevealItem } from "@/components/ui/motion";
 
@@ -21,6 +21,7 @@ const NAV_GUIDE = [
   { name: "ब्लॉग", href: "/blog", icon: BookOpen, description: "समाज की कहानियाँ पढ़ें, या फ़ोन सत्यापन के बाद स्वयं लिखें।" },
   { name: "दान", href: "/donate", icon: Heart, description: "समाज के कार्यों में सीधे योगदान देने का माध्यम।" },
   { name: "सदस्यता आवेदन", href: "/members?apply=true", icon: UserPlus, description: "मानसरोवर अग्रवाल समाज की नई सदस्यता हेतु ऑनलाइन आवेदन करें।" },
+  { name: "सदस्य लॉगिन", href: "/login", icon: LogIn, description: "पंजीकृत सदस्य अपने खाते में लॉगिन करें — अपनी प्रोफाइल, परिवार विवरण व डैशबोर्ड के लिए।" },
 ];
 
 export default function Waymarks() {
