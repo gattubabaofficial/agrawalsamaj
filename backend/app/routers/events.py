@@ -355,7 +355,7 @@ async def get_event(
 @router.post("/{event_id}/register", status_code=status.HTTP_201_CREATED)
 async def register_event(
     event_id: str,
-    reg_data: EventRegistrationRequest,
+    reg_data: EventRegistrationCreate,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_current_user)
