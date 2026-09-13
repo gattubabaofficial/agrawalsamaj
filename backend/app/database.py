@@ -8,16 +8,19 @@ from app.config import settings
 db_url = (settings.DATABASE_URL or "").strip()
 
 if not db_url:
-    db_url = "sqlite+aiosqlite:///./test.db"
+    db_url = "sqlite+aiosqlite:///./data/agrasamaj.db"
 
 # Normalize driver for SQLAlchemy async engine
 connect_args = {}
+is_sqlite = False
+
 try:
     url_obj = make_url(db_url)
     if url_obj.drivername.startswith("postgres"):
         db_url = url_obj.set(drivername="postgresql+asyncpg").render_as_string(hide_password=False)
         db_url = db_url.replace("sslmode=require", "ssl=require").replace("sslmode=prefer", "ssl=prefer").replace("sslmode=disable", "ssl=disable")
     elif url_obj.drivername.startswith("sqlite"):
+        is_sqlite = True
         db_url = url_obj.set(drivername="sqlite+aiosqlite").render_as_string(hide_password=False)
         connect_args = {"check_same_thread": False}
 except Exception:
@@ -25,18 +28,57 @@ except Exception:
         db_url = re.sub(r"^(postgres|postgresql)(\+[a-zA-Z0-9_-]+)?://", "postgresql+asyncpg://", db_url, flags=re.IGNORECASE)
         db_url = db_url.replace("sslmode=require", "ssl=require").replace("sslmode=prefer", "ssl=prefer").replace("sslmode=disable", "ssl=disable")
     elif db_url.lower().startswith("sqlite"):
+        is_sqlite = True
         db_url = re.sub(r"^sqlite://", "sqlite+aiosqlite://", db_url, flags=re.IGNORECASE)
         connect_args = {"check_same_thread": False}
 
-# Create async database engine
+# Ensure directory exists and resolve relative path for local SQLite file
+if is_sqlite:
+    import os
+    try:
+        raw_path = db_url.split("sqlite+aiosqlite:///")[-1].split("?")[0]
+        if raw_path and raw_path != ":memory:":
+            if not os.path.isabs(raw_path):
+                backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                clean_rel = raw_path
+                if clean_rel.startswith("./"):
+                    clean_rel = clean_rel[2:]
+                abs_db_path = os.path.abspath(os.path.join(backend_dir, clean_rel))
+                db_url = f"sqlite+aiosqlite:///{abs_db_path.replace(os.sep, '/')}"
+                db_dir = os.path.dirname(abs_db_path)
+            else:
+                db_dir = os.path.dirname(raw_path)
+            if db_dir:
+                os.makedirs(db_dir, exist_ok=True)
+    except Exception:
+        pass
+
+# Create async database engine with appropriate pooling
+engine_kwargs = {
+    "connect_args": connect_args,
+    "future": True,
+    "echo": settings.ENVIRONMENT == "development",
+}
+
+if not is_sqlite:
+    engine_kwargs["pool_pre_ping"] = True
+    engine_kwargs["pool_recycle"] = 300
+
 engine = create_async_engine(
     db_url,
-    connect_args=connect_args,
-    future=True,
-    echo=settings.ENVIRONMENT == "development",
-    pool_pre_ping=True,
-    pool_recycle=300,
+    **engine_kwargs
 )
+
+# Enable WAL mode and foreign keys for SQLite
+if is_sqlite:
+    from sqlalchemy import event
+
+    @event.listens_for(engine.sync_engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys = ON;")
+        cursor.execute("PRAGMA journal_mode = WAL;")
+        cursor.close()
 
 # Configure async session factory
 SessionLocal = async_sessionmaker(

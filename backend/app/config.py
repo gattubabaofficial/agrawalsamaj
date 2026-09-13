@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     # Database
     # Default to sqlite locally if postgres is not configured
-    DATABASE_URL: str = "sqlite+aiosqlite:///./test.db"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./data/agrasamaj.db"
 
     # Redis
     REDIS_URL: Optional[str] = None

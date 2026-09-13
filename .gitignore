@@ -20,9 +20,13 @@ env/
 .venv/
 .env
 
-# SQLite Database
+# SQLite Database & Backups
 *.sqlite3
 *.db
+backend/data/
+data/
+backups/
+backend/backups/
 
 # Uploads
 uploads/
