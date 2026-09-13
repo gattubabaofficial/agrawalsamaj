@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Search, Tag, Heart, MessageCircle, Eye, Clock, ArrowRight, BookOpen, Upload, X, FileText } from "lucide-react";
-import { getApiBaseUrl } from "@/utils/api";
+import { Search, Tag, Heart, MessageCircle, Eye, Clock, ArrowRight, BookOpen, Upload, X, FileText, AlertCircle, RefreshCw } from "lucide-react";
+import { getApiBaseUrl, safeFetch, formatErrorMessage } from "@/utils/api";
 
 interface Blog {
   blog_id: string;
@@ -41,6 +41,7 @@ function timeAgo(dateStr?: string) {
 export default function BlogPage() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState("");
   const [page, setPage] = useState(1);
@@ -81,7 +82,7 @@ export default function BlogPage() {
     setBlogSendingOtp(true);
     setBlogOtpError("");
     try {
-      const res = await fetch(`${getApiBaseUrl()}/auth/phone/send-otp`, {
+      const res = await safeFetch(`${getApiBaseUrl()}/auth/phone/send-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: guestPhone.trim() })
@@ -90,10 +91,11 @@ export default function BlogPage() {
         setBlogStep("otp");
       } else {
         const err = await res.json().catch(() => null);
-        alert(err?.detail || "Failed to send OTP to your phone number.");
+        alert(formatErrorMessage(err?.detail, "Failed to send OTP to your phone number."));
       }
-    } catch {
-      alert("Failed to send OTP to your phone number.");
+    } catch (err) {
+      console.error("Failed to send blog OTP:", err);
+      alert("Failed to send OTP to your phone number. Please check your connection.");
     } finally {
       setBlogSendingOtp(false);
     }
@@ -121,7 +123,7 @@ export default function BlogPage() {
         guest_phone: guestPhone.trim(),
         otp: blogOtp.trim(),
       };
-      const res = await fetch(`${getApiBaseUrl()}/blog/`, {
+      const res = await safeFetch(`${getApiBaseUrl()}/blog/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
@@ -133,10 +135,11 @@ export default function BlogPage() {
         fetchBlogs(1);
       } else {
         const errData = await res.json().catch(() => null);
-        setBlogOtpError(errData?.detail || "Failed to publish blog post.");
+        setBlogOtpError(formatErrorMessage(errData?.detail, "Failed to publish blog post."));
       }
     } catch (err) {
-      setBlogOtpError("Failed to publish blog post.");
+      console.error("Failed to publish blog post:", err);
+      setBlogOtpError("Failed to publish blog post. Please check your connection and try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -155,7 +158,7 @@ export default function BlogPage() {
       formData.append("file", file);
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 45000);
-      const res = await fetch(`${getApiBaseUrl()}/blog/upload`, {
+      const res = await safeFetch(`${getApiBaseUrl()}/blog/upload`, {
         method: "POST",
         body: formData,
         signal: controller.signal,
@@ -166,9 +169,10 @@ export default function BlogPage() {
         setNewCover(data.url);
       } else {
         const errData = await res.json().catch(() => null);
-        alert(errData?.detail || "Failed to upload image. Please try a smaller file.");
+        alert(formatErrorMessage(errData?.detail, "Failed to upload image. Please try a smaller file."));
       }
     } catch (err: any) {
+      console.error("Failed to upload blog image:", err);
       if (err?.name === "AbortError") {
         alert("Upload timed out. Please try a smaller image (under 5MB works best).");
       } else {
@@ -196,7 +200,7 @@ export default function BlogPage() {
       formData.append("file", file);
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 45000);
-      const res = await fetch(`${getApiBaseUrl()}/blog/upload`, {
+      const res = await safeFetch(`${getApiBaseUrl()}/blog/upload`, {
         method: "POST",
         body: formData,
         signal: controller.signal,
@@ -207,9 +211,10 @@ export default function BlogPage() {
         setNewPdf(data.url);
       } else {
         const errData = await res.json().catch(() => null);
-        alert(errData?.detail || "Failed to upload PDF. Please try a smaller file.");
+        alert(formatErrorMessage(errData?.detail, "Failed to upload PDF. Please try a smaller file."));
       }
     } catch (err: any) {
+      console.error("Failed to upload PDF:", err);
       if (err?.name === "AbortError") {
         alert("Upload timed out. Please try a smaller PDF.");
       } else {
@@ -222,18 +227,31 @@ export default function BlogPage() {
 
   const fetchBlogs = async (pg = 1, q = search, tag = activeTag, yr = selectedYear, mn = selectedMonth) => {
     setLoading(true);
+    setError(null);
     try {
       const params = new URLSearchParams({ page: String(pg), per_page: String(PER_PAGE) });
       if (q) params.set("search", q);
       if (tag) params.set("tag", tag);
       if (yr) params.set("year", yr);
       if (mn) params.set("month", mn);
-      const res = await fetch(`${getApiBaseUrl()}/blog/?${params}`);
+      const res = await safeFetch(`${getApiBaseUrl()}/blog/?${params}`);
       if (res.ok) {
         const data = await res.json();
-        setBlogs(data.items);
-        setTotal(data.total);
+        setBlogs(data.items || []);
+        setTotal(data.total || 0);
+      } else {
+        console.error(`Failed to fetch blogs: HTTP ${res.status}`);
+        const errData = await res.json().catch(() => null);
+        const msg = formatErrorMessage(errData?.detail, "Failed to load blogs. Please try again.");
+        setError(msg);
+        setBlogs([]);
+        setTotal(0);
       }
+    } catch (err: any) {
+      console.error("Network error fetching blogs:", err);
+      setError("Network error: Unable to load blogs. Please check your connection and try again.");
+      setBlogs([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -359,6 +377,23 @@ export default function BlogPage() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-12">
+
+        {/* Error Banner */}
+        {error && (
+          <div className="mb-8 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
+              <p className="text-sm font-medium">{error}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => fetchBlogs(page, search, activeTag, selectedYear, selectedMonth)}
+              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+            >
+              <RefreshCw className="w-3.5 h-3.5" /> Try again
+            </button>
+          </div>
+        )}
 
         {/* Tag Filter Pills */}
         {allTags.length > 0 && (
