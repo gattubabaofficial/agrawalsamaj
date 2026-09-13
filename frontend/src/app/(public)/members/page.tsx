@@ -8,6 +8,7 @@ import {
   CheckCircle2, AlertCircle, ShieldCheck, X, Send, KeyRound, UserCheck, RefreshCw, Eye, MessageSquare, User, Camera, Upload, Globe, FileText
 } from "lucide-react";
 import { getApiBaseUrl, safeFetch, formatErrorMessage } from "@/utils/api";
+import { mediaUrl } from "@/utils/media";
 import { formatParentage } from "@/utils/member";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -210,8 +211,7 @@ export default function PublicMembersPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        const baseUrl = getApiBaseUrl().replace(/\/api\/v1\/?$/, "");
-        setPhotoUrl(`${baseUrl}${data.url}`);
+        setPhotoUrl(mediaUrl(data.url) || data.url);
       } else {
         throw new Error("Upload failed");
       }
@@ -687,7 +687,7 @@ export default function PublicMembersPage() {
                   <div className="flex items-center gap-3 min-w-0 lg:w-64 xl:w-72 flex-shrink-0">
                     {m.profile_photo ? (
                       <img
-                        src={m.profile_photo}
+                        src={mediaUrl(m.profile_photo) || m.profile_photo}
                         alt={`${m.first_name} ${m.surname}`}
                         className="w-11 h-11 rounded-xl object-cover border-2 border-amber-500/20 shadow-sm flex-shrink-0"
                       />
@@ -996,7 +996,7 @@ export default function PublicMembersPage() {
                       <div className="flex items-center gap-3">
                         {editPhotoUrl ? (
                           <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-amber-500/40 shadow-sm flex-shrink-0">
-                            <img src={editPhotoUrl} alt="Profile Preview" className="w-full h-full object-cover" />
+                            <img src={mediaUrl(editPhotoUrl) || editPhotoUrl} alt="Profile Preview" className="w-full h-full object-cover" />
                             <button
                               type="button"
                               onClick={() => setEditPhotoUrl("")}
@@ -1213,7 +1213,7 @@ export default function PublicMembersPage() {
                 <div className="flex items-center gap-4">
                   {viewMemberModal.profile_photo ? (
                     <img
-                      src={viewMemberModal.profile_photo}
+                      src={mediaUrl(viewMemberModal.profile_photo) || viewMemberModal.profile_photo}
                       alt={`${viewMemberModal.first_name} ${viewMemberModal.surname}`}
                       className="w-16 h-16 rounded-2xl object-cover border-2 border-white/40 shadow-md"
                     />
@@ -1731,7 +1731,7 @@ export default function PublicMembersPage() {
                       <div className="flex items-center gap-3">
                         {regPhotoUrl ? (
                           <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-amber-500/40 shadow-sm flex-shrink-0">
-                            <img src={regPhotoUrl} alt="Profile Preview" className="w-full h-full object-cover" />
+                            <img src={mediaUrl(regPhotoUrl) || regPhotoUrl} alt="Profile Preview" className="w-full h-full object-cover" />
                             <button
                               type="button"
                               onClick={() => setRegPhotoUrl("")}

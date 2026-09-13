@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { User, Mail, Phone, MapPin, Briefcase, Lock, Unlock, Loader2, Save, X } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
+import { mediaUrl } from "@/utils/media";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<any>(null);
@@ -115,7 +116,7 @@ export default function ProfilePage() {
         <div className="p-6 sm:p-10 border-b border-zinc-200 bg-zinc-50/50 flex flex-col sm:flex-row items-center gap-6">
           <div className="relative group w-24 h-24 flex-shrink-0">
             {profile.profile_photo ? (
-              <img src={`${getApiBaseUrl().replace('/api/v1', '')}${profile.profile_photo}`} alt="Profile" className="w-full h-full rounded-full object-cover shadow-inner" />
+              <img src={mediaUrl(profile.profile_photo) || profile.profile_photo} alt="Profile" className="w-full h-full rounded-full object-cover shadow-inner" />
             ) : (
               <div className="w-full h-full rounded-full bg-gradient-to-br from-amber-400 to-rose-400 flex items-center justify-center text-white font-bold text-3xl shadow-inner">
                 {initial}

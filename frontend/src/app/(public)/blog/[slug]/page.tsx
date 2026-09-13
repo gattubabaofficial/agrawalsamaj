@@ -11,6 +11,7 @@ import {
   X, ZoomIn, ExternalLink
 } from "lucide-react";
 import { getApiBaseUrl } from "@/utils/api";
+import { mediaUrl } from "@/utils/media";
 
 // Dynamically import markdown renderer to avoid SSR issues
 const ReactMarkdown = dynamic(() => import("react-markdown"), { ssr: false });
@@ -69,11 +70,7 @@ function timeAgo(dateStr?: string) {
 }
 
 function formatImageUrl(url?: string | null) {
-  if (!url) return "";
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  const baseUrl = getApiBaseUrl().replace("/api/v1", "");
-  if (url.startsWith("/")) return `${baseUrl}${url}`;
-  return `${baseUrl}/${url}`;
+  return mediaUrl(url) || "";
 }
 
 function Avatar({ author, size = "md" }: { author: Author | null; size?: "sm" | "md" | "lg" }) {
@@ -382,7 +379,7 @@ export default function BlogReaderPage() {
               </div>
             </div>
             <a
-              href={`${getApiBaseUrl().replace('/api/v1', '')}${blog.pdf_url}`}
+              href={mediaUrl(blog.pdf_url) || blog.pdf_url}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-all shadow-sm whitespace-nowrap"

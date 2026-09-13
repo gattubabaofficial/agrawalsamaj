@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
+import { mediaUrl } from "@/utils/media";
 import { formatParentage } from "@/utils/member";
 import { useRouter } from "next/navigation";
 
@@ -94,8 +95,7 @@ export default function AdminMembersPage() {
       const res = await axios.post(`${getApiBaseUrl()}/membership/upload-photo`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      const baseUrl = getApiBaseUrl().replace(/\/api\/v1\/?$/, "");
-      setEditForm(prev => ({ ...prev, profile_photo: `${baseUrl}${res.data.url}` }));
+      setEditForm(prev => ({ ...prev, profile_photo: mediaUrl(res.data.url) || res.data.url }));
     } catch (err: any) {
       console.error("Photo upload failed", err);
       setEditError("Failed to upload photo. Please try again.");
@@ -145,8 +145,7 @@ export default function AdminMembersPage() {
       const res = await axios.post(`${getApiBaseUrl()}/membership/upload-photo`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      const baseUrl = getApiBaseUrl().replace(/\/api\/v1\/?$/, "");
-      setAddMemberForm(prev => ({ ...prev, profile_photo: `${baseUrl}${res.data.url}` }));
+      setAddMemberForm(prev => ({ ...prev, profile_photo: mediaUrl(res.data.url) || res.data.url }));
     } catch (err: any) {
       console.error("Photo upload failed", err);
       setAddMemberError("Failed to upload photo. Please try again.");
@@ -491,7 +490,7 @@ export default function AdminMembersPage() {
                     <div className="flex items-start gap-4">
                       {m.profile_photo ? (
                         <img 
-                          src={m.profile_photo} 
+                          src={mediaUrl(m.profile_photo) || m.profile_photo} 
                           alt={`${m.first_name} ${m.surname}`}
                           className="w-12 h-12 rounded-full object-cover border-2 border-amber-500/20"
                         />
@@ -670,7 +669,7 @@ export default function AdminMembersPage() {
                 <div className="flex items-center gap-4">
                   {editForm.profile_photo ? (
                     <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-amber-500/40 shadow-sm flex-shrink-0">
-                      <img src={editForm.profile_photo} alt="Profile Preview" className="w-full h-full object-cover" />
+                      <img src={mediaUrl(editForm.profile_photo) || editForm.profile_photo} alt="Profile Preview" className="w-full h-full object-cover" />
                       <button
                         type="button"
                         onClick={() => setEditForm(prev => ({ ...prev, profile_photo: "" }))}
@@ -956,7 +955,7 @@ export default function AdminMembersPage() {
             <div className="px-6 py-5 bg-gradient-to-r from-amber-500 to-orange-600 text-white flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {viewMemberModal.profile_photo ? (
-                  <img src={viewMemberModal.profile_photo} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-white/40" />
+                  <img src={mediaUrl(viewMemberModal.profile_photo) || viewMemberModal.profile_photo} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-white/40" />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold text-sm">
                     {viewMemberModal.first_name?.[0]}{viewMemberModal.surname?.[0]}
@@ -1105,7 +1104,7 @@ export default function AdminMembersPage() {
                 <div className="flex items-center gap-4">
                   {addMemberForm.profile_photo ? (
                     <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-emerald-500/40 shadow-sm shrink-0">
-                      <img src={addMemberForm.profile_photo} alt="" className="w-full h-full object-cover" />
+                      <img src={mediaUrl(addMemberForm.profile_photo) || addMemberForm.profile_photo} alt="" className="w-full h-full object-cover" />
                       <button
                         type="button"
                         onClick={() => setAddMemberForm(prev => ({ ...prev, profile_photo: "" }))}

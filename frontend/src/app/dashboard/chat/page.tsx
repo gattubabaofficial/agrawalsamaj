@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
+import { mediaUrl } from "@/utils/media";
 
 interface ChatMessage {
   message_id: string;
@@ -536,7 +537,7 @@ export default function ChatPage() {
                 >
                   {c.profile_photo ? (
                     <img 
-                      src={c.profile_photo} 
+                      src={mediaUrl(c.profile_photo) || c.profile_photo} 
                       alt={c.name}
                       className="w-10 h-10 rounded-full object-cover border border-zinc-200"
                     />

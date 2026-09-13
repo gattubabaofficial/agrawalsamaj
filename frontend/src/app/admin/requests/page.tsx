@@ -4,6 +4,7 @@ import { CheckCircle, XCircle, Search, UserPlus, Home, Users, Edit3, ArrowRight,
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
+import { mediaUrl } from "@/utils/media";
 
 export default function AdminRequestsPage() {
   const [activeTab, setActiveTab] = useState<"membership" | "profile_updates">("membership");
@@ -447,7 +448,7 @@ export default function AdminRequestsPage() {
             <div className="px-6 py-5 bg-gradient-to-r from-amber-500 to-orange-600 text-white flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {viewApplication.user?.profile_photo ? (
-                  <img src={viewApplication.user.profile_photo} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-white/40" />
+                  <img src={mediaUrl(viewApplication.user.profile_photo) || viewApplication.user.profile_photo} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-white/40" />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold text-sm">
                     {viewApplication.user?.first_name?.[0]}{viewApplication.user?.surname?.[0]}
@@ -602,7 +603,7 @@ export default function AdminRequestsPage() {
                 <div className="flex items-start gap-3">
                   {approveModalRequest.user?.profile_photo ? (
                     <img
-                      src={approveModalRequest.user.profile_photo}
+                      src={mediaUrl(approveModalRequest.user.profile_photo) || approveModalRequest.user.profile_photo}
                       alt=""
                       className="w-12 h-12 rounded-full object-cover border border-amber-200"
                     />

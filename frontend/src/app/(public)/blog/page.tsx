@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Search, Tag, Heart, MessageCircle, Eye, Clock, ArrowRight, BookOpen, Upload, X, FileText, AlertCircle, RefreshCw } from "lucide-react";
 import { getApiBaseUrl, safeFetch, formatErrorMessage } from "@/utils/api";
+import { mediaUrl } from "@/utils/media";
 
 interface Blog {
   blog_id: string;
@@ -463,7 +464,7 @@ export default function BlogPage() {
                 <Link href={`/blog/${blog.slug}`} className="block overflow-hidden">
                   {blog.cover_image_url ? (
                     <img
-                      src={blog.cover_image_url.startsWith('http') || blog.cover_image_url.startsWith('https') ? blog.cover_image_url : blog.cover_image_url.startsWith('/uploads/') ? `${getApiBaseUrl().replace('/api/v1', '')}${blog.cover_image_url}` : blog.cover_image_url}
+                      src={mediaUrl(blog.cover_image_url) || blog.cover_image_url}
                       alt={blog.title}
                       className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
                     />
@@ -602,7 +603,7 @@ export default function BlogPage() {
                   <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block">Upload Cover Image / Poster</label>
                   {newCover ? (
                     <div className="relative w-full h-44 rounded-2xl overflow-hidden border border-zinc-200 group">
-                      <img src={newCover.startsWith("http") ? newCover : `${getApiBaseUrl().replace("/api/v1", "")}${newCover}`} alt="Cover preview" className="w-full h-full object-cover" />
+                      <img src={mediaUrl(newCover) || newCover} alt="Cover preview" className="w-full h-full object-cover" />
                       <button
                         type="button"
                         onClick={() => setNewCover("")}

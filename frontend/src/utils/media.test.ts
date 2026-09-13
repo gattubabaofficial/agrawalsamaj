@@ -1,12 +1,17 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { mediaUrl } from "./media";
 
-// getApiBaseUrl() reads window.location, so pin it to a known value.
-vi.mock("./api", () => ({
-  getApiBaseUrl: () => "http://localhost:8000/api/v1",
-}));
-
 describe("mediaUrl", () => {
+  const originalEnv = process.env.NEXT_PUBLIC_MEDIA_URL;
+
+  beforeEach(() => {
+    process.env.NEXT_PUBLIC_MEDIA_URL = "http://localhost:8000";
+  });
+
+  afterEach(() => {
+    process.env.NEXT_PUBLIC_MEDIA_URL = originalEnv;
+  });
+
   it("returns null for absent paths", () => {
     expect(mediaUrl(null)).toBeNull();
     expect(mediaUrl(undefined)).toBeNull();
@@ -24,15 +29,13 @@ describe("mediaUrl", () => {
     expect(mediaUrl("http://example.com/b.jpg")).toBe("http://example.com/b.jpg");
   });
 
-  it("resolves a relative path against the API origin, not /api/v1", () => {
-    // The bug being fixed: media is served from the server root, so the
-    // /api/v1 suffix must be stripped or the URL 404s.
+  it("resolves a relative path against NEXT_PUBLIC_MEDIA_URL", () => {
     expect(mediaUrl("/uploads/profiles/x.jpg")).toBe(
       "http://localhost:8000/uploads/profiles/x.jpg",
     );
   });
 
-  it("resolves /static paths the same way", () => {
+  it("resolves /static paths against NEXT_PUBLIC_MEDIA_URL", () => {
     expect(mediaUrl("/static/profile_photos/y.jpg")).toBe(
       "http://localhost:8000/static/profile_photos/y.jpg",
     );
@@ -44,8 +47,14 @@ describe("mediaUrl", () => {
     );
   });
 
-  it("does not double up slashes", () => {
-    expect(mediaUrl("/uploads/a.jpg")).not.toContain("//uploads");
+  it("does not double up slashes if NEXT_PUBLIC_MEDIA_URL has a trailing slash", () => {
+    process.env.NEXT_PUBLIC_MEDIA_URL = "http://localhost:8000/";
+    expect(mediaUrl("/uploads/a.jpg")).toBe("http://localhost:8000/uploads/a.jpg");
+  });
+
+  it("falls back to relative path if NEXT_PUBLIC_MEDIA_URL is unset", () => {
+    delete process.env.NEXT_PUBLIC_MEDIA_URL;
+    expect(mediaUrl("/uploads/a.jpg")).toBe("/uploads/a.jpg");
   });
 
   it("passes through data URIs", () => {

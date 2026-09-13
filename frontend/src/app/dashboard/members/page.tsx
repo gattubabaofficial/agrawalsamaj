@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Search, Mail, Phone, MapPin, Lock, Award, FileUser, MessageSquare } from "lucide-react";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
+import { mediaUrl } from "@/utils/media";
 import { useRouter } from "next/navigation";
 
 interface Member {
@@ -109,7 +110,7 @@ export default function UserMembersPage() {
                     <div className="flex items-start gap-4">
                       {m.profile_photo ? (
                         <img 
-                          src={m.profile_photo} 
+                          src={mediaUrl(m.profile_photo) || m.profile_photo} 
                           alt={`${m.first_name} ${m.surname}`}
                           className="w-12 h-12 rounded-full object-cover border-2 border-amber-500/20"
                         />

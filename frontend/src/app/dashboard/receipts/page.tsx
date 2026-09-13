@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getApiBaseUrl, safeFetch, formatErrorMessage } from "@/utils/api";
+import { mediaUrl } from "@/utils/media";
 import { Loader2, Download, Receipt as ReceiptIcon } from "lucide-react";
 
 interface Receipt {
@@ -16,8 +17,6 @@ interface Receipt {
   pdf_url: string | null;
   issued_at: string;
 }
-
-const fileBase = () => getApiBaseUrl().replace(/\/api\/v1$/, "");
 
 export default function MyReceiptsPage() {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
@@ -75,7 +74,7 @@ export default function MyReceiptsPage() {
               <div className="text-right">
                 <p className="font-bold text-zinc-900">{inr(r.amount)}</p>
                 {r.pdf_url && (
-                  <a href={`${fileBase()}${r.pdf_url}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700 mt-1">
+                  <a href={mediaUrl(r.pdf_url) || r.pdf_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700 mt-1">
                     <Download className="w-3.5 h-3.5" /> Download PDF
                   </a>
                 )}

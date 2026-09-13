@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { getApiBaseUrl } from "@/utils/api";
+import { mediaUrl } from "@/utils/media";
 
 export default function FamilyPage() {
   const router = useRouter();
@@ -659,7 +660,7 @@ export default function FamilyPage() {
                           <div className="w-14 h-14 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center overflow-hidden flex-shrink-0">
                             {createProfilePhoto ? (
                               <img 
-                                src={createProfilePhoto.startsWith("http") ? createProfilePhoto : `${getApiBaseUrl()}${createProfilePhoto}`} 
+                                src={mediaUrl(createProfilePhoto) || createProfilePhoto} 
                                 alt="Preview" 
                                 className="w-full h-full object-cover"
                               />
@@ -795,7 +796,7 @@ export default function FamilyPage() {
                               <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs uppercase overflow-hidden flex-shrink-0">
                                   {m.profile_photo ? (
-                                    <img src={m.profile_photo.startsWith("http") ? m.profile_photo : `${getApiBaseUrl()}${m.profile_photo}`} alt="" className="w-full h-full object-cover" />
+                                    <img src={mediaUrl(m.profile_photo) || m.profile_photo} alt="" className="w-full h-full object-cover" />
                                   ) : (
                                     m.first_name.substring(0, 2)
                                   )}
@@ -846,7 +847,7 @@ export default function FamilyPage() {
                             <div className="flex items-center gap-3">
                               <div className="w-12 h-12 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center overflow-hidden flex-shrink-0">
                                 {newMemberPhoto ? (
-                                  <img src={newMemberPhoto.startsWith("http") ? newMemberPhoto : `${getApiBaseUrl()}${newMemberPhoto}`} alt="" className="w-full h-full object-cover" />
+                                  <img src={mediaUrl(newMemberPhoto) || newMemberPhoto} alt="" className="w-full h-full object-cover" />
                                 ) : (
                                   <Users className="w-5 h-5 text-zinc-400" />
                                 )}
@@ -1018,8 +1019,8 @@ export default function FamilyPage() {
                         <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-sm uppercase overflow-hidden flex-shrink-0">
                           {member.profile_photo ? (
                             <img 
-                              src={member.profile_photo.startsWith("http") ? member.profile_photo : `${getApiBaseUrl()}${member.profile_photo}`} 
-                              alt={member.name}
+                              src={mediaUrl(member.profile_photo) || member.profile_photo} 
+                              alt={member.name} 
                               className="w-full h-full object-cover"
                             />
                           ) : (
@@ -1076,8 +1077,8 @@ export default function FamilyPage() {
                           <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm uppercase overflow-hidden flex-shrink-0">
                             {req.user.profile_photo ? (
                               <img 
-                                src={req.user.profile_photo.startsWith("http") ? req.user.profile_photo : `${getApiBaseUrl()}${req.user.profile_photo}`} 
-                                alt={req.user.name}
+                                src={mediaUrl(req.user.profile_photo) || req.user.profile_photo} 
+                                alt={req.user.name} 
                                 className="w-full h-full object-cover"
                               />
                             ) : (
@@ -1127,7 +1128,7 @@ export default function FamilyPage() {
                     <div className="w-16 h-16 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center overflow-hidden flex-shrink-0">
                       {memberFormData.profile_photo ? (
                         <img 
-                          src={memberFormData.profile_photo.startsWith("http") ? memberFormData.profile_photo : `${getApiBaseUrl()}${memberFormData.profile_photo}`} 
+                          src={mediaUrl(memberFormData.profile_photo) || memberFormData.profile_photo} 
                           alt="Preview" 
                           className="w-full h-full object-cover"
                         />

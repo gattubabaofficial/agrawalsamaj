@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getApiBaseUrl, safeFetch, formatErrorMessage } from "@/utils/api";
+import { mediaUrl } from "@/utils/media";
 import { Loader2, Download, Receipt as ReceiptIcon } from "lucide-react";
 
 interface Receipt {
@@ -17,9 +18,6 @@ interface Receipt {
   pdf_url: string | null;
   issued_at: string;
 }
-
-// The backend serves PDFs from /static; strip the /api/v1 suffix from the API base.
-const fileBase = () => getApiBaseUrl().replace(/\/api\/v1$/, "");
 
 export default function ReceiptsPage() {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
@@ -101,7 +99,7 @@ export default function ReceiptsPage() {
                   <td className="px-4 py-3 text-xs text-zinc-500">{r.issued_by_name || "—"}</td>
                   <td className="px-4 py-3 text-right">
                     {r.pdf_url ? (
-                      <a href={`${fileBase()}${r.pdf_url}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-amber-600 hover:text-amber-700">
+                      <a href={mediaUrl(r.pdf_url) || r.pdf_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-amber-600 hover:text-amber-700">
                         <Download className="w-4 h-4" />
                       </a>
                     ) : "—"}

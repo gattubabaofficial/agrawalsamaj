@@ -9,6 +9,7 @@ import {
   Eye, Edit3, Loader2, CheckCircle, FileText
 } from "lucide-react";
 import { getApiBaseUrl } from "@/utils/api";
+import { mediaUrl } from "@/utils/media";
 
 // Dynamic import to avoid SSR issues with @uiw/react-md-editor
 const MDEditor = dynamic(
@@ -246,7 +247,7 @@ export default function BlogEditor({ initialData, mode }: BlogEditorProps) {
         <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
           {coverUrl ? (
             <div className="relative">
-              <img src={coverUrl} alt="Cover" className="w-full max-h-72 object-cover" />
+              <img src={mediaUrl(coverUrl) || coverUrl} alt="Cover" className="w-full max-h-72 object-cover" />
               <button
                 onClick={() => setCoverUrl("")}
                 className="absolute top-3 right-3 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
@@ -293,7 +294,7 @@ export default function BlogEditor({ initialData, mode }: BlogEditorProps) {
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold text-zinc-800 truncate">{pdfUrl.split('/').pop()}</p>
                 <a
-                  href={`${getApiBaseUrl().replace('/api/v1', '')}${pdfUrl}`}
+                  href={mediaUrl(pdfUrl) || pdfUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="text-[11px] text-amber-600 hover:underline font-bold"
