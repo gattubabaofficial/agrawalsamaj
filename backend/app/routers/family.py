@@ -302,6 +302,7 @@ async def reject_family_request(
     return {"message": "Request rejected."}
 
 @router.delete("", status_code=status.HTTP_200_OK)
+@router.delete("/", status_code=status.HTTP_200_OK, include_in_schema=False)
 async def delete_family(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)

@@ -208,6 +208,7 @@ async def upload_event_image(
 
 
 @router.post("", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=EventResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 async def create_event(
     event_data: EventCreate,
     db: AsyncSession = Depends(get_db),
@@ -249,6 +250,7 @@ async def create_event(
     return new_event
 
 @router.get("", response_model=List[EventResponse])
+@router.get("/", response_model=List[EventResponse], include_in_schema=False)
 async def list_events(
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_current_user),

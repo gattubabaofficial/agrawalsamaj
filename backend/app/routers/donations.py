@@ -66,7 +66,8 @@ async def list_categories(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(DonationCategory).filter(DonationCategory.is_active == True))
     return result.scalars().all()
 
-@router.post("/", response_model=DonationResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=DonationResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=DonationResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 async def create_donation(
     donation_data: DonationCreate,
     db: AsyncSession = Depends(get_db),
@@ -119,7 +120,8 @@ async def create_guest_donation(
     await db.refresh(new_donation)
     return new_donation
 
-@router.get("/", response_model=List[DonationResponse])
+@router.get("", response_model=List[DonationResponse])
+@router.get("/", response_model=List[DonationResponse], include_in_schema=False)
 async def list_my_donations(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)

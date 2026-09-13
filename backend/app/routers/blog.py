@@ -213,7 +213,8 @@ async def upload_file(
 
 # ─── Public Endpoints ─────────────────────────────────────────────────────────
 
-@router.get("/")
+@router.get("")
+@router.get("/", include_in_schema=False)
 async def list_blogs(
     page: int = Query(1, ge=1),
     per_page: int = Query(12, ge=1, le=50),
@@ -299,7 +300,8 @@ async def list_all_blogs_admin(
 
 # ─── Blog Writing & Admin CRUD ───────────────────────────────────────────────────
 
-@router.post("/", status_code=201)
+@router.post("", status_code=201)
+@router.post("/", status_code=201, include_in_schema=False)
 async def create_blog(
     data: BlogCreate,
     db: AsyncSession = Depends(get_db),

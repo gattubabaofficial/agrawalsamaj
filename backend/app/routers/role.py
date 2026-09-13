@@ -47,7 +47,8 @@ def role_dict(role: CustomRole, user_count: int = 0) -> dict:
         "updated_at": role.updated_at.isoformat() if role.updated_at else None,
     }
 
-@router.get("/")
+@router.get("")
+@router.get("/", include_in_schema=False)
 async def list_roles(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -69,7 +70,8 @@ async def list_roles(
 
     return {"items": items, "total": len(items)}
 
-@router.post("/", status_code=201)
+@router.post("", status_code=201)
+@router.post("/", status_code=201, include_in_schema=False)
 async def create_role(
     data: RoleCreate,
     db: AsyncSession = Depends(get_db),

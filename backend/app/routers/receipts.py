@@ -48,6 +48,7 @@ async def my_receipts(
 
 
 @router.get("", response_model=List[ReceiptResponse])
+@router.get("/", response_model=List[ReceiptResponse], include_in_schema=False)
 async def list_all_receipts(
     receipt_type: Optional[str] = None,
     db: AsyncSession = Depends(get_db),

@@ -24,6 +24,7 @@ app = FastAPI(
     title=settings.APP_NAME,
     description="Backend API for Mansrovar Agrawal Samaj Jaipur Management Portal",
     version="1.0.0",
+    redirect_slashes=False,
 )
 
 
