@@ -69,12 +69,21 @@ engine = create_async_engine(
     **engine_kwargs
 )
 
-# Enable WAL mode and foreign keys for SQLite
+# Enable WAL mode, foreign keys, and postgres compatibility functions for SQLite
 if is_sqlite:
     from sqlalchemy import event
+    import datetime as _dt
+    import uuid as _uuid
 
     @event.listens_for(engine.sync_engine, "connect")
     def set_sqlite_pragma(dbapi_connection, connection_record):
+        # Register postgres compatibility functions
+        try:
+            dbapi_connection.create_function("now", 0, lambda: _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f"))
+            dbapi_connection.create_function("gen_random_uuid", 0, lambda: str(_uuid.uuid4()))
+        except Exception:
+            pass
+
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys = ON;")
         cursor.execute("PRAGMA journal_mode = WAL;")

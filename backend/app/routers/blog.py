@@ -594,7 +594,7 @@ async def get_comments(
             selectinload(BlogComment.author),
             selectinload(BlogComment.replies).selectinload(BlogComment.author)
         )
-        .where(BlogComment.blog_id == blog_id, BlogComment.parent_id == None)
+        .where(BlogComment.blog_id == blog_id, BlogComment.parent_id.is_(None))
         .order_by(BlogComment.created_at)
     )
     top_level = result.scalars().all()

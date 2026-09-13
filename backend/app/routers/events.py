@@ -64,23 +64,32 @@ def _can_view_members_only(user: Optional[User]) -> bool:
 
 # Pydantic Schemas
 class EventBase(BaseModel):
-    title: str = Field(..., max_length=200)
+    title: str = Field(..., max_length=300)
     description: Optional[str] = None
-    category: EventCategory
-    venue: str = Field(..., max_length=300)
+    banner_url: Optional[str] = None
+    banner_image_url: Optional[str] = None
+    organizer_name: Optional[str] = None
+    venue: Optional[str] = None
+    address: Optional[str] = None
+    category: EventCategory = EventCategory.OTHER
     start_datetime: datetime
     end_datetime: datetime
+    registration_deadline: Optional[datetime] = None
     registration_start_datetime: Optional[datetime] = None
     registration_end_datetime: Optional[datetime] = None
+    pass_price: float = 0.0
+    member_price: Optional[float] = None
+    guest_price: Optional[float] = None
+    total_passes: Optional[int] = None
     capacity: Optional[int] = None
-    max_passes_per_user: int = 1
+    max_per_user: int = 4
+    max_passes_per_user: Optional[int] = None
     visibility: EventVisibility = EventVisibility.OPEN_TO_ALL
     pricing_type: EventPricingType = EventPricingType.FREE
-    payment_mode: EventPaymentMode = EventPaymentMode.PAY_ONLINE
-    member_price: float = 0.0
-    guest_price: float = 0.0
-    status: EventStatus = EventStatus.DRAFT
-    banner_image_url: Optional[str] = None
+    payment_mode: Optional[EventPaymentMode] = EventPaymentMode.PAY_ONLINE
+    status: EventStatus = EventStatus.UPCOMING
+    is_featured: bool = False
+    timeline: Optional[List[dict]] = None
     chief_guest: Optional[str] = None
     rules_and_regulations: Optional[str] = None
     contact_person_name: Optional[str] = None
@@ -94,33 +103,49 @@ class EventCreate(EventBase):
 class EventUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
-    category: Optional[EventCategory] = None
+    banner_url: Optional[str] = None
+    banner_image_url: Optional[str] = None
+    organizer_name: Optional[str] = None
     venue: Optional[str] = None
+    address: Optional[str] = None
+    category: Optional[EventCategory] = None
     start_datetime: Optional[datetime] = None
     end_datetime: Optional[datetime] = None
-    registration_start_datetime: Optional[datetime] = None
-    registration_end_datetime: Optional[datetime] = None
-    capacity: Optional[int] = None
-    max_passes_per_user: Optional[int] = None
+    registration_deadline: Optional[datetime] = None
+    pass_price: Optional[float] = None
+    total_passes: Optional[int] = None
+    max_per_user: Optional[int] = None
     visibility: Optional[EventVisibility] = None
     pricing_type: Optional[EventPricingType] = None
-    payment_mode: Optional[EventPaymentMode] = None
-    member_price: Optional[float] = None
-    guest_price: Optional[float] = None
     status: Optional[EventStatus] = None
-    banner_image_url: Optional[str] = None
-    chief_guest: Optional[str] = None
-    rules_and_regulations: Optional[str] = None
-    contact_person_name: Optional[str] = None
-    contact_person_phone: Optional[str] = None
+    is_featured: Optional[bool] = None
+    timeline: Optional[List[dict]] = None
 
 
-class EventResponse(EventBase):
+class EventResponse(BaseModel):
     event_id: uuid.UUID
-    passes_sold: int
+    created_by: Optional[uuid.UUID] = None
+    title: str
+    description: Optional[str] = None
+    banner_url: Optional[str] = None
+    organizer_name: Optional[str] = None
+    venue: Optional[str] = None
+    address: Optional[str] = None
+    category: EventCategory
+    start_datetime: datetime
+    end_datetime: datetime
+    registration_deadline: Optional[datetime] = None
+    pass_price: float
+    total_passes: Optional[int] = None
+    passes_sold: int = 0
+    max_per_user: int = 4
+    status: EventStatus
+    is_featured: bool = False
+    visibility: EventVisibility
+    pricing_type: EventPricingType
+    timeline: Optional[List[dict]] = None
     created_at: datetime
     updated_at: datetime
-    created_by: Optional[uuid.UUID] = None
 
     class Config:
         from_attributes = True
@@ -191,22 +216,32 @@ async def create_event(
     if not is_admin_level(current_user):
         raise HTTPException(status_code=403, detail="Only admins can create events")
 
+    banner = event_data.banner_url or event_data.banner_image_url
+    price = event_data.pass_price if event_data.pass_price is not None else (event_data.member_price or event_data.guest_price or 0.0)
+    total_p = event_data.total_passes if event_data.total_passes is not None else event_data.capacity
+    max_p = event_data.max_per_user if event_data.max_per_user is not None else (event_data.max_passes_per_user or 4)
+
     new_event = Event(
         created_by=current_user.user_id,
         title=event_data.title,
         description=event_data.description,
-        banner_url=event_data.banner_url,
+        banner_url=banner,
+        organizer_name=event_data.organizer_name or event_data.chief_guest or event_data.contact_person_name,
         venue=event_data.venue,
-        category=event_data.category,
+        address=event_data.address,
+        category=event_data.category or EventCategory.OTHER,
         start_datetime=event_data.start_datetime,
         end_datetime=event_data.end_datetime,
-        pass_price=event_data.pass_price,
-        total_passes=event_data.total_passes,
-        max_per_user=event_data.max_per_user,
-        visibility=event_data.visibility,
-        pricing_type=event_data.pricing_type,
+        registration_deadline=event_data.registration_deadline or event_data.registration_end_datetime,
+        pass_price=price,
+        total_passes=total_p,
+        passes_sold=0,
+        max_per_user=max_p,
+        visibility=event_data.visibility or EventVisibility.OPEN_TO_ALL,
+        pricing_type=event_data.pricing_type or EventPricingType.FREE,
         timeline=event_data.timeline,
-        status=EventStatus.UPCOMING
+        status=event_data.status or EventStatus.UPCOMING,
+        is_featured=event_data.is_featured,
     )
     db.add(new_event)
     await db.commit()
@@ -580,8 +615,11 @@ async def update_event(
         raise HTTPException(status_code=404, detail="Event not found")
 
     update_data = event_data.dict(exclude_unset=True)
+    if "banner_image_url" in update_data and "banner_url" not in update_data:
+        update_data["banner_url"] = update_data.pop("banner_image_url")
     for key, value in update_data.items():
-        setattr(event, key, value)
+        if hasattr(event, key):
+            setattr(event, key, value)
 
     await db.commit()
     await db.refresh(event)
