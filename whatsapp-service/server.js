@@ -29,6 +29,7 @@ const {
   useMultiFileAuthState,
   fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
+  Browsers,
 } = require("@whiskeysockets/baileys");
 
 const PORT = parseInt(process.env.PORT || "3001", 10);
@@ -69,6 +70,11 @@ async function startSocket() {
       creds: authState.creds,
       keys: makeCacheableSignalKeyStore(authState.keys, logger),
     },
+    browser: Browsers.macOS("Desktop"),
+    connectTimeoutMs: 60000,
+    defaultQueryTimeoutMs: 60000,
+    keepAliveIntervalMs: 25000,
+    qrTimeout: 60000,
     printQRInTerminal: true,
     // Prevent Baileys from spamming the phone's "message history" sync
     // on every reconnect — it can OOM small containers.
