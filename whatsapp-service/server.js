@@ -31,6 +31,8 @@ const {
   makeCacheableSignalKeyStore,
   Browsers,
 } = require("@whiskeysockets/baileys");
+const { HttpsProxyAgent } = require("https-proxy-agent");
+const { SocksProxyAgent } = require("socks-proxy-agent");
 
 const PORT = parseInt(process.env.PORT || "3001", 10);
 const API_KEY = process.env.WHATSAPP_API_KEY || "";
@@ -39,6 +41,38 @@ const DEFAULT_COUNTRY_CODE = (process.env.DEFAULT_COUNTRY_CODE || "91").replace(
 
 // Baileys is very chatty by default; silence it to keep Railway logs clean.
 const logger = pino({ level: "warn" });
+
+// ─────────────────────────── Proxy setup ───────────────────────────
+function getProxyAgent() {
+  let proxyUrl = process.env.PROXY_URL || "";
+
+  if (!proxyUrl && process.env.PROXY_HOST && process.env.PROXY_PORT) {
+    const protocol = (process.env.PROXY_PROTOCOL || "http").replace(/:?\/\/$/, "");
+    const host = process.env.PROXY_HOST.trim();
+    const port = process.env.PROXY_PORT.trim();
+    const username = process.env.PROXY_USERNAME || process.env.PROXY_USER || "";
+    const password = process.env.PROXY_PASSWORD || process.env.PROXY_PASS || "";
+
+    const auth = username ? `${encodeURIComponent(username)}:${encodeURIComponent(password)}@` : "";
+    proxyUrl = `${protocol}://${auth}${host}:${port}`;
+  }
+
+  if (!proxyUrl) return null;
+
+  try {
+    const parsed = new URL(proxyUrl);
+    if (parsed.protocol.startsWith("socks")) {
+      console.log(`[whatsapp] Using SOCKS proxy: ${parsed.protocol}//${parsed.hostname}:${parsed.port}`);
+      return new SocksProxyAgent(proxyUrl);
+    } else {
+      console.log(`[whatsapp] Using HTTP/HTTPS proxy: ${parsed.protocol}//${parsed.hostname}:${parsed.port}`);
+      return new HttpsProxyAgent(proxyUrl);
+    }
+  } catch (err) {
+    console.error("[whatsapp] Invalid proxy configuration:", err.message);
+    return null;
+  }
+}
 
 // ─────────────────────────── Session state ───────────────────────────
 const state = {
@@ -62,8 +96,9 @@ async function startSocket() {
 
   const { state: authState, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
   const { version } = await fetchLatestBaileysVersion();
+  const proxyAgent = getProxyAgent();
 
-  sock = makeWASocket({
+  const socketConfig = {
     version,
     logger,
     auth: {
@@ -82,7 +117,14 @@ async function startSocket() {
     // Mark messages as "received" automatically so the phone doesn't
     // keep retrying delivery.
     markOnlineOnConnect: false,
-  });
+  };
+
+  if (proxyAgent) {
+    socketConfig.agent = proxyAgent;
+    socketConfig.fetchAgent = proxyAgent;
+  }
+
+  sock = makeWASocket(socketConfig);
 
   // ── QR code ──
   sock.ev.on("connection.update", async (update) => {
