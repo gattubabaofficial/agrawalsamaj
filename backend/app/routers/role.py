@@ -100,6 +100,53 @@ async def create_role(
     await db.refresh(role)
     return role_dict(role, 0)
 
+@router.get("/assignments")
+async def list_role_assignments(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List all users who have an assigned custom role or administrative system role."""
+    if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    stmt = (
+        select(User)
+        .options(selectinload(User.custom_role))
+        .where(
+            (User.custom_role_id.is_not(None))
+            | (User.role.in_([UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER]))
+        )
+        .order_by(User.first_name.asc(), User.surname.asc())
+    )
+    result = await db.execute(stmt)
+    users = result.scalars().all()
+
+    items = []
+    for u in users:
+        custom_role_info = None
+        if u.custom_role:
+            custom_role_info = {
+                "role_id": str(u.custom_role.role_id),
+                "name": u.custom_role.name,
+                "description": u.custom_role.description,
+                "permissions": u.custom_role.permissions or [],
+            }
+
+        items.append({
+            "user_id": str(u.user_id),
+            "first_name": u.first_name,
+            "surname": u.surname,
+            "email": u.email,
+            "mobile": u.mobile or getattr(u, "contact_mobile", None),
+            "samaj_id": u.samaj_id,
+            "profile_photo": u.profile_photo,
+            "role": u.role.value if hasattr(u.role, "value") else str(u.role),
+            "custom_role_id": str(u.custom_role_id) if u.custom_role_id else None,
+            "custom_role": custom_role_info,
+        })
+
+    return {"items": items, "total": len(items)}
+
 @router.put("/{role_id}")
 async def update_role(
     role_id: str,
