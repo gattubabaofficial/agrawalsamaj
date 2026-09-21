@@ -294,7 +294,7 @@ export default function AdminMembersPage() {
         parent_relation: addMemberForm.family_relation || "Self",
         mobile: addMemberForm.mobile?.trim() || null,
         email: addMemberForm.email?.trim() || null,
-        lm_no: addMemberForm.lm_no != null && addMemberForm.lm_no !== "" ? Number(addMemberForm.lm_no) : null,
+        lm_no: addMemberForm.lm_no !== null && addMemberForm.lm_no !== undefined && !isNaN(Number(addMemberForm.lm_no)) ? Number(addMemberForm.lm_no) : null,
         samaj_id: addMemberForm.samaj_id?.trim() || null,
         zone: addMemberForm.zone?.trim() || null,
         house_no: addMemberForm.house_no?.trim() || null,
