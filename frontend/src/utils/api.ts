@@ -83,7 +83,16 @@ export const safeFetch = async (
  */
 export const formatErrorMessage = (detail: any, fallback = "An error occurred"): string => {
   if (!detail) return fallback;
-  if (typeof detail === "string") return detail;
+  if (typeof detail === "string") {
+    const trimmed = detail.trim();
+    if (trimmed.startsWith("<") || trimmed.includes("<html") || trimmed.includes("502 Bad Gateway")) {
+      return "Backend server is currently unreachable (502 Bad Gateway). Please ensure the backend service is running.";
+    }
+    if (trimmed.includes("504 Gateway Timeout") || trimmed.includes("504 Gateway Time-out")) {
+      return "Backend server request timed out (504 Gateway Timeout).";
+    }
+    return trimmed;
+  }
   if (Array.isArray(detail)) {
     const messages = detail
       .map((item) => {
