@@ -104,9 +104,7 @@ export default function AdminMembersPage() {
     }
   };
 
-  // Add Member Modal State (Direct creation without OTP)
-  const [addMemberModalOpen, setAddMemberModalOpen] = useState(false);
-  const [addMemberForm, setAddMemberForm] = useState<Partial<Member>>({
+  const DEFAULT_ADD_MEMBER_FORM: Partial<Member> = {
     first_name: "",
     surname: "",
     father_name: "",
@@ -125,7 +123,11 @@ export default function AdminMembersPage() {
     profile_photo: "",
     role: "member",
     is_member: true,
-  });
+  };
+
+  // Add Member Modal State (Direct creation without OTP)
+  const [addMemberModalOpen, setAddMemberModalOpen] = useState(false);
+  const [addMemberForm, setAddMemberForm] = useState<Partial<Member>>({ ...DEFAULT_ADD_MEMBER_FORM });
   const [addMemberSubmitting, setAddMemberSubmitting] = useState(false);
   const [addMemberError, setAddMemberError] = useState("");
   const [addMemberSuccess, setAddMemberSuccess] = useState("");
@@ -285,13 +287,26 @@ export default function AdminMembersPage() {
     setAddMemberSuccess("");
     try {
       const token = localStorage.getItem("token");
-      const payload: any = { ...addMemberForm };
-      delete payload.custom_role_id;
-      if (payload.lm_no === "" || payload.lm_no === null || payload.lm_no === undefined) {
-        payload.lm_no = null;
-      } else {
-        payload.lm_no = Number(payload.lm_no);
-      }
+      const payload: any = {
+        first_name: addMemberForm.first_name.trim(),
+        surname: addMemberForm.surname.trim(),
+        father_name: addMemberForm.father_name?.trim() || null,
+        parent_relation: addMemberForm.family_relation || "Self",
+        mobile: addMemberForm.mobile?.trim() || null,
+        email: addMemberForm.email?.trim() || null,
+        lm_no: addMemberForm.lm_no != null && addMemberForm.lm_no !== "" ? Number(addMemberForm.lm_no) : null,
+        samaj_id: addMemberForm.samaj_id?.trim() || null,
+        zone: addMemberForm.zone?.trim() || null,
+        house_no: addMemberForm.house_no?.trim() || null,
+        member_status: addMemberForm.member_status || "active",
+        profession: addMemberForm.profession?.trim() || null,
+        native_place: addMemberForm.native_place?.trim() || null,
+        bio: addMemberForm.bio?.trim() || null,
+        address: addMemberForm.address?.trim() || null,
+        profile_photo: addMemberForm.profile_photo?.trim() || null,
+        role: addMemberForm.role || "member",
+        is_member: true,
+      };
 
       const res = await axios.post(
         `${getApiBaseUrl()}/membership/admin-create-member`,
@@ -314,6 +329,7 @@ export default function AdminMembersPage() {
       }
 
       setAddMemberSuccess("Member created successfully without OTP!");
+      setAddMemberForm({ ...DEFAULT_ADD_MEMBER_FORM });
       setTimeout(() => {
         setAddMemberModalOpen(false);
         setAddMemberSuccess("");
@@ -416,26 +432,7 @@ export default function AdminMembersPage() {
             type="button"
             onClick={() => {
               setAddMemberModalOpen(true);
-              setAddMemberForm({
-                first_name: "",
-                surname: "",
-                father_name: "",
-                mobile: "",
-                email: "",
-                address: "",
-                family_relation: "Self",
-                samaj_id: "",
-                lm_no: undefined,
-                zone: "",
-                house_no: "",
-                member_status: "active",
-                profession: "",
-                native_place: "",
-                bio: "",
-                profile_photo: "",
-                role: "member",
-                is_member: true,
-              });
+              setAddMemberForm({ ...DEFAULT_ADD_MEMBER_FORM });
               setAddMemberError("");
               setAddMemberSuccess("");
             }}

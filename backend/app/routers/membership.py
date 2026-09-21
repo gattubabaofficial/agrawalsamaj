@@ -1203,17 +1203,47 @@ async def admin_create_member(
     Allows an administrator to directly create a new member in the database
     without requiring any OTP or login verification.
     """
-    if not payload.first_name.strip() or not payload.surname.strip():
+    if not payload.first_name or not payload.first_name.strip() or not payload.surname or not payload.surname.strip():
         raise HTTPException(status_code=400, detail="First name and surname are required.")
 
     mobile_val = payload.mobile.strip() if payload.mobile and payload.mobile.strip() else None
     email_val = payload.email.strip().lower() if payload.email and payload.email.strip() else None
+    samaj_id_val = payload.samaj_id.strip() if payload.samaj_id and payload.samaj_id.strip() else None
 
     # Check email uniqueness if provided
     if email_val:
         e_check = await db.execute(select(User).where(User.email == email_val))
         if e_check.scalars().first() is not None:
-            raise HTTPException(status_code=400, detail="A member with this email address already exists.")
+            raise HTTPException(status_code=400, detail=f"A member with email '{email_val}' already exists.")
+
+    # Check mobile uniqueness if provided
+    if mobile_val:
+        m_check = await db.execute(select(User).where(User.mobile == mobile_val))
+        if m_check.scalars().first() is not None:
+            raise HTTPException(status_code=400, detail=f"A member with mobile number '{mobile_val}' already exists.")
+
+    # Determine samaj_id
+    if samaj_id_val:
+        # Check custom samaj_id uniqueness
+        s_check = await db.execute(select(User).where(User.samaj_id == samaj_id_val))
+        if s_check.scalars().first() is not None:
+            raise HTTPException(status_code=400, detail=f"A member with Samaj ID '{samaj_id_val}' already exists.")
+    elif payload.lm_no is not None:
+        # Auto-generate unique Samaj ID from LM number
+        candidate_id = f"LM-{payload.lm_no}"
+        s_check = await db.execute(select(User).where(User.samaj_id == candidate_id))
+        if s_check.scalars().first() is not None:
+            # If base candidate exists (repeated LM number in member list), find unique suffix
+            suffix = 2
+            while True:
+                candidate_id = f"LM-{payload.lm_no}-{suffix}"
+                s_check = await db.execute(select(User).where(User.samaj_id == candidate_id))
+                if s_check.scalars().first() is None:
+                    break
+                suffix += 1
+        samaj_id_val = candidate_id
+    else:
+        samaj_id_val = None
 
     # Determine user role
     role_enum = UserRole.MEMBER
@@ -1229,21 +1259,21 @@ async def admin_create_member(
     new_user = User(
         first_name=payload.first_name.strip(),
         surname=payload.surname.strip(),
-        father_name=payload.father_name.strip() if payload.father_name else None,
-        parent_relation=payload.parent_relation.strip() if payload.parent_relation else None,
+        father_name=payload.father_name.strip() if payload.father_name and payload.father_name.strip() else None,
+        parent_relation=payload.parent_relation.strip() if payload.parent_relation and payload.parent_relation.strip() else "S/o",
         mobile=mobile_val,
         contact_mobile=mobile_val,
         email=email_val,
         lm_no=payload.lm_no,
-        samaj_id=payload.samaj_id.strip() if payload.samaj_id else (f"LM-{payload.lm_no}" if payload.lm_no else None),
-        zone=payload.zone.strip() if payload.zone else None,
-        house_no=payload.house_no.strip() if payload.house_no else None,
-        member_status=payload.member_status.strip() if payload.member_status else "active",
-        profession=payload.profession.strip() if payload.profession else None,
-        native_place=payload.native_place.strip() if payload.native_place else None,
-        bio=payload.bio.strip() if payload.bio else None,
-        address=payload.address.strip() if payload.address else None,
-        profile_photo=payload.profile_photo.strip() if payload.profile_photo else None,
+        samaj_id=samaj_id_val,
+        zone=payload.zone.strip() if payload.zone and payload.zone.strip() else None,
+        house_no=payload.house_no.strip() if payload.house_no and payload.house_no.strip() else None,
+        member_status=payload.member_status.strip() if payload.member_status and payload.member_status.strip() else "active",
+        profession=payload.profession.strip() if payload.profession and payload.profession.strip() else None,
+        native_place=payload.native_place.strip() if payload.native_place and payload.native_place.strip() else None,
+        bio=payload.bio.strip() if payload.bio and payload.bio.strip() else None,
+        address=payload.address.strip() if payload.address and payload.address.strip() else None,
+        profile_photo=payload.profile_photo.strip() if payload.profile_photo and payload.profile_photo.strip() else None,
         mobile_private=payload.mobile_private,
         email_private=payload.email_private,
         address_private=payload.address_private,
@@ -1255,8 +1285,22 @@ async def admin_create_member(
         is_member=payload.is_member
     )
     db.add(new_user)
-    await db.commit()
-    await db.refresh(new_user)
+    try:
+        await db.commit()
+        await db.refresh(new_user)
+    except Exception as exc:
+        await db.rollback()
+        err_msg = str(exc)
+        if "UNIQUE constraint failed" in err_msg or "unique constraint" in err_msg.lower() or "duplicate key" in err_msg.lower():
+            if "samaj_id" in err_msg:
+                raise HTTPException(status_code=400, detail="A member with this Samaj ID already exists.")
+            elif "email" in err_msg:
+                raise HTTPException(status_code=400, detail="A member with this Email already exists.")
+            elif "mobile" in err_msg:
+                raise HTTPException(status_code=400, detail="A member with this Mobile number already exists.")
+            else:
+                raise HTTPException(status_code=400, detail="A unique constraint conflict occurred while creating the member.")
+        raise HTTPException(status_code=500, detail=f"Database error while creating member: {err_msg}")
 
     return {
         "status": "success",
