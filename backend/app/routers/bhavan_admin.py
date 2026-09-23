@@ -11,7 +11,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Response, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select, func, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,6 +19,7 @@ from sqlalchemy.orm import selectinload
 
 from app.dependencies import get_db, get_current_admin, get_optional_current_user, is_admin_level
 from app.models.audit import AuditLog
+from app.services.bhavan_pdf_service import generate_bhavan_enquiry_pdf
 from app.models.bhavan import (
     AccommodationKind, AmenityPricingType, BhavanAccommodationImage,
     BhavanAccommodationType, BhavanAmenity, BhavanEnquiry,
@@ -1243,6 +1244,36 @@ async def get_enquiry_detail(
     if not enq:
         raise HTTPException(status_code=404, detail="Enquiry not found")
     return enq
+
+
+@router.get("/enquiries/{enquiry_id}/pdf")
+async def download_enquiry_pdf(
+    enquiry_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_bhavan_admin),
+):
+    res = await db.execute(
+        select(BhavanEnquiry)
+        .options(
+            selectinload(BhavanEnquiry.accommodations),
+            selectinload(BhavanEnquiry.amenities),
+            selectinload(BhavanEnquiry.notes),
+        )
+        .where(BhavanEnquiry.id == enquiry_id)
+    )
+    enq = res.scalar_one_or_none()
+    if not enq:
+        raise HTTPException(status_code=404, detail="Enquiry not found")
+
+    pdf_bytes = generate_bhavan_enquiry_pdf(enq)
+    filename = f"Bhavan_Enquiry_{enq.reference}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"inline; filename={filename}",
+        },
+    )
 
 
 @router.post("/enquiries/{enquiry_id}/status")

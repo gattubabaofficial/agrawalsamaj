@@ -12,13 +12,14 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Header, status
+from fastapi import APIRouter, Depends, HTTPException, Header, Response, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.dependencies import get_db
+from app.services.bhavan_pdf_service import generate_bhavan_enquiry_pdf
 from app.models.bhavan import (
     BhavanAccommodationType, BhavanAmenity, BhavanEnquiry,
     BhavanEnquiryAccommodation, BhavanEnquiryAmenity, BhavanPurpose,
@@ -671,3 +672,32 @@ async def submit_enquiry(
         status=EnquiryStatus.PENDING.value,
         message="Your Bhavan booking enquiry has been submitted successfully! An administrator will contact you shortly.",
     )
+
+
+@router.get("/enquiries/{reference}/pdf")
+async def get_public_enquiry_pdf(
+    reference: str,
+    db: AsyncSession = Depends(get_db),
+):
+    res = await db.execute(
+        select(BhavanEnquiry)
+        .options(
+            selectinload(BhavanEnquiry.accommodations),
+            selectinload(BhavanEnquiry.amenities),
+        )
+        .where(BhavanEnquiry.reference == reference)
+    )
+    enq = res.scalar_one_or_none()
+    if not enq:
+        raise HTTPException(status_code=404, detail="Booking enquiry not found")
+
+    pdf_bytes = generate_bhavan_enquiry_pdf(enq)
+    filename = f"Bhavan_Booking_Request_{enq.reference}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"inline; filename={filename}",
+        },
+    )
+

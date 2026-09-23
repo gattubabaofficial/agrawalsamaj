@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Search, Filter, Plus, CheckCircle, XCircle, Clock, FileText, Phone, X, ArrowLeft } from "lucide-react";
+import { Search, Filter, Plus, CheckCircle, XCircle, Clock, FileText, Phone, X, ArrowLeft, Printer, Download, Loader2 } from "lucide-react";
 import { getApiBaseUrl, safeFetch } from "@/utils/api";
 
 interface Enquiry {
@@ -32,6 +32,7 @@ export default function AdminEnquiriesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [search, setSearch] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   // Selected enquiry for detail view
   const [selectedEnquiry, setSelectedEnquiry] = useState<any | null>(null);
@@ -94,6 +95,35 @@ export default function AdminEnquiriesPage() {
       setError("Network or browser extension error connecting to server.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadPdf = async (enquiryId: string, reference: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setDownloadingId(enquiryId);
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/admin/bhavan/enquiries/${enquiryId}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        alert("Failed to generate PDF. Please try again.");
+        return;
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Bhavan_Enquiry_${reference}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("PDF download error:", err);
+      alert("Error downloading PDF.");
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -251,7 +281,22 @@ export default function AdminEnquiriesPage() {
                       {enq.status}
                     </span>
                   </div>
-                  <span className="text-xs font-bold text-zinc-900">₹{enq.estimated_total}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-zinc-900">₹{enq.estimated_total}</span>
+                    <button
+                      type="button"
+                      title="Download PDF"
+                      onClick={(e) => handleDownloadPdf(enq.id, enq.reference, e)}
+                      disabled={downloadingId === enq.id}
+                      className="p-1.5 text-zinc-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                    >
+                      {downloadingId === enq.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600" />
+                      ) : (
+                        <Printer className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-2 flex items-center justify-between text-xs text-zinc-600">
@@ -272,9 +317,25 @@ export default function AdminEnquiriesPage() {
                   <p className="font-mono text-base font-extrabold text-amber-600">{selectedEnquiry.reference}</p>
                   <p className="text-[10px] text-zinc-400">Source: {selectedEnquiry.source}</p>
                 </div>
-                <span className="text-xs font-bold text-emerald-600 uppercase bg-emerald-50 px-2 py-1 rounded">
-                  {selectedEnquiry.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadPdf(selectedEnquiry.id, selectedEnquiry.reference)}
+                    disabled={downloadingId === selectedEnquiry.id}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-[11px] font-bold hover:bg-amber-100 transition-colors shadow-xs"
+                    title="Print / Download PDF"
+                  >
+                    {downloadingId === selectedEnquiry.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Printer className="w-3.5 h-3.5" />
+                    )}
+                    Print PDF
+                  </button>
+                  <span className="text-xs font-bold text-emerald-600 uppercase bg-emerald-50 px-2 py-1 rounded">
+                    {selectedEnquiry.status}
+                  </span>
+                </div>
               </div>
 
               <div>
