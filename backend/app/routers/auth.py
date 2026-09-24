@@ -141,9 +141,26 @@ async def login(
     _check_login_rate_limit(normalized_val)
 
     if id_type == "email":
-        user_result = await db.execute(select(User).where(User.email == normalized_val))
+        user_result = await db.execute(
+            select(User)
+            .options(selectinload(User.custom_role))
+            .where(User.email == normalized_val)
+        )
     else:
-        user_result = await db.execute(select(User).where(User.mobile == normalized_val))
+        clean_p = re.sub(r"[^\d]", "", normalized_val)
+        last_10 = clean_p[-10:] if len(clean_p) >= 10 else clean_p
+        user_result = await db.execute(
+            select(User)
+            .options(selectinload(User.custom_role))
+            .where(
+                (User.mobile == normalized_val) |
+                (User.mobile == last_10) |
+                (User.mobile.like(f"%{last_10}")) |
+                (User.contact_mobile == normalized_val) |
+                (User.contact_mobile == last_10) |
+                (User.contact_mobile.like(f"%{last_10}"))
+            )
+        )
 
     user = user_result.scalars().first()
 
@@ -168,6 +185,7 @@ async def login(
     is_allowed = (
         user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER, UserRole.MEMBER)
         or user.custom_role_id is not None
+        or user.is_member
     )
     if not is_allowed:
         raise HTTPException(
@@ -190,6 +208,12 @@ async def login(
         "role": user.role.value,
         "first_name": user.first_name,
         "surname": user.surname,
+        "custom_role_id": str(user.custom_role_id) if user.custom_role_id else None,
+        "custom_role": {
+            "role_id": str(user.custom_role.role_id),
+            "name": user.custom_role.name,
+            "permissions": user.custom_role.permissions or [],
+        } if user.custom_role else None,
     }
 
 def hash_otp(otp: str) -> str:
@@ -230,30 +254,35 @@ async def phone_send_otp(payload: PhoneOtpSendRequest, db: AsyncSession = Depend
     if id_type != "mobile":
         raise HTTPException(status_code=400, detail="Invalid mobile number format.")
 
-    # Only allow registered members with a role to send OTP / login
-    user_query = await db.execute(select(User).where(User.mobile == normalized_mobile))
-    user = user_query.scalars().first()
+    clean_p = re.sub(r"[^\d]", "", normalized_mobile)
+    last_10 = clean_p[-10:] if len(clean_p) >= 10 else clean_p
 
-    if not user:
-        # Imported/legacy members keep their number in `contact_mobile` only
-        # (their `mobile` — the login column — was never set). Allow login
-        # through that number too, but only when it identifies exactly one
-        # member: contact_mobile is known to repeat across people in the
-        # imported list, so a duplicate is not safe to guess between.
-        cm_query = await db.execute(select(User).where(User.contact_mobile == normalized_mobile))
-        candidates = cm_query.scalars().all()
-        if len(candidates) == 1:
-            user = candidates[0]
+    # Look up user by exact mobile, 10-digit suffix, or contact_mobile
+    user_query = await db.execute(
+        select(User)
+        .options(selectinload(User.custom_role))
+        .where(
+            (User.mobile == normalized_mobile) |
+            (User.mobile == last_10) |
+            (User.mobile.like(f"%{last_10}")) |
+            (User.contact_mobile == normalized_mobile) |
+            (User.contact_mobile == last_10) |
+            (User.contact_mobile.like(f"%{last_10}"))
+        )
+    )
+    candidates = user_query.scalars().all()
+    user = candidates[0] if candidates else None
 
     if not user:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied. Only registered members with an assigned role are allowed to log in."
+            detail="Mobile number not registered. Please contact Samaj administration."
         )
 
     is_allowed = (
-        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER)
+        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER, UserRole.MEMBER)
         or user.custom_role_id is not None
+        or user.is_member
     )
     if not is_allowed:
         raise HTTPException(
@@ -267,7 +296,10 @@ async def phone_send_otp(payload: PhoneOtpSendRequest, db: AsyncSession = Depend
     
     recent_requests_query = await db.execute(
         select(PhoneOTPRequest)
-        .where(PhoneOTPRequest.phone == normalized_mobile)
+        .where(
+            (PhoneOTPRequest.phone == normalized_mobile) |
+            (PhoneOTPRequest.phone == last_10)
+        )
         .where(PhoneOTPRequest.created_at >= one_hour_ago)
         .order_by(PhoneOTPRequest.created_at.desc())
     )
@@ -305,7 +337,7 @@ async def phone_send_otp(payload: PhoneOtpSendRequest, db: AsyncSession = Depend
     db.add(otp_request)
     await db.commit()
 
-    # 3. Deliver the code — WhatsApp first, SMS if that does not land.
+    # 3. Deliver the code — WhatsApp first
     message = f"Your Mansrovar Agrawal Samaj Jaipur verification code is {otp_code}. Valid for {expiry_minutes} minutes. Do not share this with anyone."
     channel = await send_otp_message(normalized_mobile, message)
 
@@ -317,10 +349,16 @@ async def phone_verify_otp(payload: PhoneOtpVerifyRequest, db: AsyncSession = De
     if id_type != "mobile":
         raise HTTPException(status_code=400, detail="Invalid mobile number.")
 
+    clean_p = re.sub(r"[^\d]", "", normalized_mobile)
+    last_10 = clean_p[-10:] if len(clean_p) >= 10 else clean_p
+
     # 1. Get the most recent active OTP request
     otp_query = await db.execute(
         select(PhoneOTPRequest)
-        .where(PhoneOTPRequest.phone == normalized_mobile)
+        .where(
+            (PhoneOTPRequest.phone == normalized_mobile) |
+            (PhoneOTPRequest.phone == last_10)
+        )
         .where(PhoneOTPRequest.verified == False)
         .order_by(PhoneOTPRequest.created_at.desc())
         .limit(1)
@@ -349,30 +387,35 @@ async def phone_verify_otp(payload: PhoneOtpVerifyRequest, db: AsyncSession = De
     await db.commit()
 
     # 3. Handle User Session
-    user_query = await db.execute(select(User).where(User.mobile == normalized_mobile))
-    user = user_query.scalars().first()
-
-    if not user:
-        # Same contact_mobile fallback as phone_send_otp above. The OTP just
-        # verified against this exact number is proof of ownership, so it's
-        # also safe to backfill `mobile` here — future logins then resolve
-        # through the primary column directly.
-        cm_query = await db.execute(select(User).where(User.contact_mobile == normalized_mobile))
-        candidates = cm_query.scalars().all()
-        if len(candidates) == 1:
-            user = candidates[0]
-            if not user.mobile:
-                user.mobile = normalized_mobile
+    user_query = await db.execute(
+        select(User)
+        .options(selectinload(User.custom_role))
+        .where(
+            (User.mobile == normalized_mobile) |
+            (User.mobile == last_10) |
+            (User.mobile.like(f"%{last_10}")) |
+            (User.contact_mobile == normalized_mobile) |
+            (User.contact_mobile == last_10) |
+            (User.contact_mobile.like(f"%{last_10}"))
+        )
+    )
+    candidates = user_query.scalars().all()
+    user = candidates[0] if candidates else None
 
     if not user:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied. Only registered members with an assigned role are allowed to log in."
+            detail="Mobile number not registered. Please contact Samaj administration."
         )
 
+    if not user.mobile:
+        user.mobile = normalized_mobile
+        await db.commit()
+
     is_allowed = (
-        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER)
+        user.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VOLUNTEER, UserRole.MEMBER)
         or user.custom_role_id is not None
+        or user.is_member
     )
     if not is_allowed:
         raise HTTPException(
@@ -393,6 +436,12 @@ async def phone_verify_otp(payload: PhoneOtpVerifyRequest, db: AsyncSession = De
         "role": user.role.value,
         "first_name": user.first_name,
         "surname": user.surname,
+        "custom_role_id": str(user.custom_role_id) if user.custom_role_id else None,
+        "custom_role": {
+            "role_id": str(user.custom_role.role_id),
+            "name": user.custom_role.name,
+            "permissions": user.custom_role.permissions or [],
+        } if user.custom_role else None,
     }
 
 

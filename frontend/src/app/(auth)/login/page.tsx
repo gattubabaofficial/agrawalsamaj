@@ -6,10 +6,15 @@ import { Mail, Phone, Lock, Eye, EyeOff, ShieldCheck, Loader2 } from "lucide-rea
 import { signIn } from "next-auth/react";
 import { getApiBaseUrl, safeFetch } from "@/utils/api";
 
-function getRoleHomeUrl(role: string) {
-  const r = (role || "").toLowerCase();
+function getRoleHomeUrl(data: any) {
+  if (!data) return "/dashboard";
+  const role = typeof data === "string" ? data : (data.role || "");
+  const r = role.toLowerCase();
   if (r === "admin" || r === "super_admin") return "/admin/dashboard";
   if (r === "volunteer") return "/admin/scan";
+  if (typeof data === "object" && (data.custom_role_id || (data.custom_role && data.custom_role.permissions?.length > 0))) {
+    return "/admin/dashboard";
+  }
   return "/dashboard";
 }
 
@@ -47,10 +52,9 @@ export default function LoginPage() {
 
         if (res.ok) {
           const data = await res.json();
-          const role = data.role || localStorage.getItem("userRole") || "guest";
           const params = new URLSearchParams(window.location.search);
           const next = params.get("next");
-          window.location.href = next || getRoleHomeUrl(role);
+          window.location.href = next || getRoleHomeUrl(data);
         } else {
           // Token invalid — clear it
           localStorage.removeItem("token");
@@ -157,7 +161,7 @@ export default function LoginPage() {
         const params = new URLSearchParams(window.location.search);
         let redirectUrl = params.get("next");
         if (!redirectUrl) {
-          redirectUrl = getRoleHomeUrl(data.role);
+          redirectUrl = getRoleHomeUrl(data);
         }
         window.location.href = redirectUrl;
       }

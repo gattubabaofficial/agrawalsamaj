@@ -40,14 +40,18 @@ export default function AdminLoginPage() {
 
       if (data.access_token) {
         const role = (data.role || "").toUpperCase();
-        if (role !== "ADMIN" && role !== "SUPER_ADMIN" && role !== "VOLUNTEER") {
-          setErrorMsg("Access Denied: You are not an administrator.");
+        const hasCustomRole = data.custom_role_id || (data.custom_role && data.custom_role.permissions?.length > 0);
+        if (role !== "ADMIN" && role !== "SUPER_ADMIN" && role !== "VOLUNTEER" && !hasCustomRole) {
+          setErrorMsg("Access Denied: You do not have an administrative or management role.");
           setIsLoading(false);
           return;
         }
 
         localStorage.setItem("token", data.access_token);
         localStorage.setItem("userRole", data.role);
+        if (data.first_name) {
+          localStorage.setItem("userName", `${data.first_name} ${data.surname || ""}`);
+        }
 
         const params = new URLSearchParams(window.location.search);
         const redirectUrl = params.get("next") || (role === "VOLUNTEER" ? "/admin/scan" : "/admin/dashboard");
