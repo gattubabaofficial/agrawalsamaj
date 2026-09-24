@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     SECRET_KEY: str = "super-secret-development-key-that-is-very-long-and-secure"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 days session validity for continuous management
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
     # Shared secret the Next.js server must present (via X-Internal-Secret) when
