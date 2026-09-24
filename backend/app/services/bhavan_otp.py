@@ -1,28 +1,55 @@
 """Bhavan OTP and verification token service.
 
-Issues OTPs via WhatsApp/SMS for Bhavan enquiries and issues signed 15-minute
+Issues OTPs via WhatsApp for Bhavan enquiries and issues signed 15-minute
 verification tokens bound to the applicant's mobile number.
+Supports both AsyncSession and Session.
 """
 
 import random
 from datetime import datetime, timedelta
-from typing import Tuple
+from typing import Tuple, Union
 
 from fastapi import HTTPException, status
 from jose import JWTError, jwt
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.models.user import PhoneOTPRequest
-from app.services.whatsapp_service import send_whatsapp_text
+from app.services.otp_delivery import (
+    send_otp_message,
+    CHANNEL_WHATSAPP,
+    CHANNEL_CONSOLE,
+    DELIVERED_CHANNELS,
+)
 from app.utils.security import hash_password, verify_password, create_access_token
 
 
 BHAVAN_OTP_PURPOSE = "bhavan_enquiry"
 
 
-def request_bhavan_otp(db: Session, mobile: str) -> dict:
+async def _get_phone_otp_req(db: Union[AsyncSession, Session], mobile: str):
+    stmt = select(PhoneOTPRequest).where(
+        PhoneOTPRequest.phone == mobile,
+        PhoneOTPRequest.purpose == BHAVAN_OTP_PURPOSE,
+    )
+    if isinstance(db, AsyncSession):
+        res = await db.execute(stmt)
+        return res.scalar_one_or_none()
+    else:
+        res = db.execute(stmt)
+        return res.scalar_one_or_none()
+
+
+async def _commit_db(db: Union[AsyncSession, Session]):
+    if isinstance(db, AsyncSession):
+        await db.commit()
+    else:
+        db.commit()
+
+
+async def request_bhavan_otp(db: Union[AsyncSession, Session], mobile: str) -> dict:
     """Generate and send OTP for Bhavan enquiry verification."""
     clean_mobile = mobile.strip()
     if not clean_mobile:
@@ -32,12 +59,7 @@ def request_bhavan_otp(db: Session, mobile: str) -> dict:
         )
 
     # Cooldown & rate limiting check
-    existing = db.execute(
-        select(PhoneOTPRequest).where(
-            PhoneOTPRequest.phone == clean_mobile,
-            PhoneOTPRequest.purpose == BHAVAN_OTP_PURPOSE,
-        )
-    ).scalar_one_or_none()
+    existing = await _get_phone_otp_req(db, clean_mobile)
 
     now = datetime.utcnow()
     if existing and existing.created_at:
@@ -56,7 +78,7 @@ def request_bhavan_otp(db: Session, mobile: str) -> dict:
         existing.otp_hash = hashed_otp
         existing.expires_at = expires_at
         existing.attempts = 0
-        existing.is_verified = False
+        existing.verified = False
         existing.created_at = now
     else:
         existing = PhoneOTPRequest(
@@ -65,44 +87,39 @@ def request_bhavan_otp(db: Session, mobile: str) -> dict:
             purpose=BHAVAN_OTP_PURPOSE,
             expires_at=expires_at,
             attempts=0,
-            is_verified=False,
+            verified=False,
             created_at=now,
         )
         db.add(existing)
 
-    db.commit()
+    await _commit_db(db)
 
     # Deliver exclusively via WhatsApp
     message = (
         f"Your Mansrovar Agrawal Samaj Jaipur Bhavan booking verification code is {otp}. "
         f"Valid for 10 minutes. Do not share this with anyone."
     )
-    res = send_whatsapp_text(clean_mobile, message, timeout=12)
-    if not res or res == "failed_sid":
+    channel = await send_otp_message(clean_mobile, message)
+    if channel not in DELIVERED_CHANNELS and channel != CHANNEL_CONSOLE:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Could not send OTP to WhatsApp. Please verify your WhatsApp number and try again.",
+            detail="Could not send OTP to WhatsApp. Please verify your WhatsApp number and ensure WhatsApp service is connected.",
         )
 
     return {
         "status": "success",
         "message": "OTP sent successfully to your WhatsApp.",
-        "channel": "whatsapp",
+        "channel": channel,
         "expires_in_seconds": 600,
     }
 
 
-def verify_bhavan_otp(db: Session, mobile: str, otp: str) -> dict:
+async def verify_bhavan_otp(db: Union[AsyncSession, Session], mobile: str, otp: str) -> dict:
     """Verify OTP and return signed 15-minute verification token."""
     clean_mobile = mobile.strip()
     otp_code = otp.strip()
 
-    otp_req = db.execute(
-        select(PhoneOTPRequest).where(
-            PhoneOTPRequest.phone == clean_mobile,
-            PhoneOTPRequest.purpose == BHAVAN_OTP_PURPOSE,
-        )
-    ).scalar_one_or_none()
+    otp_req = await _get_phone_otp_req(db, clean_mobile)
 
     if not otp_req:
         raise HTTPException(
@@ -124,14 +141,14 @@ def verify_bhavan_otp(db: Session, mobile: str, otp: str) -> dict:
 
     if not verify_password(otp_code, otp_req.otp_hash):
         otp_req.attempts += 1
-        db.commit()
+        await _commit_db(db)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid OTP. {5 - otp_req.attempts} attempts remaining.",
         )
 
-    otp_req.is_verified = True
-    db.commit()
+    otp_req.verified = True
+    await _commit_db(db)
 
     # Mint 15-minute verification token
     verification_token = create_access_token(

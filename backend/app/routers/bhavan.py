@@ -530,12 +530,12 @@ async def get_published_terms(db: AsyncSession = Depends(get_db)):
 
 @router.post("/otp/request")
 async def send_otp(payload: OTPRequestPayload, db: AsyncSession = Depends(get_db)):
-    return request_bhavan_otp(db, payload.mobile)
+    return await request_bhavan_otp(db, payload.mobile)
 
 
 @router.post("/otp/verify")
 async def verify_otp(payload: OTPVerifyPayload, db: AsyncSession = Depends(get_db)):
-    return verify_bhavan_otp(db, payload.mobile, payload.otp)
+    return await verify_bhavan_otp(db, payload.mobile, payload.otp)
 
 
 @router.post("/enquiries", response_model=EnquirySubmitResponse)

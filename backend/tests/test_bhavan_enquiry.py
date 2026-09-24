@@ -2,6 +2,7 @@ import pytest
 import uuid
 from datetime import date
 from decimal import Decimal
+from unittest.mock import patch
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -11,8 +12,12 @@ from app.models.bhavan import (
     BhavanAccommodationType, BhavanEnquiry, BhavanEnquiryAccommodation,
     EnquiryStatus,
 )
-from app.services.bhavan_otp import validate_enquiry_token
-from app.utils.security import create_access_token
+from app.models.user import PhoneOTPRequest
+from app.services.bhavan_otp import (
+    request_bhavan_otp, verify_bhavan_otp, validate_enquiry_token,
+    BHAVAN_OTP_PURPOSE,
+)
+from app.utils.security import create_access_token, hash_password
 
 
 def setup_db():
@@ -78,3 +83,26 @@ def test_enquiry_snapshot_immutability():
     saved_enq = db.query(BhavanEnquiry).filter_by(reference="BV-2027-01001").first()
     assert saved_enq.estimated_total == Decimal("3000.00")
     assert saved_enq.quote_snapshot["estimated_total"] == "3000.00"
+
+
+@pytest.mark.asyncio
+async def test_bhavan_otp_flow():
+    db = setup_db()
+    mobile = "8290909163"
+
+    with patch("app.services.bhavan_otp.send_otp_message", return_value="whatsapp"):
+        resp = await request_bhavan_otp(db, mobile)
+        assert resp["status"] == "success"
+        assert resp["channel"] == "whatsapp"
+
+    # Verify PhoneOTPRequest was recorded
+    otp_record = db.query(PhoneOTPRequest).filter_by(phone=mobile, purpose=BHAVAN_OTP_PURPOSE).first()
+    assert otp_record is not None
+    assert otp_record.verified is False
+
+    # Mock verify
+    with patch("app.services.bhavan_otp.verify_password", return_value=True):
+        verify_resp = await verify_bhavan_otp(db, mobile, "123456")
+        assert verify_resp["verified"] is True
+        token = verify_resp["verification_token"]
+        assert validate_enquiry_token(token, mobile) is True
