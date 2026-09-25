@@ -59,25 +59,25 @@ const SOCIALS = [
 export default function Footer() {
   return (
     <footer className="relative overflow-hidden border-t border-rule bg-paper">
-      <div className="mx-auto max-w-[78rem] px-5 pb-10 pt-20 sm:px-8 lg:px-12">
-        <div className="grid grid-cols-2 gap-x-8 gap-y-12 sm:grid-cols-3 lg:grid-cols-12 lg:gap-x-12">
+      <div className="mx-auto max-w-[78rem] px-5 pb-10 pt-16 sm:px-8 sm:pt-20 lg:px-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-12 gap-x-6 sm:gap-x-8 gap-y-10 sm:gap-y-12 lg:gap-x-12">
           {/* Identity */}
-          <div className="col-span-2 sm:col-span-3 lg:col-span-4">
+          <div className="col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4">
             <p className="deva text-lg text-vermilion">मानसरोवर अग्रवाल समाज</p>
             <p className="display mt-2 text-2xl">Mansrovar Agrawal Samaj Jaipur</p>
-            <p className="mt-5 max-w-xs text-sm leading-relaxed text-ink-2">
+            <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink-2">
               One brick, one rupee — the covenant that built Agroha, kept by the
               households of Jaipur.
             </p>
 
-            <div className="mt-7 flex gap-4">
+            <div className="mt-6 flex gap-3 sm:gap-4">
               {SOCIALS.map((social) => (
                 <a
                   key={social.label}
                   href={social.href}
                   aria-label={social.label}
                   title={social.description}
-                  className="flex h-9 w-9 items-center justify-center border border-rule text-ink-3 transition-colors duration-300 hover:border-vermilion hover:text-vermilion"
+                  className="flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center border border-rule text-ink-3 transition-colors duration-300 hover:border-vermilion hover:text-vermilion"
                 >
                   <svg
                     className="h-4 w-4"
@@ -97,15 +97,15 @@ export default function Footer() {
 
           {/* Link columns */}
           {COLUMNS.map((column) => (
-            <nav key={column.heading} className="lg:col-span-2">
+            <nav key={column.heading} className="col-span-1 lg:col-span-2">
               <h2 className="eyebrow">{column.heading}</h2>
-              <ul className="mt-5 space-y-3">
+              <ul className="mt-4 sm:mt-5 space-y-2.5 sm:space-y-3">
                 {column.links.map((link) => (
                   <li key={link.label}>
                     <Link
                       href={link.href}
                       title={link.description}
-                      className="text-sm text-ink-2 transition-colors duration-300 hover:text-vermilion"
+                      className="inline-block py-1 text-sm text-ink-2 transition-colors duration-300 hover:text-vermilion"
                     >
                       {link.label}
                     </Link>
@@ -116,9 +116,9 @@ export default function Footer() {
           ))}
 
           {/* Contact */}
-          <div className="col-span-2 sm:col-span-3 lg:col-span-2">
+          <div className="col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-2">
             <h2 className="eyebrow">Find us</h2>
-            <ul className="mt-5 space-y-4 text-sm text-ink-2">
+            <ul className="mt-4 sm:mt-5 space-y-3 sm:space-y-4 text-sm text-ink-2">
               <li className="flex gap-2.5">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-vermilion" />
                 <span className="leading-relaxed">
@@ -127,16 +127,16 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-2.5">
                 <Phone className="h-4 w-4 shrink-0 text-vermilion" />
-                <a href="tel:+911412345678" title="Call the Samaj office" className="transition-colors hover:text-vermilion">
+                <a href="tel:+911412345678" title="Call the Samaj office" className="py-1 transition-colors hover:text-vermilion">
                   +91 141 234 5678
                 </a>
               </li>
-              <li className="flex items-center gap-2.5">
-                <Mail className="h-4 w-4 shrink-0 text-vermilion" />
+              <li className="flex items-start sm:items-center gap-2.5">
+                <Mail className="mt-0.5 sm:mt-0 h-4 w-4 shrink-0 text-vermilion" />
                 <a
                   href="mailto:contact@agrawalsamajjaipur.org"
                   title="Email the Samaj office"
-                  className="break-words transition-colors hover:text-vermilion"
+                  className="break-all py-1 transition-colors hover:text-vermilion"
                 >
                   contact@agrawalsamajjaipur.org
                 </a>
@@ -145,17 +145,17 @@ export default function Footer() {
           </div>
         </div>
 
-        <Rule className="mt-16" />
+        <Rule className="mt-12 sm:mt-16" />
 
-        <div className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3.5 pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="eyebrow !tracking-[0.18em]">
             © {new Date().getFullYear()} Mansrovar Agrawal Samaj Jaipur
           </p>
           <div className="flex gap-6">
-            <Link href="#" title="Read our privacy policy" className="eyebrow !tracking-[0.18em] transition-colors hover:text-vermilion">
+            <Link href="#" title="Read our privacy policy" className="eyebrow !tracking-[0.18em] py-1 transition-colors hover:text-vermilion">
               Privacy
             </Link>
-            <Link href="#" title="Read our terms of use" className="eyebrow !tracking-[0.18em] transition-colors hover:text-vermilion">
+            <Link href="#" title="Read our terms of use" className="eyebrow !tracking-[0.18em] py-1 transition-colors hover:text-vermilion">
               Terms
             </Link>
           </div>

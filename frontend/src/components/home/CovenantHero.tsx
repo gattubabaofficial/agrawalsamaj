@@ -127,7 +127,7 @@ export default function CovenantHero() {
           <div className="order-last col-span-2 flex flex-col items-center text-center lg:order-none lg:col-span-1">
             <Reveal delay={0.14}>
               <h1
-                className="text-[clamp(2.5rem,7vw,4.75rem)] leading-tight text-center font-medium"
+                className="text-[clamp(2.25rem,6vw,4.75rem)] leading-tight text-center font-medium"
                 style={{ fontFamily: "var(--font-noto-serif-deva), 'Noto Serif Devanagari', serif" }}
               >
                 <span className="block">
@@ -139,28 +139,28 @@ export default function CovenantHero() {
             </Reveal>
 
             <Reveal delay={0.26}>
-              <p className="mx-auto mt-6 max-w-md text-[0.9375rem] leading-relaxed text-ink-2 sm:mt-7">
+              <p className="mx-auto mt-5 max-w-md text-sm leading-relaxed text-ink-2 sm:mt-7 sm:text-[0.9375rem]">
                 The oldest social contract we know still runs this community —
                 the covenant Maharaja Agrasen founded it on.
               </p>
             </Reveal>
 
-            <Reveal delay={0.32} className="mt-8 w-full max-w-xs sm:mt-10">
+            <Reveal delay={0.32} className="mt-6 w-full max-w-xs sm:mt-10">
               <Rule />
             </Reveal>
 
             <Reveal delay={0.38}>
-              <div className="mt-6 text-center sm:mt-8">
-                <p className="deva text-lg text-vermilion">मानसरोवर अग्रवाल समाज</p>
-                <h2 className="display mt-2 text-[clamp(1.75rem,4.5vw,2.75rem)]">
+              <div className="mt-5 text-center sm:mt-8">
+                <p className="deva text-base text-vermilion sm:text-lg">मानसरोवर अग्रवाल समाज</p>
+                <h2 className="display mt-1.5 text-[clamp(1.5rem,4vw,2.75rem)] sm:mt-2">
                   Mansrovar Agrawal Samaj Jaipur
                 </h2>
-                <Eyebrow className="mt-4 justify-center">Jaipur · Est. 1985</Eyebrow>
+                <Eyebrow className="mt-3 justify-center sm:mt-4">Jaipur · Est. 1985</Eyebrow>
               </div>
             </Reveal>
 
             <Reveal delay={0.46}>
-              <div className="mt-7 flex flex-wrap items-center justify-center gap-3 sm:mt-9 sm:gap-4 max-w-2xl mx-auto">
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5 sm:mt-9 sm:gap-4 max-w-2xl mx-auto">
                 <ActionLink href="/members?apply=true" title="मानसरोवर अग्रवाल समाज सदस्यता हेतु ऑनलाइन आवेदन करें">
                   <span className="deva font-medium">सदस्यता आवेदन</span> (Apply)
                 </ActionLink>

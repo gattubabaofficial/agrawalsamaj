@@ -88,7 +88,7 @@ export default function EventsPage() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white/70 backdrop-blur-md p-4 rounded-3xl border border-zinc-200/60 shadow-sm">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 bg-white/70 backdrop-blur-md p-3 sm:p-4 rounded-3xl border border-zinc-200/60 shadow-sm">
           <div className="relative max-w-md w-full">
             <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
@@ -96,16 +96,16 @@ export default function EventsPage() {
               placeholder="Search events by title, venue or description..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-zinc-200 rounded-xl text-xs bg-white focus:outline-none focus:border-amber-500"
+              className="w-full pl-10 pr-4 py-2.5 border border-zinc-200 rounded-xl text-xs bg-white focus:outline-none focus:border-amber-500"
             />
           </div>
 
-          <div className="flex flex-wrap gap-1.5 self-stretch md:self-auto overflow-x-auto pb-1 md:pb-0">
+          <div className="flex gap-1.5 w-full md:w-auto overflow-x-auto pb-1.5 md:pb-0 scrollbar-thin">
             {["all", "cultural", "religious", "sports", "social", "educational", "other"].map((cat) => (
               <button
                 key={cat}
                 onClick={() => setCategory(cat)}
-                className={`px-4 py-2 rounded-xl text-2xs font-bold uppercase transition-all whitespace-nowrap cursor-pointer ${category === cat
+                className={`min-h-[44px] px-3.5 sm:px-4 py-2 rounded-xl text-2xs font-bold uppercase transition-all whitespace-nowrap cursor-pointer flex items-center justify-center ${category === cat
                     ? "bg-amber-500 text-white shadow-md shadow-amber-500/20"
                     : "bg-white border border-zinc-200 text-zinc-600 hover:border-amber-300 hover:text-amber-600"
                   }`}
@@ -117,7 +117,7 @@ export default function EventsPage() {
         </div>
 
         {/* Event List */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {filteredEvents.map((evt, idx) => (
             <motion.div
               key={evt.event_id}
@@ -152,7 +152,7 @@ export default function EventsPage() {
                   </div>
                 </div>
 
-                <div className="p-6 space-y-4">
+                <div className="p-4 sm:p-6 space-y-4">
                   <div className="space-y-2">
                     <h3 className="text-lg font-bold text-zinc-900 group-hover:text-amber-500 transition-colors line-clamp-1">
                       {evt.title}
@@ -169,15 +169,15 @@ export default function EventsPage() {
 
                   <div className="space-y-2 pt-2 border-t border-zinc-100 text-xs text-zinc-500">
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-zinc-400" />
+                      <Calendar className="w-4 h-4 text-zinc-400 shrink-0" />
                       <span>{formatDateDDMonthYYYY(evt.start_datetime)}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-zinc-400" />
+                      <Clock className="w-4 h-4 text-zinc-400 shrink-0" />
                       <span>{new Date(evt.start_datetime).toLocaleTimeString("en-US", { timeStyle: "short" })}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-zinc-400" />
+                      <MapPin className="w-4 h-4 text-zinc-400 shrink-0" />
                       <span className="truncate">{evt.venue}</span>
                     </div>
                   </div>
@@ -199,16 +199,16 @@ export default function EventsPage() {
                 </div>
               </div>
 
-              <div className="p-6 pt-0 border-t border-zinc-100 mt-6 flex items-center gap-3 bg-zinc-50/50">
+              <div className="p-4 sm:p-6 pt-0 border-t border-zinc-100 mt-4 sm:mt-6 flex flex-col sm:flex-row items-center gap-2.5 sm:gap-3 bg-zinc-50/50">
                 <Link
                   href={`/events/${evt.event_id}`}
-                  className="flex-1 py-2.5 px-3 border border-zinc-300 hover:border-amber-500 hover:bg-amber-50 text-zinc-700 hover:text-amber-700 text-2xs font-bold rounded-xl transition-all text-center flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                  className="w-full sm:flex-1 min-h-[44px] py-2.5 px-3 border border-zinc-300 hover:border-amber-500 hover:bg-amber-50 text-zinc-700 hover:text-amber-700 text-2xs font-bold rounded-xl transition-all text-center flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                 >
                   <Info className="w-4 h-4 text-amber-500" /> View Details
                 </Link>
                 <Link
                   href={`/events/${evt.event_id}?book=true`}
-                  className="flex-1 py-2.5 px-3 bg-zinc-900 hover:bg-zinc-800 text-white text-2xs font-bold rounded-xl transition-all text-center flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                  className="w-full sm:flex-1 min-h-[44px] py-2.5 px-3 bg-zinc-900 hover:bg-zinc-800 text-white text-2xs font-bold rounded-xl transition-all text-center flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                 >
                   <Ticket className="w-4 h-4 text-amber-400" /> Book passes
                 </Link>

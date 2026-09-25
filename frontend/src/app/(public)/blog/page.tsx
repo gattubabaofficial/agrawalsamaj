@@ -323,19 +323,19 @@ export default function BlogPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search blogs by keyword..."
-                  className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/10 backdrop-blur border border-white/20 text-white placeholder-zinc-400 focus:outline-none focus:border-amber-400/60 focus:bg-white/15 transition-all"
+                  className="w-full pl-12 pr-28 py-3.5 rounded-2xl bg-white/10 backdrop-blur border border-white/20 text-white placeholder-zinc-400 focus:outline-none focus:border-amber-400/60 focus:bg-white/15 transition-all text-sm sm:text-base"
                 />
-                <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white text-sm font-semibold shadow-md shadow-amber-500/30 transition-all active:scale-95">
+                <button type="submit" className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 px-3.5 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white text-xs sm:text-sm font-semibold shadow-md shadow-amber-500/30 transition-all active:scale-95 flex items-center justify-center min-h-[36px]">
                   Search
                 </button>
               </div>
 
               {/* Year & Month Date-wise Filters */}
-              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-center gap-2.5 sm:gap-3 pt-2">
                 <select
                   value={selectedYear}
                   onChange={(e) => handleYearChange(e.target.value)}
-                  className="px-4 py-2.5 rounded-xl bg-zinc-800/90 text-white border border-zinc-700 text-sm font-semibold focus:outline-none focus:border-amber-500 cursor-pointer"
+                  className="min-h-[44px] px-4 py-2.5 rounded-xl bg-zinc-800/90 text-white border border-zinc-700 text-sm font-semibold focus:outline-none focus:border-amber-500 cursor-pointer"
                 >
                   <option value="">🗓️ All Years</option>
                   <option value="2026">2026</option>
@@ -347,7 +347,7 @@ export default function BlogPage() {
                 <select
                   value={selectedMonth}
                   onChange={(e) => handleMonthChange(e.target.value)}
-                  className="px-4 py-2.5 rounded-xl bg-zinc-800/90 text-white border border-zinc-700 text-sm font-semibold focus:outline-none focus:border-amber-500 cursor-pointer"
+                  className="min-h-[44px] px-4 py-2.5 rounded-xl bg-zinc-800/90 text-white border border-zinc-700 text-sm font-semibold focus:outline-none focus:border-amber-500 cursor-pointer"
                 >
                   <option value="">📅 All Months</option>
                   <option value="1">January</option>
@@ -367,7 +367,7 @@ export default function BlogPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(true)}
-                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold shadow-lg shadow-amber-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="min-h-[44px] px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   ✍️ Write a Blog
                 </button>
@@ -516,11 +516,11 @@ export default function BlogPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex flex-wrap justify-center gap-2 mt-12">
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-12">
             <button
               onClick={() => { const p = page - 1; setPage(p); fetchBlogs(p); }}
               disabled={page === 1}
-              className="px-4 py-2 rounded-xl border border-zinc-200 text-sm font-medium text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="min-h-[44px] px-4 py-2 rounded-xl border border-zinc-200 text-sm font-medium text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
             >
               Previous
             </button>
@@ -528,7 +528,7 @@ export default function BlogPage() {
               <button
                 key={i}
                 onClick={() => { setPage(i + 1); fetchBlogs(i + 1); }}
-                className={`w-9 h-9 rounded-xl text-sm font-medium transition-colors ${page === i + 1 ? "bg-amber-500 text-white" : "border border-zinc-200 text-zinc-600 hover:bg-zinc-50"}`}
+                className={`min-h-[44px] min-w-[44px] rounded-xl text-sm font-medium transition-colors flex items-center justify-center ${page === i + 1 ? "bg-amber-500 text-white shadow-sm" : "border border-zinc-200 text-zinc-600 hover:bg-zinc-50"}`}
               >
                 {i + 1}
               </button>
@@ -536,7 +536,7 @@ export default function BlogPage() {
             <button
               onClick={() => { const p = page + 1; setPage(p); fetchBlogs(p); }}
               disabled={page === totalPages}
-              className="px-4 py-2 rounded-xl border border-zinc-200 text-sm font-medium text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="min-h-[44px] px-4 py-2 rounded-xl border border-zinc-200 text-sm font-medium text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
             >
               Next
             </button>
@@ -545,14 +545,14 @@ export default function BlogPage() {
 
         {/* Create Blog Modal */}
         {showCreateModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-2xl animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+            <div className="bg-white rounded-3xl max-w-2xl w-full p-4 sm:p-8 space-y-5 sm:space-y-6 shadow-2xl animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-zinc-100 pb-3 sm:pb-4">
                 <div>
-                  <h3 className="font-bold text-zinc-900 text-xl">✍️ Write a Blog Post</h3>
+                  <h3 className="font-bold text-zinc-900 text-lg sm:text-xl">✍️ Write a Blog Post</h3>
                   <p className="text-xs text-zinc-500">Publish your story directly — no approval needed!</p>
                 </div>
-                <button type="button" onClick={() => setShowCreateModal(false)} className="p-1 text-zinc-400 hover:text-zinc-600 rounded-lg">
+                <button type="button" onClick={() => setShowCreateModal(false)} className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 text-zinc-400 hover:text-zinc-600 rounded-lg">
                   ✕
                 </button>
               </div>
@@ -571,7 +571,7 @@ export default function BlogPage() {
                 </div>
 
                 {/* Guest Author Info */}
-                <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 space-y-3">
+                <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-3.5 sm:p-4 space-y-3">
                   <p className="text-xs font-bold text-amber-700 uppercase tracking-wider">👤 Your Details (as author)</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>

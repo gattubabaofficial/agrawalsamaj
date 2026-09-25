@@ -110,7 +110,7 @@ export default function Gallery() {
               onClick={() => setOpen(null)}
               aria-label="Close"
               title="Close"
-              className="absolute right-5 top-5 p-2 text-paper/70 transition-colors hover:text-paper"
+              className="absolute right-3 top-3 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-char/70 p-2 text-paper transition-colors hover:bg-char hover:text-white sm:right-6 sm:top-6"
             >
               <X className="h-6 w-6" />
             </button>
@@ -120,7 +120,7 @@ export default function Gallery() {
               onClick={(e) => { e.stopPropagation(); step(-1); }}
               aria-label="Previous photograph"
               title="Previous photograph"
-              className="absolute left-3 p-2 text-paper/70 transition-colors hover:text-paper sm:left-8"
+              className="absolute left-2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-char/70 p-2 text-paper transition-colors hover:bg-char hover:text-white sm:left-6"
             >
               <ChevronLeft className="h-7 w-7" />
             </button>
@@ -130,7 +130,7 @@ export default function Gallery() {
               onClick={(e) => { e.stopPropagation(); step(1); }}
               aria-label="Next photograph"
               title="Next photograph"
-              className="absolute right-3 p-2 text-paper/70 transition-colors hover:text-paper sm:right-8"
+              className="absolute right-2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-char/70 p-2 text-paper transition-colors hover:bg-char hover:text-white sm:right-6"
             >
               <ChevronRight className="h-7 w-7" />
             </button>

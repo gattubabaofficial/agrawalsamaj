@@ -170,12 +170,12 @@ export default function LoginPage() {
       <div className="absolute top-1/10 left-1/10 w-90 h-90 bg-amber-500/5 rounded-full blur-3xl z-0" />
       <div className="absolute bottom-1/10 right-1/10 w-90 h-90 bg-rose-500/5 rounded-full blur-3xl z-0" />
 
-      <div className="max-w-md w-full space-y-8 p-8 rounded-3xl border border-zinc-200/50 bg-white shadow-xl relative z-10" suppressHydrationWarning>
+      <div className="max-w-md w-full space-y-6 sm:space-y-8 p-5 sm:p-8 rounded-3xl border border-zinc-200/50 bg-white shadow-xl relative z-10" suppressHydrationWarning>
         <div className="text-center space-y-2">
-          <Link href="/" className="inline-block text-2xl font-bold bg-gradient-to-r from-amber-500 to-rose-600 bg-clip-text text-transparent">
+          <Link href="/" className="inline-block text-xl sm:text-2xl font-bold bg-gradient-to-r from-amber-500 to-rose-600 bg-clip-text text-transparent">
             Mansrovar Agrawal Samaj Jaipur
           </Link>
-          <h2 className="text-2xl font-bold text-zinc-900">Welcome Back</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-zinc-900">Welcome Back</h2>
           <p className="text-xs text-zinc-500">Sign in to your member account.</p>
         </div>
 
@@ -184,7 +184,7 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={() => { setMethod("password"); setErrorMsg(""); }}
-            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
+            className={`flex-1 min-h-[44px] py-2 text-xs font-semibold rounded-lg transition-all flex items-center justify-center ${
               method === "password"
                 ? "bg-white text-zinc-900 shadow-sm"
                 : "text-zinc-500 hover:text-zinc-900"
@@ -195,7 +195,7 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={() => { setMethod("otp"); setErrorMsg(""); }}
-            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
+            className={`flex-1 min-h-[44px] py-2 text-xs font-semibold rounded-lg transition-all flex items-center justify-center ${
               method === "otp"
                 ? "bg-white text-zinc-900 shadow-sm"
                 : "text-zinc-500 hover:text-zinc-900"
@@ -240,7 +240,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 min-h-[36px] min-w-[36px] flex items-center justify-center"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -251,7 +251,7 @@ export default function LoginPage() {
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="font-semibold text-zinc-700">Mobile no (WhatsApp no)</label>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <div className="relative flex-1">
                     <Phone className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
@@ -267,7 +267,7 @@ export default function LoginPage() {
                     type="button"
                     onClick={handleSendOtp}
                     disabled={mobile.trim().length < 10 || isLoading || resendCountdown > 0}
-                    className="px-4 py-2.5 rounded-xl border border-zinc-200 text-xs font-semibold hover:bg-zinc-50 disabled:opacity-50 disabled:pointer-events-none transition-colors min-w-[90px] text-center"
+                    className="min-h-[44px] px-4 py-2.5 rounded-xl border border-zinc-200 text-xs font-semibold hover:bg-zinc-50 disabled:opacity-50 disabled:pointer-events-none transition-colors min-w-[90px] text-center flex items-center justify-center"
                   >
                     {resendCountdown > 0 ? `${resendCountdown}s` : otpSent ? "Resend" : "Send OTP"}
                   </button>
@@ -285,7 +285,7 @@ export default function LoginPage() {
                       placeholder="6-digit code"
                       value={otp}
                       onChange={(e) => setOtp(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-200 bg-transparent focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-200 bg-transparent focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 font-mono font-bold tracking-widest text-center"
                     />
                   </div>
                 </div>
@@ -302,7 +302,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-semibold shadow-md shadow-amber-500/10 hover:shadow-amber-500/20 transition-all hover:scale-[1.01] flex justify-center items-center gap-2 cursor-pointer"
+            className="w-full min-h-[44px] py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-semibold shadow-md shadow-amber-500/10 hover:shadow-amber-500/20 transition-all hover:scale-[1.01] flex justify-center items-center gap-2 cursor-pointer"
           >
             {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
             {method === "otp" && !otpSent ? "Send OTP" : (isLoading ? "Signing In..." : "Sign In")}
@@ -318,7 +318,7 @@ export default function LoginPage() {
         <button
           type="button"
           onClick={() => signIn("google")}
-          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-2xl border border-zinc-200 hover:bg-zinc-50 text-xs font-semibold transition-colors cursor-pointer"
+          className="flex min-h-[44px] items-center justify-center gap-2 w-full py-2.5 rounded-2xl border border-zinc-200 hover:bg-zinc-50 text-xs font-semibold transition-colors cursor-pointer"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path
@@ -343,7 +343,7 @@ export default function LoginPage() {
 
         <p className="text-center text-xs text-zinc-500">
           Admin or Coordinator?{" "}
-          <Link href="/admin-login" className="font-semibold text-amber-600 hover:text-amber-700 underline">
+          <Link href="/admin-login" className="font-semibold text-amber-600 hover:text-amber-700 underline py-1 inline-block">
             Admin Login
           </Link>
         </p>

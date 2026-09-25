@@ -71,16 +71,16 @@ function Plate({
 function MemberRow({ person }: { person: Person }) {
   return (
     <RevealItem as="li" distance={14} className="h-full">
-      <article className="flex h-full flex-col gap-4 rounded-lg border border-rule bg-paper p-4">
-        <div className="flex items-start gap-4">
-          <Plate person={person} sizes="96px" className="aspect-[3/4] w-24 shrink-0" />
+      <article className="flex h-full flex-col gap-3 sm:gap-4 rounded-lg border border-rule bg-paper p-3 sm:p-4">
+        <div className="flex items-start gap-3 sm:gap-4">
+          <Plate person={person} sizes="(max-width: 640px) 80px, 96px" className="aspect-[3/4] w-20 sm:w-24 shrink-0" />
           <div className="min-w-0 pt-0.5">
-            <h4 className="deva text-[0.9375rem] font-medium leading-snug text-ink">{person.name}</h4>
+            <h4 className="deva text-sm sm:text-[0.9375rem] font-medium leading-snug text-ink">{person.name}</h4>
             <p className="mt-0.5 text-xs leading-tight text-ink-3">{person.latin}</p>
-            <p className="deva mt-1.5 text-xs font-semibold leading-tight text-vermilion">
+            <p className="deva mt-1 text-xs font-semibold leading-tight text-vermilion sm:mt-1.5">
               {person.designation}
             </p>
-            <p className="eyebrow text-[0.65rem] text-ink-3 tracking-wider mt-0.5">
+            <p className="eyebrow text-[0.625rem] sm:text-[0.65rem] text-ink-3 tracking-wider mt-0.5">
               {person.designationEn}
             </p>
             {person.mobile && (
@@ -91,7 +91,7 @@ function MemberRow({ person }: { person: Person }) {
           </div>
         </div>
         {person.description && (
-          <p className="deva mt-auto text-[0.8125rem] leading-relaxed text-ink-2 border-t border-rule pt-3">
+          <p className="deva mt-auto text-xs sm:text-[0.8125rem] leading-relaxed text-ink-2 border-t border-rule pt-2.5 sm:pt-3">
             {person.description}
           </p>
         )}
@@ -105,7 +105,7 @@ export default function Padadhikari() {
     <section
       id="padadhikari"
       aria-labelledby="padadhikari-heading"
-      className="grain relative border-y border-rule bg-paper-2 py-24 sm:py-32"
+      className="grain relative border-y border-rule bg-paper-2 py-16 sm:py-24 lg:py-32"
     >
       {/* Same container as the Section primitive, written out because this one
           also needs aria-labelledby. Padding matches Ledger and the rest of the
@@ -116,28 +116,28 @@ export default function Padadhikari() {
           <Eyebrow tone="accent">Mansrovar Agrawal Samaj Jaipur Samiti</Eyebrow>
         </Reveal>
 
-        <Reveal className="mt-5 max-w-2xl">
-          <h2 id="padadhikari-heading" className="deva text-4xl leading-tight text-ink sm:text-5xl">
+        <Reveal className="mt-4 sm:mt-5 max-w-2xl">
+          <h2 id="padadhikari-heading" className="deva text-3xl sm:text-4xl lg:text-5xl leading-tight text-ink">
             पदाधिकारी
           </h2>
-          <p className="mt-2 text-lg text-ink-3">Office bearers</p>
-          <p className="mt-5 max-w-xl text-[0.9375rem] leading-relaxed text-ink-2">
+          <p className="mt-1.5 sm:mt-2 text-base sm:text-lg text-ink-3">Office bearers</p>
+          <p className="mt-4 sm:mt-5 max-w-xl text-sm sm:text-[0.9375rem] leading-relaxed text-ink-2">
             The members serving on the executive committee of
             Mansrovar Agrawal Samaj Jaipur Samiti.
           </p>
         </Reveal>
 
         {/* ── The three leaders ─────────────────────────────────────── */}
-        <RevealGroup as="div" stagger={0.08} className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <RevealGroup as="div" stagger={0.08} className="mt-8 sm:mt-10 grid gap-5 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {LEADERS.map((leader) => (
             <RevealItem key={leader.slug} distance={14}>
-              <figure className="flex flex-col items-center gap-4 rounded-lg border border-rule bg-paper p-6 text-center">
-                <Plate person={leader} sizes="160px" className="aspect-[3/4] w-40" />
-                <figcaption>
+              <figure className="flex flex-col items-center gap-3.5 sm:gap-4 rounded-lg border border-rule bg-paper p-4 sm:p-6 text-center">
+                <Plate person={leader} sizes="(max-width: 640px) 130px, 160px" className="aspect-[3/4] w-32 sm:w-40" />
+                <figcaption className="w-full">
                   <p className="eyebrow text-vermilion">{leader.designationEn}</p>
-                  <p className="deva mt-2 text-lg leading-snug text-ink">{leader.name}</p>
+                  <p className="deva mt-1.5 sm:mt-2 text-base sm:text-lg leading-snug text-ink">{leader.name}</p>
                   <p className="mt-0.5 text-xs text-ink-3">{leader.latin}</p>
-                  <p className="deva mt-2 text-sm font-semibold leading-tight text-vermilion">
+                  <p className="deva mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold leading-tight text-vermilion">
                     {leader.designation}
                   </p>
                   {leader.mobile && (
@@ -146,7 +146,7 @@ export default function Padadhikari() {
                     </p>
                   )}
                   {leader.description && (
-                    <p className="deva mt-3 text-[0.8125rem] leading-relaxed text-ink-2">
+                    <p className="deva mt-2.5 sm:mt-3 text-xs sm:text-[0.8125rem] leading-relaxed text-ink-2">
                       {leader.description}
                     </p>
                   )}

@@ -403,8 +403,8 @@ export default function EventDetailsPage() {
                   <div className="absolute inset-0 bg-black/35" />
                 </div>
               )}
-              <div className="p-6 sm:p-8">
-                <div className="flex items-center justify-between border-b border-zinc-100 pb-4 mb-6">
+              <div className="p-4 sm:p-8">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-100 pb-4 mb-6">
                 <div>
                   <h3 className="text-xl font-bold text-zinc-900 flex items-center gap-2">
                     <Ticket className="w-5 h-5 text-amber-500" /> Book Passes
@@ -414,7 +414,7 @@ export default function EventDetailsPage() {
                 <button
                   type="button"
                   onClick={() => setIsBookingMode(false)}
-                  className="text-xs text-zinc-400 hover:text-zinc-600 underline"
+                  className="min-h-[44px] px-2 flex items-center text-xs text-zinc-500 hover:text-zinc-800 underline"
                 >
                   View Details
                 </button>
@@ -434,7 +434,7 @@ export default function EventDetailsPage() {
                     <button
                       type="button"
                       onClick={() => setAttendeeType("member")}
-                      className={`py-2 px-3 text-xs font-semibold rounded-lg transition-all ${
+                      className={`min-h-[44px] py-2 px-3 text-xs font-semibold rounded-lg transition-all flex items-center justify-center ${
                         attendeeType === "member"
                           ? "bg-amber-500 text-white shadow-sm"
                           : "text-zinc-600 hover:text-zinc-900"
@@ -445,7 +445,7 @@ export default function EventDetailsPage() {
                     <button
                       type="button"
                       onClick={() => setAttendeeType("user")}
-                      className={`py-2 px-3 text-xs font-semibold rounded-lg transition-all ${
+                      className={`min-h-[44px] py-2 px-3 text-xs font-semibold rounded-lg transition-all flex items-center justify-center ${
                         attendeeType === "user"
                           ? "bg-amber-500 text-white shadow-sm"
                           : "text-zinc-600 hover:text-zinc-900"
@@ -460,7 +460,7 @@ export default function EventDetailsPage() {
                 <div className="space-y-4 pt-3 border-t border-zinc-100">
                   {attendeeType === "member" ? (
                     <div className="space-y-3 p-3.5 bg-zinc-50 border border-zinc-200 rounded-xl relative">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
                         <p className="text-xs text-zinc-600 font-medium">Type name, father name or mobile to search Member Directory:</p>
                         <span className="text-[10px] font-bold text-amber-700 bg-amber-100/80 px-2.5 py-0.5 rounded-full">
                           {allMembersList.length} Members Listed
@@ -470,7 +470,7 @@ export default function EventDetailsPage() {
                       {/* Selected Attendees Cards List */}
                       {selectedAttendees.length > 0 && (
                         <div className="space-y-2 p-3 bg-amber-50 rounded-xl border border-amber-200">
-                          <div className="flex items-center justify-between text-xs font-bold text-amber-900 border-b border-amber-200/60 pb-1.5">
+                          <div className="flex flex-wrap items-center justify-between gap-1 text-xs font-bold text-amber-900 border-b border-amber-200/60 pb-1.5">
                             <span>Selected Attendees ({selectedAttendees.length} / {maxPassAllowed} Max):</span>
                             <span className="text-[10px] bg-amber-200 text-amber-900 px-2.5 py-0.5 rounded-full font-bold">
                               {selectedAttendees.length} Ticket{selectedAttendees.length > 1 ? "s" : ""} Total
@@ -478,15 +478,15 @@ export default function EventDetailsPage() {
                           </div>
                           <div className="space-y-1.5 max-h-40 overflow-y-auto">
                             {selectedAttendees.map((att, idx) => (
-                              <div key={att.id} className="p-2 bg-white rounded-lg border border-amber-200/80 flex items-center justify-between text-xs shadow-sm">
-                                <div>
-                                  <span className="font-bold text-zinc-900">Ticket #{idx + 1}: {att.name}</span>
-                                  {att.samaj_id && <span className="text-[10px] font-mono text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded ml-1.5">{att.samaj_id}</span>}
+                              <div key={att.id} className="p-2.5 bg-white rounded-lg border border-amber-200/80 flex items-center justify-between text-xs shadow-sm gap-2">
+                                <div className="min-w-0 flex-1">
+                                  <span className="font-bold text-zinc-900 truncate block">Ticket #{idx + 1}: {att.name}</span>
+                                  {att.samaj_id && <span className="text-[10px] font-mono text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded inline-block mt-0.5">{att.samaj_id}</span>}
                                 </div>
                                 <button
                                   type="button"
                                   onClick={() => removeAttendee(idx)}
-                                  className="text-rose-600 hover:text-rose-800 text-xs font-bold px-1.5 py-0.5 rounded hover:bg-rose-50 transition-colors"
+                                  className="min-h-[36px] min-w-[36px] flex items-center justify-center text-rose-600 hover:text-rose-800 text-xs font-bold px-2 py-1 rounded hover:bg-rose-50 transition-colors shrink-0"
                                 >
                                   ✕ Remove
                                 </button>
@@ -501,12 +501,12 @@ export default function EventDetailsPage() {
                         <div className="flex gap-2">
                           <input
                             type="text"
-                            placeholder="Name / Father's Name / Last 4 digit of Mobile"
+                            placeholder="Name / Father's Name / Mobile"
                             value={memberSearchQuery}
                             onChange={(e) => handleMemberSearch(e.target.value)}
                             onFocus={() => { handleMemberSearch(memberSearchQuery); }}
                             onBlur={() => { setTimeout(() => setShowMemberDropdown(false), 250); }}
-                            className="flex-1 px-3.5 py-2.5 border border-zinc-300 rounded-xl text-sm bg-white focus:outline-none focus:border-amber-500 shadow-sm font-medium placeholder-zinc-400 placeholder:italic"
+                            className="w-full px-3.5 py-2.5 border border-zinc-300 rounded-xl text-sm bg-white focus:outline-none focus:border-amber-500 shadow-sm font-medium placeholder-zinc-400 placeholder:italic"
                           />
                         </div>
 
@@ -546,15 +546,15 @@ export default function EventDetailsPage() {
                     </div>
                   ) : (
                     <div className="space-y-3 p-3.5 bg-zinc-50 border border-zinc-200 rounded-xl">
-                      <p className="text-xs text-zinc-600 font-bold">Contact & Attendee Details:</p>
+                      <p className="text-xs text-zinc-600 font-bold">Contact &amp; Attendee Details:</p>
                       
                       <div className="space-y-1">
                         <label className="text-xs font-semibold text-zinc-700 block">Mobile no (whatsapp no) *</label>
-                        <input required type="tel" pattern="[0-9+]{10,13}" placeholder="Mobile no (whatsapp no)" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white focus:outline-none focus:border-amber-500" />
+                        <input required type="tel" pattern="[0-9+]{10,13}" placeholder="Mobile no (whatsapp no)" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white focus:outline-none focus:border-amber-500" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-xs font-semibold text-zinc-700 block">Primary Contact Email *</label>
-                        <input required type="email" placeholder="Your Email Address" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white focus:outline-none focus:border-amber-500" />
+                        <input required type="email" placeholder="Your Email Address" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white focus:outline-none focus:border-amber-500" />
                       </div>
 
                       <div className="pt-2 space-y-3 border-t border-zinc-200/60 mt-3">
@@ -576,7 +576,7 @@ export default function EventDetailsPage() {
                                 });
                                 if (idx === 0) setGuestName(val);
                               }}
-                              className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white focus:outline-none focus:border-amber-500"
+                              className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm bg-white focus:outline-none focus:border-amber-500"
                             />
                           </div>
                         ))}
@@ -587,7 +587,7 @@ export default function EventDetailsPage() {
 
                 {/* Step 3: Number of Passes & Limit Info */}
                 <div className="space-y-2 pt-2 border-t border-zinc-100">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <label className="text-sm font-semibold text-zinc-700">Number of Passes</label>
                     <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
                       {attendeeType === "member" ? "Member Cap: Max 10 Tickets" : "User Cap: Max 4 Tickets"}
@@ -598,7 +598,7 @@ export default function EventDetailsPage() {
                     <button
                       type="button"
                       onClick={() => setPassCount(Math.max(1, passCount - 1))}
-                      className="w-10 h-10 flex items-center justify-center border border-zinc-200 rounded-l-xl bg-zinc-50 hover:bg-zinc-100 text-zinc-600 font-bold"
+                      className="w-11 h-11 min-h-[44px] min-w-[44px] flex items-center justify-center border border-zinc-200 rounded-l-xl bg-zinc-50 hover:bg-zinc-100 text-zinc-600 font-bold text-lg"
                     >
                       -
                     </button>
@@ -608,12 +608,12 @@ export default function EventDetailsPage() {
                       max={maxPassAllowed}
                       readOnly
                       value={passCount > maxPassAllowed ? maxPassAllowed : passCount}
-                      className="w-16 h-10 text-center border-y border-zinc-200 focus:outline-none font-semibold text-zinc-900"
+                      className="w-16 h-11 min-h-[44px] text-center border-y border-zinc-200 focus:outline-none font-semibold text-zinc-900"
                     />
                     <button
                       type="button"
                       onClick={() => setPassCount(Math.min(maxPassAllowed, passCount + 1))}
-                      className="w-10 h-10 flex items-center justify-center border border-zinc-200 rounded-r-xl bg-zinc-50 hover:bg-zinc-100 text-zinc-600 font-bold"
+                      className="w-11 h-11 min-h-[44px] min-w-[44px] flex items-center justify-center border border-zinc-200 rounded-r-xl bg-zinc-50 hover:bg-zinc-100 text-zinc-600 font-bold text-lg"
                     >
                       +
                     </button>
@@ -631,24 +631,24 @@ export default function EventDetailsPage() {
                           <span className="text-sm font-semibold text-emerald-800 flex items-center gap-2">
                             <Ticket className="w-4 h-4" /> {appliedVoucher.code} applied — ₹{appliedVoucher.discountAmount} off
                           </span>
-                          <button type="button" onClick={handleRemoveVoucher} className="text-emerald-700 hover:text-emerald-900">
+                          <button type="button" onClick={handleRemoveVoucher} className="min-h-[44px] min-w-[44px] flex items-center justify-center text-emerald-700 hover:text-emerald-900">
                             <X className="w-4 h-4" />
                           </button>
                         </div>
                       ) : (
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <input
                             type="text"
                             placeholder="Enter voucher code"
                             value={voucherCode}
                             onChange={(e) => { setVoucherCode(e.target.value.toUpperCase()); setVoucherError(""); }}
-                            className="flex-1 px-3 py-2 border border-zinc-200 rounded-lg text-sm font-mono focus:outline-none focus:border-amber-500"
+                            className="flex-1 px-3 py-2.5 border border-zinc-200 rounded-lg text-sm font-mono focus:outline-none focus:border-amber-500"
                           />
                           <button
                             type="button"
                             onClick={handleApplyVoucher}
                             disabled={voucherChecking || !voucherCode.trim()}
-                            className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl disabled:opacity-50 transition-colors"
+                            className="min-h-[44px] px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl disabled:opacity-50 transition-colors flex items-center justify-center"
                           >
                             {voucherChecking ? "Checking..." : "Apply"}
                           </button>

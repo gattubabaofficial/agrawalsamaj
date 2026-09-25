@@ -325,18 +325,20 @@ export default function BlogReaderPage() {
 
       <article className="max-w-3xl mx-auto px-4 pb-16">
         {/* Title */}
-        <h1 className="text-3xl md:text-4xl font-bold text-zinc-900 leading-tight mb-6">{blog.title}</h1>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-zinc-900 leading-tight mb-6">{blog.title}</h1>
 
         {/* Author + Meta */}
-        <div className="flex items-center gap-4 mb-8 pb-6 border-b border-zinc-100">
-          <Avatar author={blog.author} size="lg" />
-          <div className="flex-1">
-            <p className="font-semibold text-zinc-800">
-              {blog.author ? `${blog.author.first_name} ${blog.author.surname}` : "Admin"}
-            </p>
-            <div className="flex items-center gap-3 text-zinc-400 text-xs mt-1">
-              <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{timeAgo(blog.created_at)}</span>
-              <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{blog.views} views</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-zinc-100">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <Avatar author={blog.author} size="lg" />
+            <div>
+              <p className="font-semibold text-zinc-800 text-sm sm:text-base">
+                {blog.author ? `${blog.author.first_name} ${blog.author.surname}` : "Admin"}
+              </p>
+              <div className="flex items-center gap-3 text-zinc-400 text-xs mt-0.5">
+                <span className="flex items-center gap-1"><Clock className="w-3 h-3 shrink-0" />{timeAgo(blog.created_at)}</span>
+                <span className="flex items-center gap-1"><Eye className="w-3 h-3 shrink-0" />{blog.views} views</span>
+              </div>
             </div>
           </div>
           {/* Actions */}
@@ -344,7 +346,7 @@ export default function BlogReaderPage() {
             <button
               onClick={handleLike}
               disabled={likeLoading}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-all ${liked ? "bg-rose-50 border-rose-200 text-rose-500" : "bg-zinc-50 border-zinc-200 text-zinc-500 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-500"}`}
+              className={`min-h-[44px] flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl border text-sm font-medium transition-all cursor-pointer ${liked ? "bg-rose-50 border-rose-200 text-rose-500" : "bg-zinc-50 border-zinc-200 text-zinc-600 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-500"}`}
             >
               <Heart className={`w-4 h-4 ${liked ? "fill-rose-500" : ""}`} />
               {likeCount}
@@ -353,22 +355,22 @@ export default function BlogReaderPage() {
               href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`*${blog?.title}*\nRead more on Mansrovar Agrawal Samaj Jaipur Portal: ${typeof window !== "undefined" ? window.location.href : ""}`)}`}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-sm font-semibold transition-all"
+              className="min-h-[44px] flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-sm font-semibold transition-all cursor-pointer"
             >
-              💬 WhatsApp Share
+              💬 WhatsApp
             </a>
             <button
               onClick={handleShare}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-500 hover:bg-amber-50 hover:border-amber-200 hover:text-amber-600 text-sm font-medium transition-all"
+              className="min-h-[44px] flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-amber-50 hover:border-amber-200 hover:text-amber-600 text-sm font-medium transition-all cursor-pointer"
             >
-              {copied ? <><CheckCheck className="w-4 h-4" /> Copied!</> : <><Share2 className="w-4 h-4" /> Copy Link</>}
+              {copied ? <><CheckCheck className="w-4 h-4 text-emerald-600" /> Copied!</> : <><Share2 className="w-4 h-4" /> Share</>}
             </button>
           </div>
         </div>
 
         {/* PDF Attachment Banner */}
         {blog.pdf_url && (
-          <div className="mb-8 p-4 bg-amber-50/60 border border-amber-200/80 rounded-2xl flex flex-wrap items-center justify-between gap-4 shadow-sm">
+          <div className="mb-8 p-4 bg-amber-50/60 border border-amber-200/80 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-amber-100 rounded-xl">
                 <FileText className="w-6 h-6 text-amber-600" />
@@ -382,7 +384,7 @@ export default function BlogReaderPage() {
               href={mediaUrl(blog.pdf_url) || blog.pdf_url}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-all shadow-sm whitespace-nowrap"
+              className="min-h-[44px] inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-all shadow-sm whitespace-nowrap w-full sm:w-auto"
             >
               View / Download PDF
             </a>
