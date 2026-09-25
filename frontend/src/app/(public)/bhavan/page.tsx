@@ -68,66 +68,66 @@ export default function BhavanLandingPage() {
             {introText || "Book pristine AC rooms, non-AC rooms, dormitories, and event amenities for your weddings, social gatherings, and community events."}
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4">
             <Link
               href="/bhavan/booking"
-              className="inline-flex items-center gap-3 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 px-8 py-4 text-base font-bold text-white shadow-lg shadow-amber-500/20 hover:scale-105 transition-all"
+              className="inline-flex min-h-[44px] items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 px-6 sm:px-8 py-3.5 sm:py-4 text-sm sm:text-base font-bold text-white shadow-lg shadow-amber-500/20 hover:scale-[1.02] transition-all"
             >
               Start Booking Enquiry <ArrowRight className="h-5 w-5" />
             </Link>
             <Link
               href="/bhavan/terms-and-conditions"
-              className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800/80 px-6 py-4 text-sm font-semibold text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all"
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800/80 px-5 sm:px-6 py-3.5 sm:py-4 text-xs sm:text-sm font-semibold text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all"
             >
-              <ShieldCheck className="h-4 w-4 text-amber-400" /> View Terms & Conditions
+              <ShieldCheck className="h-4 w-4 text-amber-400" /> View Terms &amp; Conditions
             </Link>
           </div>
         </div>
       </section>
 
       {/* Accommodation Cards */}
-      <section className="py-16 px-6 max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-white mb-3">Accommodation Types</h2>
-          <p className="text-zinc-400">Explore comfortable rooms and spacious dormitories</p>
+      <section className="py-12 sm:py-16 px-4 sm:px-6 max-w-7xl mx-auto">
+        <div className="text-center mb-8 sm:mb-12">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2 sm:mb-3">Accommodation Types</h2>
+          <p className="text-xs sm:text-sm text-zinc-400">Explore comfortable rooms and spacious dormitories</p>
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-64 rounded-2xl bg-zinc-800/50 animate-pulse" />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {types.map((type) => (
               <div
                 key={type.id}
-                className="group rounded-2xl border border-zinc-800 bg-zinc-950 p-6 flex flex-col justify-between hover:border-amber-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-amber-500/5"
+                className="group rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6 flex flex-col justify-between hover:border-amber-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-amber-500/5"
               >
                 <div>
-                  <div className="h-40 rounded-xl bg-zinc-900 border border-zinc-800 mb-5 overflow-hidden flex items-center justify-center">
+                  <div className="h-36 sm:h-40 rounded-xl bg-zinc-900 border border-zinc-800 mb-4 sm:mb-5 overflow-hidden flex items-center justify-center">
                     {type.images && type.images.length > 0 ? (
                       <img src={type.images[0].path} alt={type.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
-                      <Building className="h-12 w-12 text-zinc-700" />
+                      <Building className="h-10 w-10 sm:h-12 sm:w-12 text-zinc-700" />
                     )}
                   </div>
                   <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-md">
                     {type.kind}
                   </span>
-                  <h3 className="text-xl font-bold text-white mt-3 mb-2">{type.name}</h3>
+                  <h3 className="text-lg sm:text-xl font-bold text-white mt-2 sm:mt-3 mb-1 sm:mb-2">{type.name}</h3>
                   <p className="text-xs text-zinc-400 mb-4">{type.description || `Capacity: ${type.capacity_per_unit} guest(s) per unit`}</p>
                 </div>
 
                 <div className="border-t border-zinc-900 pt-4 flex items-center justify-between">
                   <div>
                     <span className="text-xs text-zinc-500">Starting from</span>
-                    <p className="text-lg font-bold text-amber-400">₹{type.base_price_per_night} <span className="text-xs font-normal text-zinc-400">/ night</span></p>
+                    <p className="text-base sm:text-lg font-bold text-amber-400">₹{type.base_price_per_night} <span className="text-xs font-normal text-zinc-400">/ night</span></p>
                   </div>
                   <Link
                     href="/bhavan/booking"
-                    className="p-2.5 rounded-lg bg-zinc-800 text-zinc-200 hover:bg-amber-500 hover:text-white transition-colors"
+                    className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2.5 rounded-lg bg-zinc-800 text-zinc-200 hover:bg-amber-500 hover:text-white transition-colors"
                   >
                     <ArrowRight className="h-4 w-4" />
                   </Link>

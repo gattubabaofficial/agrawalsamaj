@@ -34,21 +34,21 @@ export default function BhavanTermsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 py-12 px-6 sm:px-12">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <div className="flex items-center justify-between border-b border-zinc-800 pb-6">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 py-8 sm:py-12 px-4 sm:px-12">
+      <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-6">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-400 mb-2">
               <ShieldCheck className="h-4 w-4" /> Terms & Conditions
             </div>
-            <h1 className="text-3xl font-extrabold text-white">Bhavan Booking Policy</h1>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Bhavan Booking Policy</h1>
             {terms?.version_label && (
               <p className="text-xs text-zinc-400 mt-1">Current Version: {terms.version_label}</p>
             )}
           </div>
           <Link
             href="/bhavan/booking"
-            className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-800"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 min-h-[44px] text-sm text-zinc-300 hover:bg-zinc-800 self-start sm:self-auto"
           >
             <ArrowLeft className="h-4 w-4" /> Back to Booking
           </Link>

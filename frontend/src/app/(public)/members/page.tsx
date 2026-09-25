@@ -721,7 +721,7 @@ export default function PublicMembersPage() {
                   </div>
 
                   {/* Key details */}
-                  <div className="flex-1 min-w-0 grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1.5 text-xs">
+                  <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 text-xs">
                     {/* Phone */}
                     <div className="flex items-center gap-1.5 min-w-0">
                       <Phone className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
@@ -760,14 +760,14 @@ export default function PublicMembersPage() {
 
                     {/* Native Place */}
                     {m.native_place ? (
-                      <div className="flex items-center gap-1.5 min-w-0 col-span-2 md:col-span-2">
+                      <div className="flex items-center gap-1.5 min-w-0 col-span-1 sm:col-span-2 md:col-span-2">
                         <span className="text-zinc-500 font-semibold flex-shrink-0">Origin:</span>
                         <span className="text-zinc-700 font-medium truncate">🚩 {m.native_place}</span>
                       </div>
                     ) : null}
 
                     {/* Address (full width) */}
-                    <div className="col-span-2 md:col-span-4 flex items-start gap-1.5 min-w-0">
+                    <div className="col-span-1 sm:col-span-2 md:col-span-4 flex items-start gap-1.5 min-w-0">
                       <MapPin className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
                       <span className="text-zinc-600 font-medium truncate">
                         {m.address && !m.address_private
@@ -780,16 +780,16 @@ export default function PublicMembersPage() {
                   </div>
 
                   {/* Actions: Edit (OTP), View Details & Message */}
-                  <div className="flex items-center gap-2 flex-shrink-0 lg:justify-end border-t border-zinc-100 pt-3 mt-1 lg:border-t-0 lg:pt-0 lg:mt-0">
+                  <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 flex-shrink-0 lg:justify-end border-t border-zinc-100 pt-3 mt-1 lg:border-t-0 lg:pt-0 lg:mt-0">
                     <button
                       onClick={() => handleOpenEdit(m)}
-                      className="py-2 px-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap"
+                      className="flex-1 sm:flex-none min-h-[44px] py-2 px-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer"
                     >
                       <Edit3 className="w-4 h-4 text-zinc-500" /> Edit
                     </button>
                     <button
                       onClick={() => setViewMemberModal(m)}
-                      className="py-2 px-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap"
+                      className="flex-1 sm:flex-none min-h-[44px] py-2 px-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer"
                     >
                       <Eye className="w-4 h-4 text-zinc-500" /> View Details
                     </button>
@@ -804,7 +804,7 @@ export default function PublicMembersPage() {
                         setMessageError("");
                         setMessageSuccessMsg("");
                       }}
-                      className="py-2 px-3 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap"
+                      className="w-full sm:w-auto min-h-[44px] py-2 px-3.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer"
                     >
                       <MessageSquare className="w-4 h-4 text-amber-600" /> Message
                     </button>

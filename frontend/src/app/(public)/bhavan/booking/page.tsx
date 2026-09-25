@@ -839,21 +839,21 @@ export default function BhavanBookingPage() {
       <div className="max-w-6xl mx-auto">
 
         {/* Stepper Progress Bar */}
-        <div className="mb-10">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mb-6 sm:mb-10">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
             {[1, 2, 3, 4, 5, 6].map((s) => (
               <div key={s} className="flex flex-col items-center flex-1">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${step === s
-                      ? "bg-amber-500 text-white shadow-lg shadow-amber-500/30 scale-110"
+                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm transition-all ${step === s
+                      ? "bg-amber-500 text-white shadow-lg shadow-amber-500/30 scale-105 sm:scale-110"
                       : step > s
                         ? "bg-emerald-500 text-white"
                         : "bg-zinc-800 text-zinc-500"
                     }`}
                 >
-                  {step > s ? <Check className="w-5 h-5" /> : s}
+                  {step > s ? <Check className="w-4 h-4 sm:w-5 sm:h-5" /> : s}
                 </div>
-                <span className="text-[10px] uppercase font-bold tracking-wider mt-2 text-zinc-400 hidden sm:block">
+                <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mt-1.5 sm:mt-2 text-zinc-400 hidden xs:block">
                   {s === 1 && "Dates"}
                   {s === 2 && "Rooms"}
                   {s === 3 && "Amenities"}
@@ -872,10 +872,10 @@ export default function BhavanBookingPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
 
           {/* Stepper Main Step Container */}
-          <div className="lg:col-span-2 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-6 sm:p-8">
+          <div className="lg:col-span-2 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 sm:p-8">
 
             {/* Step 1: Dates & Purpose */}
             {step === 1 && (
@@ -1493,7 +1493,7 @@ export default function BhavanBookingPage() {
                                       type="button"
                                       disabled={currentQty <= 0}
                                       onClick={() => handleApplyBulkQty(t.id, Math.max(0, currentQty - 1))}
-                                      className="w-10 h-10 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-extrabold flex items-center justify-center transition-colors cursor-pointer text-lg disabled:opacity-30 disabled:cursor-not-allowed"
+                                      className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-extrabold flex items-center justify-center transition-colors cursor-pointer text-lg disabled:opacity-30 disabled:cursor-not-allowed"
                                       aria-label={`Decrease ${t.name}`}
                                     >
                                       -
@@ -1514,7 +1514,7 @@ export default function BhavanBookingPage() {
                                       type="button"
                                       disabled={currentQty >= minAvailAcrossStay || isSoldOut}
                                       onClick={() => handleApplyBulkQty(t.id, currentQty + 1)}
-                                      className="w-10 h-10 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-extrabold flex items-center justify-center transition-colors cursor-pointer text-lg disabled:opacity-30 disabled:cursor-not-allowed"
+                                      className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-extrabold flex items-center justify-center transition-colors cursor-pointer text-lg disabled:opacity-30 disabled:cursor-not-allowed"
                                       aria-label={`Increase ${t.name}`}
                                     >
                                       +
@@ -1708,7 +1708,8 @@ export default function BhavanBookingPage() {
                                       type="button"
                                       disabled={currentQty <= 0}
                                       onClick={() => handleSetDateTypeQty(activeDateStr, t.id, currentQty - 1)}
-                                      className="w-9 h-9 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-extrabold flex items-center justify-center transition-colors cursor-pointer text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+                                      className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-extrabold flex items-center justify-center transition-colors cursor-pointer text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+                                      aria-label={`Decrease ${t.name}`}
                                     >
                                       -
                                     </button>
@@ -1728,7 +1729,8 @@ export default function BhavanBookingPage() {
                                       type="button"
                                       disabled={currentQty >= maxAvail || isFull}
                                       onClick={() => handleSetDateTypeQty(activeDateStr, t.id, currentQty + 1)}
-                                      className="w-9 h-9 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-extrabold flex items-center justify-center transition-colors cursor-pointer text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+                                      className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-extrabold flex items-center justify-center transition-colors cursor-pointer text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+                                      aria-label={`Increase ${t.name}`}
                                     >
                                       +
                                     </button>
@@ -1953,7 +1955,8 @@ export default function BhavanBookingPage() {
                                   type="button"
                                   disabled={firstDateQty <= 0}
                                   onClick={() => handleApplyBulkAmenityQty(a.id, firstDateQty - 1)}
-                                  className="w-9 h-9 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-extrabold flex items-center justify-center transition-colors cursor-pointer text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+                                  className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-extrabold flex items-center justify-center transition-colors cursor-pointer text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+                                  aria-label={`Decrease ${a.name}`}
                                 >
                                   -
                                 </button>
@@ -1973,7 +1976,8 @@ export default function BhavanBookingPage() {
                                   type="button"
                                   disabled={firstDateQty >= maxLimit || isOutOfStock}
                                   onClick={() => handleApplyBulkAmenityQty(a.id, firstDateQty + 1)}
-                                  className="w-9 h-9 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-extrabold flex items-center justify-center transition-colors cursor-pointer text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+                                  className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-extrabold flex items-center justify-center transition-colors cursor-pointer text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+                                  aria-label={`Increase ${a.name}`}
                                 >
                                   +
                                 </button>
@@ -2160,7 +2164,8 @@ export default function BhavanBookingPage() {
                                       type="button"
                                       disabled={currentQty <= 0}
                                       onClick={() => handleSetDateAmenityQty(activeDateStr, a.id, currentQty - 1)}
-                                      className="w-9 h-9 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-extrabold flex items-center justify-center transition-colors cursor-pointer text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+                                      className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-extrabold flex items-center justify-center transition-colors cursor-pointer text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+                                      aria-label={`Decrease ${a.name}`}
                                     >
                                       -
                                     </button>
@@ -2180,7 +2185,8 @@ export default function BhavanBookingPage() {
                                       type="button"
                                       disabled={currentQty >= maxLimit || isOutOfStock}
                                       onClick={() => handleSetDateAmenityQty(activeDateStr, a.id, currentQty + 1)}
-                                      className="w-9 h-9 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-extrabold flex items-center justify-center transition-colors cursor-pointer text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+                                      className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-extrabold flex items-center justify-center transition-colors cursor-pointer text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+                                      aria-label={`Increase ${a.name}`}
                                     >
                                       +
                                     </button>
@@ -2312,7 +2318,7 @@ export default function BhavanBookingPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1">Total Guests</label>
                       <input

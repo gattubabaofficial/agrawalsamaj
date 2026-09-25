@@ -375,16 +375,16 @@ export default function DonatePage() {
               </div>
 
               {/* Quick amounts */}
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                 {PRESET_AMOUNTS.map(preset => (
                   <button
                     key={preset}
                     type="button"
                     onClick={() => setAmount(String(preset))}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                    className={`min-h-[44px] py-2 px-1 rounded-xl text-xs font-bold border transition-all flex items-center justify-center cursor-pointer ${
                       amount === String(preset)
-                        ? "bg-amber-500 border-amber-500 text-white"
-                        : "border-zinc-200 hover:bg-zinc-50 text-zinc-600"
+                        ? "bg-amber-500 border-amber-500 text-white shadow-sm"
+                        : "border-zinc-200 hover:bg-zinc-50 text-zinc-700 bg-white"
                     }`}
                   >
                     ₹{preset.toLocaleString("en-IN")}
