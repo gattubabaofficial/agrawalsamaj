@@ -163,7 +163,6 @@ export default function BhavanBookingPage() {
   const [calendarData, setCalendarData] = useState<Record<string, any>>({});
   const [calendarLoading, setCalendarLoading] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
-  const calendarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -597,21 +596,6 @@ export default function BhavanBookingPage() {
     fetchCalendarData(calendarViewDate);
   }, [calendarViewDate]);
 
-  // Click outside to close calendar popover
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
-        setIsCalendarOpen(false);
-      }
-    };
-    if (isCalendarOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isCalendarOpen]);
-
   const fetchCalendarRange = async (startStr: string, endStr: string) => {
     try {
       const res = await safeFetch(`${getApiBaseUrl()}/bhavan/calendar?start_date=${startStr}&end_date=${endStr}`);
@@ -910,7 +894,7 @@ export default function BhavanBookingPage() {
                 </div>
 
                 {/* Date Selection Box & Interactive Popover Trigger */}
-                <div className="relative" ref={calendarRef}>
+                <div className="relative">
                   <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
                     Booking Dates & Live Availability
                   </label>
@@ -1000,6 +984,7 @@ export default function BhavanBookingPage() {
                     >
                       <div
                         onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
                         className="w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] sm:max-w-3xl md:max-w-4xl bg-zinc-950 sm:rounded-2xl border border-zinc-700 shadow-2xl flex flex-col overflow-hidden"
                       >
                         {/* 1. Modal Header */}
@@ -1010,7 +995,10 @@ export default function BhavanBookingPage() {
                           </div>
                           <button
                             type="button"
-                            onClick={() => setIsCalendarOpen(false)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsCalendarOpen(false);
+                            }}
                             aria-label="Close date picker"
                             className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
                           >
@@ -1023,7 +1011,10 @@ export default function BhavanBookingPage() {
                           <div className="flex items-center justify-between gap-2 max-w-lg mx-auto">
                             <button
                               type="button"
-                              onClick={() => setCalendarTab("checkIn")}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCalendarTab("checkIn");
+                              }}
                               className={`flex-1 p-2 sm:p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                                 calendarTab === "checkIn"
                                   ? "border-amber-400 bg-amber-500/15 text-white shadow-sm ring-1 ring-amber-400/40"
@@ -1047,7 +1038,10 @@ export default function BhavanBookingPage() {
 
                             <button
                               type="button"
-                              onClick={() => setCalendarTab("checkOut")}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCalendarTab("checkOut");
+                              }}
                               className={`flex-1 p-2 sm:p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                                 calendarTab === "checkOut"
                                   ? "border-amber-400 bg-amber-500/15 text-white shadow-sm ring-1 ring-amber-400/40"
@@ -1068,7 +1062,10 @@ export default function BhavanBookingPage() {
                         <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 bg-zinc-950 shrink-0">
                           <button
                             type="button"
-                            onClick={handlePrevMonth}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePrevMonth();
+                            }}
                             className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-200 hover:text-white transition-colors cursor-pointer"
                             aria-label="Previous Month"
                           >
@@ -1092,7 +1089,10 @@ export default function BhavanBookingPage() {
 
                           <button
                             type="button"
-                            onClick={handleNextMonth}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleNextMonth();
+                            }}
                             className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-200 hover:text-white transition-colors cursor-pointer"
                             aria-label="Next Month"
                           >
@@ -1155,7 +1155,11 @@ export default function BhavanBookingPage() {
                                               key={dateStr}
                                               type="button"
                                               disabled={isDisabled}
-                                              onClick={() => handleCalendarDateSelect(dateStr)}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleCalendarDateSelect(dateStr);
+                                              }}
+                                              onMouseDown={(e) => e.stopPropagation()}
                                               title={
                                                 isClosed
                                                   ? info?.closure_reason || "Closed"
@@ -1250,7 +1254,10 @@ export default function BhavanBookingPage() {
                           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                             <button
                               type="button"
-                              onClick={() => setIsCalendarOpen(false)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsCalendarOpen(false);
+                              }}
                               className="w-full sm:w-auto px-5 py-2.5 min-h-[44px] rounded-xl bg-amber-500 hover:bg-amber-400 text-white font-bold text-xs sm:text-sm transition-colors cursor-pointer shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
                             >
                               <span>Apply Dates</span>
