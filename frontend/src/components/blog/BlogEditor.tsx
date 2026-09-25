@@ -185,33 +185,33 @@ export default function BlogEditor({ initialData, mode }: BlogEditorProps) {
   return (
     <div className="min-h-screen bg-zinc-50" data-color-mode="light">
       {/* Topbar */}
-      <div className="sticky top-0 z-40 bg-white border-b border-zinc-200 flex items-center gap-4 px-6 h-16 shadow-sm">
-        <button
-          onClick={() => router.push("/admin/blog")}
-          className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-700 transition-colors text-sm"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </button>
+      <div className="sticky top-0 z-40 bg-white border-b border-zinc-200 flex items-center justify-between gap-2 sm:gap-4 px-4 sm:px-6 min-h-[64px] py-2 sm:py-0 shadow-sm flex-wrap">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push("/admin/blog")}
+            className="min-h-[44px] min-w-[44px] flex items-center gap-1.5 text-zinc-500 hover:text-zinc-700 transition-colors text-sm cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
 
-        <div className="flex-1">
-          <h1 className="font-semibold text-zinc-800 text-sm">
+          <h1 className="font-semibold text-zinc-800 text-xs sm:text-sm">
             {mode === "new" ? "New Blog Post" : "Edit Blog Post"}
           </h1>
         </div>
 
-        {/* Status badge */}
-        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${status === "published" ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-amber-50 text-amber-600 border border-amber-100"}`}>
-          {status === "published" ? "Published" : "Draft"}
-        </span>
-
         {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Status badge */}
+          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${status === "published" ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-amber-50 text-amber-600 border border-amber-100"}`}>
+            {status === "published" ? "Published" : "Draft"}
+          </span>
+
           {saved && (
             <motion.span
               initial={{ opacity: 0, x: 8 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-1 text-emerald-600 text-sm font-medium"
+              className="flex items-center gap-1 text-emerald-600 text-xs sm:text-sm font-medium"
             >
               <CheckCircle className="w-4 h-4" /> Saved!
             </motion.span>
@@ -219,7 +219,7 @@ export default function BlogEditor({ initialData, mode }: BlogEditorProps) {
           <button
             onClick={() => handleSave(false)}
             disabled={saving}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-zinc-200 text-zinc-700 text-sm font-medium hover:bg-zinc-50 transition-colors disabled:opacity-50"
+            className="min-h-[44px] flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl border border-zinc-200 text-zinc-700 text-xs sm:text-sm font-medium hover:bg-zinc-50 transition-colors disabled:opacity-50 cursor-pointer"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Draft
@@ -227,7 +227,7 @@ export default function BlogEditor({ initialData, mode }: BlogEditorProps) {
           <button
             onClick={() => handleSave(true)}
             disabled={saving}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold shadow-md shadow-amber-200 transition-colors disabled:opacity-50"
+            className="min-h-[44px] flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs sm:text-sm font-semibold shadow-md shadow-amber-200 transition-colors disabled:opacity-50 cursor-pointer"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             Publish

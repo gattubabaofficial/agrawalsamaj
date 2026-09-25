@@ -268,16 +268,16 @@ export default function UserEventsPage() {
                     </div>
                   )}
 
-                  <div className="pt-4 border-t border-zinc-100 flex items-center gap-3">
+                  <div className="pt-4 border-t border-zinc-100 flex flex-col sm:flex-row items-center gap-3">
                     <button
                       onClick={() => setViewingDetailsEvent(event)}
-                      className="flex-1 py-2.5 px-3 border border-zinc-300 hover:border-amber-500 hover:bg-amber-50 text-zinc-700 hover:text-amber-700 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                      className="w-full sm:flex-1 min-h-[44px] py-2.5 px-3 border border-zinc-300 hover:border-amber-500 hover:bg-amber-50 text-zinc-700 hover:text-amber-700 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                     >
                       <Info className="w-4 h-4 text-amber-500" /> View Details
                     </button>
                     <button 
                       onClick={() => handleRegisterClick(event)}
-                      className="flex-1 py-2.5 px-3 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5"
+                      className="w-full sm:flex-1 min-h-[44px] py-2.5 px-3 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <Ticket className="w-4 h-4 text-amber-400" /> Book a Ticket
                     </button>
@@ -314,8 +314,8 @@ export default function UserEventsPage() {
                     {reg.event_venue && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5"/> {reg.event_venue}</span>}
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                  <div className="text-left sm:text-right">
                     <p className="text-sm font-bold text-zinc-900">{reg.pass_count} Passes</p>
                     <p className={`text-xs font-semibold ${reg.payment_status === 'verified' ? 'text-emerald-600' : 'text-amber-600'}`}>
                       {reg.payment_status?.toUpperCase()}
@@ -324,7 +324,7 @@ export default function UserEventsPage() {
                   {(reg.payment_status === 'verified' || reg.payment_status === 'not_applicable') && (
                     <button 
                       onClick={() => setViewingPassesReg(reg)}
-                      className="px-3 py-2 bg-amber-50 text-amber-700 hover:bg-amber-100 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2 shadow-sm animate-fade-in"
+                      className="min-h-[44px] px-4 py-2 bg-amber-50 text-amber-700 hover:bg-amber-100 text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm animate-fade-in cursor-pointer"
                     >
                       <Ticket className="w-4 h-4" /> View Passes
                     </button>
@@ -406,8 +406,9 @@ export default function UserEventsPage() {
                   <button 
                     type="button"
                     onClick={() => setPassCount(prev => Math.max(1, prev - 1))}
-                    className="p-2 bg-white hover:bg-zinc-100 border border-zinc-200 rounded-lg text-zinc-700 disabled:opacity-50 transition-colors"
+                    className="min-w-[44px] min-h-[44px] flex items-center justify-center bg-white hover:bg-zinc-100 border border-zinc-200 rounded-lg text-zinc-700 disabled:opacity-50 transition-colors cursor-pointer"
                     disabled={passCount <= 1}
+                    aria-label="Decrease ticket count"
                   >
                     <Minus className="w-4 h-4" />
                   </button>
@@ -415,8 +416,9 @@ export default function UserEventsPage() {
                   <button 
                     type="button"
                     onClick={() => setPassCount(prev => Math.min(selectedEvent.max_per_user || 5, prev + 1))}
-                    className="p-2 bg-white hover:bg-zinc-100 border border-zinc-200 rounded-lg text-zinc-700 transition-colors"
+                    className="min-w-[44px] min-h-[44px] flex items-center justify-center bg-white hover:bg-zinc-100 border border-zinc-200 rounded-lg text-zinc-700 transition-colors cursor-pointer"
                     disabled={passCount >= (selectedEvent.max_per_user || 5)}
+                    aria-label="Increase ticket count"
                   >
                     <Plus className="w-4 h-4" />
                   </button>
@@ -529,18 +531,18 @@ export default function UserEventsPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-2 flex gap-4">
+              <div className="pt-2 flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <button 
                   type="button"
                   onClick={() => setShowBookingModal(false)}
-                  className="flex-1 py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold rounded-xl text-sm transition-colors"
+                  className="w-full sm:flex-1 min-h-[44px] py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold rounded-xl text-sm transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
                   disabled={isSubmittingBooking}
-                  className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl text-sm shadow-md transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full sm:flex-1 min-h-[44px] py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl text-sm shadow-md transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isSubmittingBooking && <Loader2 className="w-4 h-4 animate-spin" />}
                   {selectedEvent.pass_price === 0 

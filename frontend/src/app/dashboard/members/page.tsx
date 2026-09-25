@@ -101,47 +101,47 @@ export default function UserMembersPage() {
             No members found.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 p-4 sm:p-6">
             {filteredMembers.map((m) => {
               const initials = `${m.first_name.charAt(0)}${m.surname.charAt(0)}`.toUpperCase();
               return (
-                <div key={m.user_id} className="bg-white border border-zinc-200 rounded-2xl p-5 hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+                <div key={m.user_id} className="bg-white border border-zinc-200 rounded-2xl p-4 sm:p-5 hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
                   <div className="space-y-4">
                     <div className="flex items-start gap-4">
                       {m.profile_photo ? (
                         <img 
                           src={mediaUrl(m.profile_photo) || m.profile_photo} 
                           alt={`${m.first_name} ${m.surname}`}
-                          className="w-12 h-12 rounded-full object-cover border-2 border-amber-500/20"
+                          className="w-12 h-12 rounded-full object-cover border-2 border-amber-500/20 flex-shrink-0"
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-sm border border-amber-200">
+                        <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-sm border border-amber-200 flex-shrink-0">
                           {initials}
                         </div>
                       )}
-                      <div>
-                        <h4 className="font-bold text-zinc-900 text-base">{m.first_name} {m.surname}</h4>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-zinc-900 text-base truncate">{m.first_name} {m.surname}</h4>
                         {m.samaj_id && (
                           <span className="inline-flex items-center gap-1 mt-1 text-xs font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-100">
                             <Award className="w-3.5 h-3.5" /> {m.samaj_id}
                           </span>
                         )}
-                        {m.profession && <p className="text-xs text-zinc-500 mt-1 italic">{m.profession}</p>}
+                        {m.profession && <p className="text-xs text-zinc-500 mt-1 italic truncate">{m.profession}</p>}
                       </div>
                     </div>
 
                     <div className="border-t border-zinc-100 pt-3 space-y-2.5 text-sm">
                       {m.family_name && (
                         <div className="flex items-center gap-2 text-zinc-600">
-                          <FileUser className="w-4 h-4 text-zinc-400" />
-                          <span>{m.family_name} ({m.family_relation || 'Member'})</span>
+                          <FileUser className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+                          <span className="truncate">{m.family_name} ({m.family_relation || 'Member'})</span>
                         </div>
                       )}
                       
                       {m.native_place && (
                         <div className="flex items-center gap-2 text-zinc-600 text-xs">
-                          <span className="font-semibold text-zinc-500">Origin:</span>
-                          <span>🚩 {m.native_place}</span>
+                          <span className="font-semibold text-zinc-500 flex-shrink-0">Origin:</span>
+                          <span className="truncate">🚩 {m.native_place}</span>
                         </div>
                       )}
 
@@ -186,7 +186,7 @@ export default function UserMembersPage() {
                   <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between">
                     <button
                       onClick={() => router.push(`/dashboard/chat?userId=${m.user_id}`)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
+                      className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-xl shadow-sm transition-colors cursor-pointer"
                     >
                       <MessageSquare className="w-3.5 h-3.5" /> Message
                     </button>

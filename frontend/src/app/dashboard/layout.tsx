@@ -144,7 +144,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
             <button
               onClick={() => setIsMobileNavOpen(false)}
-              className={`p-1.5 rounded-lg md:hidden ${role === "ADMIN" ? "text-zinc-400 hover:bg-zinc-800 hover:text-white" : "text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800"}`}
+              className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg md:hidden cursor-pointer ${role === "ADMIN" ? "text-zinc-400 hover:bg-zinc-800 hover:text-white" : "text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800"}`}
               aria-label="Close menu"
               title="Close menu"
             >
@@ -159,7 +159,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <button
                   onClick={() => setIsManagementOpen(!isManagementOpen)}
                   title="Show management tools"
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${
+                  className={`w-full flex items-center justify-between px-3 py-2.5 min-h-[44px] rounded-xl text-sm font-semibold transition-colors cursor-pointer ${
                     role === "ADMIN" ? "text-zinc-300 hover:bg-zinc-800 hover:text-white" : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900"
                   }`}
                 >
@@ -184,7 +184,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           key={item.name}
                           href={item.href}
                           title={item.description}
-                          className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
+                          className={`flex items-center gap-3 px-3 py-2.5 min-h-[44px] rounded-xl text-xs font-medium transition-colors ${
                             isActive
                               ? "bg-amber-500/10 text-amber-500 font-semibold"
                               : role === "ADMIN"
@@ -211,7 +211,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   key={item.name}
                   href={item.href}
                   title={item.description}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:translate-x-0.5 ${
+                  className={`flex items-center gap-3 px-3 py-2.5 min-h-[44px] rounded-xl text-sm font-medium transition-all hover:translate-x-0.5 ${
                     isActive
                       ? role === "ADMIN"
                         ? "bg-gradient-to-r from-amber-500/20 to-rose-500/20 text-amber-400 font-semibold shadow-[0_0_12px_rgba(245,158,11,0.25)]"
@@ -236,13 +236,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <header className="h-16 bg-white/80 backdrop-blur-md border-b border-zinc-200 flex items-center justify-between px-4 sm:px-6 flex-shrink-0 sticky top-0 z-10">
           <button
             onClick={() => setIsMobileNavOpen(true)}
-            className="p-2.5 text-zinc-500 hover:text-zinc-800 rounded-lg hover:bg-zinc-100 transition-colors md:hidden"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-500 hover:text-zinc-800 rounded-lg hover:bg-zinc-100 transition-colors md:hidden cursor-pointer"
             aria-label="Open menu"
             title="Open navigation menu"
           >
             <Menu className="w-5 h-5" />
           </button>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 ml-auto md:ml-0">
             <div className="flex items-center gap-3">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
                 role === "ADMIN" ? "bg-gradient-to-br from-indigo-500 to-purple-500" : "bg-gradient-to-br from-amber-400 to-rose-400"
@@ -255,8 +255,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
             <button
               onClick={handleLogout}
-              className="p-2 text-zinc-400 hover:text-zinc-600 rounded-lg hover:bg-zinc-100 transition-colors"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-400 hover:text-zinc-600 rounded-lg hover:bg-zinc-100 transition-colors cursor-pointer"
               title="Logout"
+              aria-label="Logout"
             >
               <LogOut className="w-5 h-5" />
             </button>
@@ -264,7 +265,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Page Content */}
-        <div ref={contentRef} className="flex-1 overflow-auto p-6">
+        <div ref={contentRef} className="flex-1 overflow-auto p-4 sm:p-6">
           {children}
         </div>
       </main>

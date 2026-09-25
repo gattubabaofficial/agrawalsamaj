@@ -145,17 +145,17 @@ export default function ProfilePage() {
             </div>
           </div>
           {!isEditing && (
-            <button onClick={() => setIsEditing(true)} className="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors whitespace-nowrap">
+            <button onClick={() => setIsEditing(true)} className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors whitespace-nowrap cursor-pointer">
               Edit Profile
             </button>
           )}
         </div>
 
-        <div className="p-6 sm:p-10">
+        <div className="p-4 sm:p-10">
           {!isEditing ? (
             <div>
               <h3 className="text-lg font-semibold text-zinc-900 mb-6">Personal Information</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-12">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 sm:gap-y-8 gap-x-12">
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider flex items-center justify-between">
                     <span className="flex items-center gap-2"><Mail className="w-3.5 h-3.5" /> Email Address</span>
@@ -209,7 +209,7 @@ export default function ProfilePage() {
             <form onSubmit={handleSave} className="space-y-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-zinc-900">Edit Personal Information</h3>
-                <button type="button" onClick={() => setIsEditing(false)} className="text-zinc-400 hover:text-zinc-600 p-1">
+                <button type="button" onClick={() => setIsEditing(false)} className="text-zinc-400 hover:text-zinc-600 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -225,7 +225,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center gap-2 flex-wrap">
                     <label className="text-sm font-semibold text-zinc-700">Email Address</label>
                     <label className="flex items-center gap-1.5 text-xs text-zinc-500 cursor-pointer">
                       <input type="checkbox" checked={formData.email_private} onChange={e => setFormData({...formData, email_private: e.target.checked})} className="rounded text-amber-500 focus:ring-amber-500 border-zinc-300" />
@@ -236,7 +236,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center gap-2 flex-wrap">
                     <label className="text-sm font-semibold text-zinc-700">Mobile no (whatsapp no)</label>
                     <label className="flex items-center gap-1.5 text-xs text-zinc-500 cursor-pointer">
                       <input type="checkbox" checked={formData.mobile_private} onChange={e => setFormData({...formData, mobile_private: e.target.checked})} className="rounded text-amber-500 focus:ring-amber-500 border-zinc-300" />
@@ -247,7 +247,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2 sm:col-span-2">
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center gap-2 flex-wrap">
                     <label className="text-sm font-semibold text-zinc-700">Profession / Business</label>
                     <label className="flex items-center gap-1.5 text-xs text-zinc-500 cursor-pointer">
                       <input type="checkbox" checked={formData.profession_private} onChange={e => setFormData({...formData, profession_private: e.target.checked})} className="rounded text-amber-500 focus:ring-amber-500 border-zinc-300" />
@@ -258,7 +258,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2 sm:col-span-2">
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center gap-2 flex-wrap">
                     <label className="text-sm font-semibold text-zinc-700">Where you belong from / Native Place</label>
                     <label className="flex items-center gap-1.5 text-xs text-zinc-500 cursor-pointer">
                       <input type="checkbox" checked={formData.native_place_private} onChange={e => setFormData({...formData, native_place_private: e.target.checked})} className="rounded text-amber-500 focus:ring-amber-500 border-zinc-300" />
@@ -269,7 +269,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2 sm:col-span-2">
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center gap-2 flex-wrap">
                     <label className="text-sm font-semibold text-zinc-700">About Me / Bio</label>
                     <label className="flex items-center gap-1.5 text-xs text-zinc-500 cursor-pointer">
                       <input type="checkbox" checked={formData.bio_private} onChange={e => setFormData({...formData, bio_private: e.target.checked})} className="rounded text-amber-500 focus:ring-amber-500 border-zinc-300" />
@@ -280,7 +280,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2 sm:col-span-2">
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center gap-2 flex-wrap">
                     <label className="text-sm font-semibold text-zinc-700">Address</label>
                     <label className="flex items-center gap-1.5 text-xs text-zinc-500 cursor-pointer">
                       <input type="checkbox" checked={formData.address_private} onChange={e => setFormData({...formData, address_private: e.target.checked})} className="rounded text-amber-500 focus:ring-amber-500 border-zinc-300" />
@@ -291,11 +291,11 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-zinc-200 flex justify-end gap-3">
-                <button type="button" onClick={() => setIsEditing(false)} className="px-5 py-2.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-semibold rounded-xl shadow-sm transition-colors">
+              <div className="pt-6 border-t border-zinc-200 flex flex-col sm:flex-row justify-end gap-3">
+                <button type="button" onClick={() => setIsEditing(false)} className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-semibold rounded-xl shadow-sm transition-colors cursor-pointer">
                   Cancel
                 </button>
-                <button type="submit" disabled={isSaving} className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors flex items-center gap-2">
+                <button type="submit" disabled={isSaving} className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 cursor-pointer">
                   {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                   Save Changes
                 </button>

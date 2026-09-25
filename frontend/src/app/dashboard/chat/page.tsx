@@ -430,12 +430,12 @@ export default function ChatPage() {
   const uniqueFilteredConversations = filteredConversations.filter((v, i, a) => a.findIndex(t => t.id === v.id && t.type === v.type) === i);
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] -m-6 bg-zinc-50 border border-zinc-200 overflow-hidden rounded-2xl shadow-sm">
+    <div className="flex h-[calc(100vh-7rem)] sm:h-[calc(100vh-8rem)] -m-4 sm:-m-6 bg-zinc-50 border border-zinc-200 overflow-hidden rounded-2xl shadow-sm">
       {/* Sidebar Navigation */}
       <div className={`${activeChat ? "hidden md:flex" : "flex"} w-full md:w-80 border-r border-zinc-200 bg-white flex-col flex-shrink-0`}>
         <div className="p-4 border-b border-zinc-200 bg-zinc-50/50 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="font-bold text-zinc-800 text-lg">Samaj Chat Channels</h2>
+            <h2 className="font-bold text-zinc-800 text-base sm:text-lg">Samaj Chat Channels</h2>
             <MessageCircle className="w-5 h-5 text-amber-500" />
           </div>
           
@@ -447,7 +447,7 @@ export default function ChatPage() {
               placeholder="Search chat or user..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-xs border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white"
+              className="w-full pl-9 pr-3 py-2 text-xs border border-zinc-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white min-h-[40px]"
             />
           </div>
 
@@ -455,25 +455,25 @@ export default function ChatPage() {
           <div className="flex bg-zinc-100 p-1 rounded-xl gap-1 text-[11px] font-semibold text-zinc-500">
             <button 
               onClick={() => setSidebarTab("all")}
-              className={`flex-1 py-1.5 rounded-lg text-center transition-colors cursor-pointer ${sidebarTab === "all" ? "bg-white text-amber-600 shadow-sm" : "hover:text-zinc-800"}`}
+              className={`flex-1 py-2 rounded-lg text-center transition-colors cursor-pointer min-h-[36px] ${sidebarTab === "all" ? "bg-white text-amber-600 shadow-sm" : "hover:text-zinc-800"}`}
             >
               All
             </button>
             <button 
               onClick={() => setSidebarTab("personal")}
-              className={`flex-1 py-1.5 rounded-lg text-center transition-colors cursor-pointer ${sidebarTab === "personal" ? "bg-white text-amber-600 shadow-sm" : "hover:text-zinc-800"}`}
+              className={`flex-1 py-2 rounded-lg text-center transition-colors cursor-pointer min-h-[36px] ${sidebarTab === "personal" ? "bg-white text-amber-600 shadow-sm" : "hover:text-zinc-800"}`}
             >
               DMs
             </button>
             <button 
               onClick={() => setSidebarTab("group")}
-              className={`flex-1 py-1.5 rounded-lg text-center transition-colors cursor-pointer ${sidebarTab === "group" ? "bg-white text-amber-600 shadow-sm" : "hover:text-zinc-800"}`}
+              className={`flex-1 py-2 rounded-lg text-center transition-colors cursor-pointer min-h-[36px] ${sidebarTab === "group" ? "bg-white text-amber-600 shadow-sm" : "hover:text-zinc-800"}`}
             >
               Groups
             </button>
             <button 
               onClick={() => setSidebarTab("explore")}
-              className={`flex-1 py-1.5 rounded-lg text-center transition-colors cursor-pointer ${sidebarTab === "explore" ? "bg-white text-amber-600 shadow-sm" : "hover:text-zinc-800"}`}
+              className={`flex-1 py-2 rounded-lg text-center transition-colors cursor-pointer min-h-[36px] ${sidebarTab === "explore" ? "bg-white text-amber-600 shadow-sm" : "hover:text-zinc-800"}`}
             >
               Explore
             </button>
@@ -499,14 +499,14 @@ export default function ChatPage() {
                   {g.is_joined ? (
                     <button 
                       onClick={() => handleLeaveGroup(g.group_id)}
-                      className="w-full py-1.5 border border-rose-200 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg text-xs font-semibold shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                      className="w-full min-h-[44px] py-2 border border-rose-200 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl text-xs font-semibold shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                     >
                       <LogOut className="w-3.5 h-3.5" /> Leave Group
                     </button>
                   ) : (
                     <button 
                       onClick={() => handleJoinGroup(g.group_id)}
-                      className="w-full py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                      className="w-full min-h-[44px] py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-semibold shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                     >
                       <Plus className="w-3.5 h-3.5" /> Join Group
                     </button>
@@ -531,7 +531,7 @@ export default function ChatPage() {
                 <button
                   key={`${c.type}-${c.id}`}
                   onClick={() => setActiveChat(c)}
-                  className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-colors text-left relative ${
+                  className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-colors text-left relative min-h-[44px] cursor-pointer ${
                     isActive ? "bg-amber-500/10 border border-amber-500/20" : "hover:bg-zinc-50 border border-transparent"
                   }`}
                 >
@@ -539,10 +539,10 @@ export default function ChatPage() {
                     <img 
                       src={mediaUrl(c.profile_photo) || c.profile_photo} 
                       alt={c.name}
-                      className="w-10 h-10 rounded-full object-cover border border-zinc-200"
+                      className="w-10 h-10 rounded-full object-cover border border-zinc-200 flex-shrink-0"
                     />
                   ) : (
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs border ${
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs border flex-shrink-0 ${
                       c.type === "group" 
                         ? "bg-amber-50 text-amber-700 border-amber-200" 
                         : "bg-zinc-100 text-zinc-600 border-zinc-200"
@@ -551,10 +551,10 @@ export default function ChatPage() {
                     </div>
                   )}
 
-                  <div className="flex-1 overflow-hidden">
+                  <div className="flex-1 overflow-hidden min-w-0">
                     <div className="flex justify-between items-baseline mb-0.5">
                       <h4 className="font-semibold text-zinc-800 text-xs truncate">{c.name}</h4>
-                      <span className="text-[9px] text-zinc-400">
+                      <span className="text-[9px] text-zinc-400 flex-shrink-0 ml-1">
                         {c.last_message_time ? new Date(c.last_message_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
                       </span>
                     </div>
@@ -581,20 +581,20 @@ export default function ChatPage() {
           <>
             {/* Active Header */}
             <div className="h-16 px-3 sm:px-6 border-b border-zinc-200 bg-white flex items-center justify-between z-10 shadow-sm">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <button
                   onClick={() => setActiveChat(null)}
-                  className="p-2 -ml-1 text-zinc-500 hover:text-zinc-800 rounded-lg hover:bg-zinc-100 transition-colors md:hidden"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center -ml-1 text-zinc-500 hover:text-zinc-800 rounded-xl hover:bg-zinc-100 transition-colors md:hidden cursor-pointer"
                   aria-label="Back to conversations"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-rose-400 flex items-center justify-center text-white font-bold text-sm">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-rose-400 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                   {activeChat.type === "group" ? <Users className="w-5 h-5" /> : activeChat.name.charAt(0).toUpperCase()}
                 </div>
-                <div>
-                  <h3 className="font-bold text-zinc-800 text-sm leading-none">{activeChat.name}</h3>
-                  <span className="text-[10px] text-zinc-500 mt-1.5 block capitalize">
+                <div className="min-w-0">
+                  <h3 className="font-bold text-zinc-800 text-sm leading-none truncate">{activeChat.name}</h3>
+                  <span className="text-[10px] text-zinc-500 mt-1.5 block capitalize truncate">
                     {activeChat.type === "group" 
                       ? `${activeChat.group_type || "General"} Group ${activeChat.location ? `· ${activeChat.location}` : ""}`
                       : `${activeChat.role || "Guest User"} Directory DM`}
@@ -604,7 +604,7 @@ export default function ChatPage() {
             </div>
 
             {/* Messages body */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 z-10 flex flex-col">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 z-10 flex flex-col">
               {loadingMsg ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-zinc-400 gap-2">
                   <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
@@ -620,7 +620,7 @@ export default function ChatPage() {
                   const time = new Date(m.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                   return (
                     <div key={m.message_id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-md ${isMe ? "bg-amber-100 rounded-l-2xl rounded-tr-2xl text-amber-950 border border-amber-200/50" : "bg-white rounded-r-2xl rounded-tl-2xl text-zinc-800 border border-zinc-200"} p-3 shadow-sm relative group`}>
+                      <div className={`max-w-[85%] sm:max-w-md ${isMe ? "bg-amber-100 rounded-l-2xl rounded-tr-2xl text-amber-950 border border-amber-200/50" : "bg-white rounded-r-2xl rounded-tl-2xl text-zinc-800 border border-zinc-200"} p-3 shadow-sm relative group`}>
                         {!isMe && activeChat.type === "group" && (
                           <span className="text-[10px] font-bold text-amber-600 mb-1.5 block leading-none">{m.sender_name || "Samaj Member"}</span>
                         )}
@@ -638,19 +638,20 @@ export default function ChatPage() {
             </div>
 
             {/* Message input */}
-            <form onSubmit={handleSendMessage} className="p-4 bg-zinc-50 border-t border-zinc-200 z-10">
+            <form onSubmit={handleSendMessage} className="p-3 sm:p-4 bg-zinc-50 border-t border-zinc-200 z-10">
               <div className="flex items-center gap-2 max-w-4xl mx-auto">
                 <input 
                   type="text" 
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   placeholder={`Send a message to ${activeChat.name}...`}
-                  className="flex-1 py-2.5 px-4 text-sm rounded-xl border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white"
+                  className="flex-1 py-2.5 px-4 text-sm rounded-xl border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white min-h-[44px]"
                 />
                 <button 
                   type="submit"
                   disabled={sendingMsg || !inputText.trim()}
-                  className="w-10 h-10 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white flex items-center justify-center shadow-sm transition-colors flex-shrink-0 cursor-pointer"
+                  className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white flex items-center justify-center shadow-sm transition-colors flex-shrink-0 cursor-pointer"
+                  aria-label="Send message"
                 >
                   {sendingMsg ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

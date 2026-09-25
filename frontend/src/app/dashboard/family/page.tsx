@@ -570,22 +570,22 @@ export default function FamilyPage() {
 
             <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
               <div className="border-b border-zinc-200 bg-zinc-50/50 p-4">
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <button 
                     onClick={() => setActiveTab("overview")}
-                    className={`px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${activeTab === "overview" ? "bg-white text-zinc-900 shadow-sm border border-zinc-200" : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100"}`}
+                    className={`min-h-[44px] px-4 py-2 text-sm font-semibold rounded-xl transition-colors cursor-pointer ${activeTab === "overview" ? "bg-white text-zinc-900 shadow-sm border border-zinc-200" : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100"}`}
                   >
                     Getting Started
                   </button>
                   <button 
                     onClick={() => setActiveTab("create")}
-                    className={`px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${activeTab === "create" ? "bg-white text-amber-600 shadow-sm border border-zinc-200" : "text-zinc-500 hover:text-amber-600 hover:bg-amber-50"}`}
+                    className={`min-h-[44px] px-4 py-2 text-sm font-semibold rounded-xl transition-colors cursor-pointer ${activeTab === "create" ? "bg-white text-amber-600 shadow-sm border border-zinc-200" : "text-zinc-500 hover:text-amber-600 hover:bg-amber-50"}`}
                   >
                     Create Family
                   </button>
                   <button 
                     onClick={() => setActiveTab("join")}
-                    className={`px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${activeTab === "join" ? "bg-white text-amber-600 shadow-sm border border-zinc-200" : "text-zinc-500 hover:text-amber-600 hover:bg-amber-50"}`}
+                    className={`min-h-[44px] px-4 py-2 text-sm font-semibold rounded-xl transition-colors cursor-pointer ${activeTab === "join" ? "bg-white text-amber-600 shadow-sm border border-zinc-200" : "text-zinc-500 hover:text-amber-600 hover:bg-amber-50"}`}
                   >
                     Join Family
                   </button>

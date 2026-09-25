@@ -85,16 +85,16 @@ export default function UserDashboard() {
   return (
     <div className="space-y-8 max-w-7xl">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
+      <div className="bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 rounded-3xl p-5 sm:p-8 text-white shadow-xl relative overflow-hidden">
         <div className="absolute -top-12 -right-12 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 space-y-2 max-w-2xl">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-amber-100 text-xs font-semibold backdrop-blur-md">
             <ShieldCheck className="w-4 h-4" /> Welcome to Samaj Portal
           </span>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight">
             Portal Sections &amp; Quick Access
           </h1>
-          <p className="text-amber-100 text-sm sm:text-base leading-relaxed">
+          <p className="text-amber-100 text-xs sm:text-sm md:text-base leading-relaxed">
             Select any card below to navigate directly to your account services, Samaj directory, events, or community features.
           </p>
         </div>

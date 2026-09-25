@@ -97,7 +97,7 @@ export default function UserDonationsPage() {
         </div>
         <button 
           onClick={() => setShowDonateForm(!showDonateForm)}
-          className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors flex items-center gap-2"
+          className="w-full sm:w-auto min-h-[44px] px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
         >
           <Heart className="w-4 h-4" /> {showDonateForm ? "Cancel" : "Make a Donation"}
         </button>
@@ -112,7 +112,7 @@ export default function UserDonationsPage() {
                 <label className="block text-sm font-semibold text-zinc-700 mb-1">Donation Category</label>
                 <select 
                   required 
-                  className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white text-sm"
+                  className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white text-sm min-h-[44px]"
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
                 >
@@ -124,14 +124,14 @@ export default function UserDonationsPage() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-zinc-700 mb-1">Amount (₹)</label>
-                <input type="number" required min="1" className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 text-sm" value={amount} onChange={e => setAmount(e.target.value)} placeholder="e.g. 1000" />
+                <input type="number" required min="1" className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 text-sm min-h-[44px]" value={amount} onChange={e => setAmount(e.target.value)} placeholder="e.g. 1000" />
               </div>
             </div>
             <div>
               <label className="block text-sm font-semibold text-zinc-700 mb-1">Message (Optional)</label>
-              <input type="text" className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 text-sm" value={message} onChange={e => setMessage(e.target.value)} placeholder="In memory of..." />
+              <input type="text" className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 text-sm min-h-[44px]" value={message} onChange={e => setMessage(e.target.value)} placeholder="In memory of..." />
             </div>
-            <button type="submit" className="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-semibold rounded-xl shadow-sm transition-colors">
+            <button type="submit" className="w-full sm:w-auto min-h-[44px] px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-semibold rounded-xl shadow-sm transition-colors cursor-pointer flex items-center justify-center">
               Proceed to Payment
             </button>
           </form>
@@ -163,7 +163,7 @@ export default function UserDonationsPage() {
         </div>
         
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[500px]">
             <thead>
               <tr className="border-b border-zinc-200 text-xs uppercase tracking-wider text-zinc-500 bg-zinc-50/50">
                 <th className="px-6 py-4 font-medium">Date</th>
@@ -185,20 +185,20 @@ export default function UserDonationsPage() {
                   const catName = categories.find(c => c.category_id === donation.category_id)?.name || "Donation";
                   return (
                     <tr key={donation.donation_id} className="hover:bg-zinc-50 transition-colors">
-                      <td className="px-6 py-4 text-zinc-900 font-medium">{new Date(donation.donated_at).toLocaleDateString()}</td>
+                      <td className="px-6 py-4 text-zinc-900 font-medium whitespace-nowrap">{new Date(donation.donated_at).toLocaleDateString()}</td>
                       <td className="px-6 py-4 text-zinc-600">
                         {catName}
                         {donation.message && <span className="block text-xs text-zinc-400 mt-0.5">Note: {donation.message}</span>}
                       </td>
-                      <td className="px-6 py-4 text-zinc-900 font-bold">₹{donation.amount.toFixed(2)}</td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 text-zinc-900 font-bold whitespace-nowrap">₹{donation.amount.toFixed(2)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full uppercase">
                           {donation.payment_status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 text-right whitespace-nowrap">
                         {donation.payment_status === "PAID" && (
-                          <button className="text-amber-600 hover:text-amber-700 font-medium inline-flex items-center gap-1">
+                          <button className="min-h-[44px] text-amber-600 hover:text-amber-700 font-medium inline-flex items-center gap-1 cursor-pointer">
                             <Download className="w-4 h-4" /> PDF
                           </button>
                         )}

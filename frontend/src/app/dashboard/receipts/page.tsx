@@ -47,11 +47,13 @@ export default function MyReceiptsPage() {
   const inr = (n: number) => `₹${(n || 0).toLocaleString("en-IN")}`;
 
   return (
-    <div className="p-6 md:p-8 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-2 mb-1">
-        <ReceiptIcon className="w-6 h-6 text-amber-600" /> My Receipts
-      </h1>
-      <p className="text-sm text-zinc-500 mb-5">Download receipts for your bookings and event registrations.</p>
+    <div className="p-3 sm:p-6 md:p-8 max-w-4xl mx-auto space-y-4">
+      <div>
+        <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-2 mb-1">
+          <ReceiptIcon className="w-6 h-6 text-amber-600" /> My Receipts
+        </h1>
+        <p className="text-sm text-zinc-500">Download receipts for your bookings and event registrations.</p>
+      </div>
 
       {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4">{error}</div>}
 
@@ -62,20 +64,25 @@ export default function MyReceiptsPage() {
       ) : (
         <div className="space-y-3">
           {receipts.map((r) => (
-            <div key={r.receipt_id} className="bg-white border border-zinc-200 rounded-2xl p-4 flex items-center justify-between">
+            <div key={r.receipt_id} className="bg-white border border-zinc-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs text-zinc-500">{r.receipt_number}</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${r.receipt_type?.toLowerCase() === "booking" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>{r.receipt_type}</span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-mono text-xs text-zinc-500 font-bold">{r.receipt_number}</span>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${r.receipt_type?.toLowerCase() === "booking" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>{r.receipt_type}</span>
                 </div>
-                <p className="text-sm text-zinc-800 mt-1">{r.description}</p>
-                <p className="text-xs text-zinc-400">{new Date(r.issued_at).toLocaleDateString("en-IN")} · {(r.payment_mode || "").toUpperCase()}</p>
+                <p className="text-sm font-semibold text-zinc-800 mt-1">{r.description || "Samaj Payment Receipt"}</p>
+                <p className="text-xs text-zinc-400 mt-0.5">{new Date(r.issued_at).toLocaleDateString("en-IN")} · {(r.payment_mode || "").toUpperCase()}</p>
               </div>
-              <div className="text-right">
-                <p className="font-bold text-zinc-900">{inr(r.amount)}</p>
+              <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2 border-t sm:border-t-0 border-zinc-100 pt-2 sm:pt-0">
+                <p className="font-extrabold text-zinc-900 text-base">{inr(r.amount)}</p>
                 {r.pdf_url && (
-                  <a href={mediaUrl(r.pdf_url) || r.pdf_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700 mt-1">
-                    <Download className="w-3.5 h-3.5" /> Download PDF
+                  <a 
+                    href={mediaUrl(r.pdf_url) || r.pdf_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="min-h-[44px] inline-flex items-center gap-1.5 px-3 py-2 bg-amber-50 hover:bg-amber-100 text-xs font-bold text-amber-700 rounded-xl transition-colors"
+                  >
+                    <Download className="w-4 h-4" /> Download PDF
                   </a>
                 )}
               </div>
