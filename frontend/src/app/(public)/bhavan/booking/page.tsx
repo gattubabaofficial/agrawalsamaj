@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -151,7 +152,7 @@ export default function BhavanBookingPage() {
   const [activeAmenityDateIndex, setActiveAmenityDateIndex] = useState<number>(0);
   const [amenityViewMode, setAmenityViewMode] = useState<"tabs" | "all">("all");
 
-  // Availability Popover Calendar state
+  // Availability Modal Calendar state
   const [isCalendarOpen, setIsCalendarOpen] = useState<boolean>(false);
   const [calendarTab, setCalendarTab] = useState<"checkIn" | "checkOut">("checkIn");
   const [calendarViewDate, setCalendarViewDate] = useState<Date>(() => {
@@ -161,7 +162,26 @@ export default function BhavanBookingPage() {
   });
   const [calendarData, setCalendarData] = useState<Record<string, any>>({});
   const [calendarLoading, setCalendarLoading] = useState<boolean>(false);
+  const [mounted, setMounted] = useState<boolean>(false);
   const calendarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Lock body & html scroll while calendar modal is open
+  useEffect(() => {
+    if (isCalendarOpen) {
+      const origBody = document.body.style.overflow;
+      const origHtml = document.documentElement.style.overflow;
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = origBody;
+        document.documentElement.style.overflow = origHtml;
+      };
+    }
+  }, [isCalendarOpen]);
 
   // Customer details
   const [fullName, setFullName] = useState<string>("");
@@ -678,6 +698,9 @@ export default function BhavanBookingPage() {
         setCalendarTab("checkOut");
       } else {
         setCheckOut(dateStr);
+        setTimeout(() => {
+          setIsCalendarOpen(false);
+        }, 200);
       }
     }
   };
@@ -835,7 +858,7 @@ export default function BhavanBookingPage() {
   }, 0);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 py-10 px-4 sm:px-8" suppressHydrationWarning>
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 py-6 sm:py-10 px-2.5 xs:px-4 sm:px-8" suppressHydrationWarning>
       <div className="max-w-6xl mx-auto">
 
         {/* Stepper Progress Bar */}
@@ -844,14 +867,15 @@ export default function BhavanBookingPage() {
             {[1, 2, 3, 4, 5, 6].map((s) => (
               <div key={s} className="flex flex-col items-center flex-1">
                 <div
-                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm transition-all ${step === s
+                  className={`w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-[11px] sm:text-sm transition-all ${
+                    step === s
                       ? "bg-amber-500 text-white shadow-lg shadow-amber-500/30 scale-105 sm:scale-110"
                       : step > s
                         ? "bg-emerald-500 text-white"
                         : "bg-zinc-800 text-zinc-500"
-                    }`}
+                  }`}
                 >
-                  {step > s ? <Check className="w-4 h-4 sm:w-5 sm:h-5" /> : s}
+                  {step > s ? <Check className="w-3.5 h-3.5 sm:w-5 sm:h-5" /> : s}
                 </div>
                 <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mt-1.5 sm:mt-2 text-zinc-400 hidden xs:block">
                   {s === 1 && "Dates"}
@@ -875,7 +899,7 @@ export default function BhavanBookingPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
 
           {/* Stepper Main Step Container */}
-          <div className="lg:col-span-2 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 sm:p-8">
+          <div className="lg:col-span-2 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-3 xs:p-4 sm:p-8">
 
             {/* Step 1: Dates & Purpose */}
             {step === 1 && (
@@ -893,12 +917,8 @@ export default function BhavanBookingPage() {
 
                   {/* Main Clickable Trigger Bar */}
                   <div
-                    onClick={() => setIsCalendarOpen(!isCalendarOpen)}
-                    className={`rounded-2xl border transition-all cursor-pointer p-4 sm:p-5 shadow-lg ${
-                      isCalendarOpen
-                        ? "border-amber-500/80 bg-zinc-900 ring-2 ring-amber-500/20 shadow-amber-500/10"
-                        : "border-zinc-700 bg-zinc-800/90 hover:border-amber-500/60 hover:bg-zinc-800"
-                    }`}
+                    onClick={() => setIsCalendarOpen(true)}
+                    className="rounded-2xl border border-zinc-700 bg-zinc-800/90 hover:border-amber-500/60 hover:bg-zinc-800 transition-all cursor-pointer p-4 sm:p-5 shadow-lg"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       {/* Check-in selector button */}
@@ -909,11 +929,7 @@ export default function BhavanBookingPage() {
                           setCalendarTab("checkIn");
                           setIsCalendarOpen(true);
                         }}
-                        className={`flex-1 p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                          isCalendarOpen && calendarTab === "checkIn"
-                            ? "border-amber-500 bg-amber-500/15 text-white shadow-sm"
-                            : "border-zinc-700/80 bg-zinc-900/70 hover:border-zinc-600 text-zinc-200"
-                        }`}
+                        className="flex-1 p-3 rounded-xl border border-zinc-700/80 bg-zinc-900/70 hover:border-zinc-600 text-zinc-200 text-left transition-all cursor-pointer"
                       >
                         <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-400 uppercase tracking-wider mb-1">
                           <Calendar className="w-3.5 h-3.5 text-amber-400" />
@@ -945,11 +961,7 @@ export default function BhavanBookingPage() {
                           setCalendarTab("checkOut");
                           setIsCalendarOpen(true);
                         }}
-                        className={`flex-1 p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                          isCalendarOpen && calendarTab === "checkOut"
-                            ? "border-amber-500 bg-amber-500/15 text-white shadow-sm"
-                            : "border-zinc-700/80 bg-zinc-900/70 hover:border-zinc-600 text-zinc-200"
-                        }`}
+                        className="flex-1 p-3 rounded-xl border border-zinc-700/80 bg-zinc-900/70 hover:border-zinc-600 text-zinc-200 text-left transition-all cursor-pointer"
                       >
                         <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-400 uppercase tracking-wider mb-1">
                           <Calendar className="w-3.5 h-3.5 text-amber-400" />
@@ -974,252 +986,286 @@ export default function BhavanBookingPage() {
                         Check-in 10:00 AM · Check-out 8:00 AM next day
                       </span>
                       <span className="font-bold text-amber-400 flex items-center gap-1">
-                        {isCalendarOpen ? "Close Calendar ▲" : "Select from Calendar ▼"}
+                        Select from Calendar ▼
                       </span>
                     </div>
                   </div>
 
-                  {/* Dual-Month Interactive Calendar Popover */}
-                  {isCalendarOpen && (
-                    <div className="mt-3 rounded-2xl border border-zinc-700 bg-zinc-950 p-4 sm:p-6 shadow-2xl z-30 transition-all">
-                      {/* Top Header Tabs */}
-                      <div className="flex items-center justify-between border-b border-zinc-800 pb-3 gap-2 flex-wrap">
-                        <div className="flex items-center gap-2 sm:gap-4">
-                          <button
-                            type="button"
-                            onClick={() => setCalendarTab("checkIn")}
-                            className={`flex items-center gap-1.5 pb-2 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer ${
-                              calendarTab === "checkIn"
-                                ? "border-amber-400 text-amber-400"
-                                : "border-transparent text-zinc-400 hover:text-white"
-                            }`}
-                          >
-                            <Calendar className="w-4 h-4" />
-                            <span>Select Check-in</span>
-                            {checkIn && (
-                              <span className="text-[11px] font-mono bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-200 ml-1">
-                                {formatDateDisplay(checkIn, {
-                                  day: "numeric",
-                                  month: "short",
-                                })}
-                              </span>
-                            )}
-                          </button>
-
-                          <span className="text-zinc-600 font-bold pb-2">-</span>
-
-                          <button
-                            type="button"
-                            onClick={() => setCalendarTab("checkOut")}
-                            className={`flex items-center gap-1.5 pb-2 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer ${
-                              calendarTab === "checkOut"
-                                ? "border-amber-400 text-amber-400"
-                                : "border-transparent text-zinc-400 hover:text-white"
-                            }`}
-                          >
-                            <Calendar className="w-4 h-4" />
-                            <span>Select Check-out</span>
-                            {checkOut && (
-                              <span className="text-[11px] font-mono bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-200 ml-1">
-                                {formatDateDisplay(checkOut, {
-                                  day: "numeric",
-                                  month: "short",
-                                })}
-                              </span>
-                            )}
-                          </button>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => setIsCalendarOpen(false)}
-                          className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 text-xs font-bold transition-colors cursor-pointer"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-
-                      {/* Month Navigation Row */}
-                      <div className="flex items-center justify-between py-3">
-                        <button
-                          type="button"
-                          onClick={handlePrevMonth}
-                          className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-200 hover:text-white transition-colors cursor-pointer"
-                          aria-label="Previous Month"
-                        >
-                          <ChevronLeft className="w-5 h-5" />
-                        </button>
-
-                        {(() => {
-                          const m1 = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth(), 1);
-                          const m2 = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 1);
-                          return (
-                            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 text-center gap-4">
-                              <span className="font-extrabold text-base text-white">
-                                {MONTH_NAMES[m1.getMonth()]} {m1.getFullYear()}
-                              </span>
-                              <span className="font-extrabold text-base text-white hidden md:block">
-                                {MONTH_NAMES[m2.getMonth()]} {m2.getFullYear()}
-                              </span>
-                            </div>
-                          );
-                        })()}
-
-                        <button
-                          type="button"
-                          onClick={handleNextMonth}
-                          className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-200 hover:text-white transition-colors cursor-pointer"
-                          aria-label="Next Month"
-                        >
-                          <ChevronRight className="w-5 h-5" />
-                        </button>
-                      </div>
-
-                      {/* Side-by-side Dual Month Grid */}
-                      {(() => {
-                        const todayStr = formatDateString(new Date());
-                        const m1 = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth(), 1);
-                        const m2 = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 1);
-                        const monthsToRender = [m1, m2];
-
-                        return (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                            {monthsToRender.map((mDate) => {
-                              const y = mDate.getFullYear();
-                              const m = mDate.getMonth();
-                              const daysInMonth = new Date(y, m + 1, 0).getDate();
-                              const firstDayOfWeek = new Date(y, m, 1).getDay();
-
-                              return (
-                                <div key={`${y}-${m}`} className="space-y-2">
-                                  <div className="md:hidden text-center font-bold text-sm text-zinc-300 pb-1">
-                                    {MONTH_NAMES[m]} {y}
-                                  </div>
-
-                                  {/* Weekdays Header */}
-                                  <div className="grid grid-cols-7 text-center text-[11px] font-bold text-zinc-400 pb-1">
-                                    {WEEKDAYS.map((w) => (
-                                      <div key={w}>{w}</div>
-                                    ))}
-                                  </div>
-
-                                  {/* Days Grid */}
-                                  <div className="grid grid-cols-7 gap-1">
-                                    {Array.from({ length: firstDayOfWeek }).map((_, idx) => (
-                                      <div key={`empty-${idx}`} className="h-12" />
-                                    ))}
-
-                                    {Array.from({ length: daysInMonth }).map((_, idx) => {
-                                      const dayNum = idx + 1;
-                                      const dateStr = `${y}-${String(m + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
-                                      const isPast = dateStr < todayStr;
-                                      const info = calendarData[dateStr];
-                                      const isClosed = info?.closed;
-                                      const isSoldOut = info?.status === "sold_out";
-                                      const isCheckInDate = dateStr === checkIn;
-                                      const isCheckOutDate = dateStr === checkOut;
-                                      const isInRange = checkIn && checkOut && dateStr > checkIn && dateStr < checkOut;
-                                      const isDisabled = isPast || isClosed;
-
-                                      return (
-                                        <button
-                                          key={dateStr}
-                                          type="button"
-                                          disabled={isDisabled}
-                                          onClick={() => handleCalendarDateSelect(dateStr)}
-                                          title={
-                                            isClosed
-                                              ? info?.closure_reason || "Closed"
-                                              : info?.available_rooms !== undefined
-                                              ? `${info.available_rooms} rooms available`
-                                              : `Date: ${dateStr}`
-                                          }
-                                          className={`h-13 min-h-[52px] rounded-xl flex flex-col items-center justify-center relative p-1 transition-all text-xs cursor-pointer ${
-                                            isCheckInDate
-                                              ? "bg-amber-500 text-white font-extrabold shadow-lg scale-105 z-10 rounded-xl ring-2 ring-amber-300"
-                                              : isCheckOutDate
-                                              ? "bg-amber-500 text-white font-extrabold shadow-lg scale-105 z-10 rounded-xl ring-2 ring-amber-300"
-                                              : isInRange
-                                              ? "bg-amber-500/20 text-amber-200 rounded-none first:rounded-l-xl last:rounded-r-xl border-y border-amber-500/30"
-                                              : isDisabled
-                                              ? "opacity-30 cursor-not-allowed text-zinc-600 bg-zinc-900/30"
-                                              : isSoldOut
-                                              ? "bg-zinc-900/80 text-zinc-400 hover:bg-zinc-800"
-                                              : info?.available_rooms !== undefined && info.available_rooms > 0
-                                              ? "bg-zinc-900 hover:bg-zinc-800 text-zinc-100 hover:border-amber-500/60 border border-zinc-800 shadow-sm"
-                                              : "bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:border-amber-500/50 border border-zinc-800/80"
-                                          }`}
-                                        >
-                                          <span className="font-bold text-xs leading-none">{dayNum}</span>
-
-                                          {!isDisabled && (
-                                            <div className="flex flex-col items-center mt-1 leading-none">
-                                              <span
-                                                className={`text-[9px] font-extrabold truncate max-w-full px-1.5 py-0.5 rounded-full ${
-                                                  isCheckInDate || isCheckOutDate
-                                                    ? "text-white bg-amber-600/70"
-                                                    : isSoldOut
-                                                    ? "text-rose-400 bg-rose-950/60"
-                                                    : info?.available_rooms !== undefined
-                                                    ? info.available_rooms > 2
-                                                      ? "text-emerald-400 bg-emerald-950/70 border border-emerald-500/30"
-                                                      : "text-amber-400 bg-amber-950/70 border border-amber-500/30"
-                                                    : "text-emerald-400 bg-emerald-950/70"
-                                                }`}
-                                              >
-                                                {isSoldOut
-                                                  ? "Full"
-                                                  : info?.available_rooms !== undefined
-                                                  ? `${info.available_rooms} rms`
-                                                  : "Available"}
-                                              </span>
-                                            </div>
-                                          )}
-
-                                          {isClosed && (
-                                            <span className="text-[8px] text-rose-400 font-bold leading-none mt-0.5">
-                                              Closed
-                                            </span>
-                                          )}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              );
-                            })}
+                  {/* Calendar Modal via Portal */}
+                  {mounted && isCalendarOpen && createPortal(
+                    <div
+                      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm transition-all"
+                      style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}
+                      onClick={() => setIsCalendarOpen(false)}
+                    >
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] sm:max-w-3xl md:max-w-4xl bg-zinc-950 sm:rounded-2xl border border-zinc-700 shadow-2xl flex flex-col overflow-hidden"
+                      >
+                        {/* 1. Modal Header */}
+                        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-zinc-800 bg-zinc-900/90 shrink-0">
+                          <div className="flex items-center gap-2">
+                            <CalendarDays className="w-5 h-5 text-amber-400" />
+                            <h3 className="font-extrabold text-sm sm:text-base text-white">Select Booking Dates</h3>
                           </div>
-                        );
-                      })()}
-
-                      {/* Calendar Footer: Legend & Actions */}
-                      <div className="mt-6 pt-4 border-t border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-                        <div className="flex items-center gap-4 flex-wrap text-zinc-400 text-[11px]">
-                          <span className="flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                            <span>Available</span>
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-                            <span>Fast Filling (≤2 rms)</span>
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
-                            <span>Sold Out / Closed</span>
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => setIsCalendarOpen(false)}
-                            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-white font-bold text-xs transition-colors cursor-pointer shadow-md"
+                            aria-label="Close date picker"
+                            className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
                           >
-                            Apply Dates ✓
+                            <X className="w-5 h-5" />
                           </button>
                         </div>
+
+                        {/* 2. Check-in / Check-out Tab Selector Bar inside Modal */}
+                        <div className="px-4 sm:px-6 py-2.5 bg-zinc-900/50 border-b border-zinc-800/80 shrink-0">
+                          <div className="flex items-center justify-between gap-2 max-w-lg mx-auto">
+                            <button
+                              type="button"
+                              onClick={() => setCalendarTab("checkIn")}
+                              className={`flex-1 p-2 sm:p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                                calendarTab === "checkIn"
+                                  ? "border-amber-400 bg-amber-500/15 text-white shadow-sm ring-1 ring-amber-400/40"
+                                  : "border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-zinc-200"
+                              }`}
+                            >
+                              <div className="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
+                                <Calendar className="w-3 h-3" /> Check-in
+                              </div>
+                              <div className="text-xs sm:text-sm font-extrabold text-white truncate mt-0.5">
+                                {checkIn ? formatDateDisplay(checkIn, { weekday: "short", day: "numeric", month: "short" }) : "Tap date"}
+                              </div>
+                            </button>
+
+                            <div className="flex flex-col items-center px-1 text-zinc-500 shrink-0">
+                              <span className="text-xs font-bold">→</span>
+                              {quote?.nights ? (
+                                <span className="text-[9px] font-bold text-amber-400 whitespace-nowrap">{quote.nights}N</span>
+                              ) : null}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => setCalendarTab("checkOut")}
+                              className={`flex-1 p-2 sm:p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                                calendarTab === "checkOut"
+                                  ? "border-amber-400 bg-amber-500/15 text-white shadow-sm ring-1 ring-amber-400/40"
+                                  : "border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-zinc-200"
+                              }`}
+                            >
+                              <div className="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
+                                <Calendar className="w-3 h-3" /> Check-out
+                              </div>
+                              <div className="text-xs sm:text-sm font-extrabold text-white truncate mt-0.5">
+                                {checkOut ? formatDateDisplay(checkOut, { weekday: "short", day: "numeric", month: "short" }) : "Tap date"}
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* 3. Month Navigation Row */}
+                        <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 bg-zinc-950 shrink-0">
+                          <button
+                            type="button"
+                            onClick={handlePrevMonth}
+                            className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-200 hover:text-white transition-colors cursor-pointer"
+                            aria-label="Previous Month"
+                          >
+                            <ChevronLeft className="w-5 h-5" />
+                          </button>
+
+                          {(() => {
+                            const m1 = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth(), 1);
+                            const m2 = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 1);
+                            return (
+                              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 text-center gap-4">
+                                <span className="font-extrabold text-sm sm:text-base text-white">
+                                  {MONTH_NAMES[m1.getMonth()]} {m1.getFullYear()}
+                                </span>
+                                <span className="font-extrabold text-sm sm:text-base text-white hidden md:block">
+                                  {MONTH_NAMES[m2.getMonth()]} {m2.getFullYear()}
+                                </span>
+                              </div>
+                            );
+                          })()}
+
+                          <button
+                            type="button"
+                            onClick={handleNextMonth}
+                            className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-200 hover:text-white transition-colors cursor-pointer"
+                            aria-label="Next Month"
+                          >
+                            <ChevronRight className="w-5 h-5" />
+                          </button>
+                        </div>
+
+                        {/* 4. Calendar Body / Month Grid */}
+                        <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-2">
+                          {(() => {
+                            const todayStr = formatDateString(new Date());
+                            const m1 = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth(), 1);
+                            const m2 = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 1);
+                            const monthsToRender = [m1, m2];
+
+                            return (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                                {monthsToRender.map((mDate, mIdx) => {
+                                  const y = mDate.getFullYear();
+                                  const m = mDate.getMonth();
+                                  const daysInMonth = new Date(y, m + 1, 0).getDate();
+                                  const firstDayOfWeek = new Date(y, m, 1).getDay();
+
+                                  return (
+                                    <div
+                                      key={`${y}-${m}`}
+                                      className={`space-y-1 sm:space-y-1.5 ${mIdx > 0 ? "hidden md:block" : ""}`}
+                                    >
+                                      {/* Weekdays Header */}
+                                      <div className="grid grid-cols-7 text-center text-[10px] sm:text-[11px] font-bold text-zinc-400 pb-1">
+                                        {WEEKDAYS.map((w) => (
+                                          <div key={w}>{w}</div>
+                                        ))}
+                                      </div>
+
+                                      {/* Days Grid */}
+                                      <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
+                                        {Array.from({ length: firstDayOfWeek }).map((_, idx) => (
+                                          <div key={`empty-${idx}`} className="h-10 sm:h-12 min-h-[40px] sm:min-h-[48px]" />
+                                        ))}
+
+                                        {Array.from({ length: daysInMonth }).map((_, idx) => {
+                                          const dayNum = idx + 1;
+                                          const dateStr = `${y}-${String(m + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
+                                          const isPast = dateStr < todayStr;
+                                          const info = calendarData[dateStr];
+                                          const isClosed = info?.closed;
+                                          const isSoldOut = info?.status === "sold_out";
+                                          const isCheckInDate = dateStr === checkIn;
+                                          const isCheckOutDate = dateStr === checkOut;
+                                          const isInRange = checkIn && checkOut && dateStr > checkIn && dateStr < checkOut;
+                                          const isDisabled = isPast || isClosed;
+
+                                          const availCount = info?.available_rooms;
+                                          const hasAvail = availCount !== undefined && availCount > 0;
+                                          const isLimited = hasAvail && availCount <= 2;
+
+                                          return (
+                                            <button
+                                              key={dateStr}
+                                              type="button"
+                                              disabled={isDisabled}
+                                              onClick={() => handleCalendarDateSelect(dateStr)}
+                                              title={
+                                                isClosed
+                                                  ? info?.closure_reason || "Closed"
+                                                  : availCount !== undefined
+                                                  ? `${availCount} rooms available`
+                                                  : `Date: ${dateStr}`
+                                              }
+                                              className={`h-10 sm:h-12 min-h-[40px] sm:min-h-[48px] rounded-lg sm:rounded-xl flex flex-col items-center justify-center relative p-0.5 sm:p-1 transition-all text-xs cursor-pointer overflow-hidden ${
+                                                isCheckInDate || isCheckOutDate
+                                                  ? "bg-amber-500 text-white font-extrabold shadow-lg scale-[1.03] z-10 ring-2 ring-amber-300"
+                                                  : isInRange
+                                                  ? "bg-amber-500/20 text-amber-200 rounded-none first:rounded-l-lg last:rounded-r-lg border-y border-amber-500/30"
+                                                  : isDisabled
+                                                  ? "opacity-25 cursor-not-allowed text-zinc-600 bg-zinc-900/20"
+                                                  : isSoldOut
+                                                  ? "bg-zinc-900/60 text-zinc-500 hover:bg-zinc-800"
+                                                  : hasAvail
+                                                  ? "bg-zinc-900 hover:bg-zinc-800 text-zinc-100 hover:border-amber-500/60 border border-zinc-800/80 shadow-sm"
+                                                  : "bg-zinc-900/80 hover:bg-zinc-800 text-zinc-200 border border-zinc-800/60"
+                                              }`}
+                                            >
+                                              <span className="font-bold text-xs sm:text-sm leading-none">{dayNum}</span>
+
+                                              {!isDisabled && (
+                                                <>
+                                                  {/* Mobile: Subtle dot indicator to prevent clutter */}
+                                                  <div className="sm:hidden flex items-center justify-center mt-1">
+                                                    {isSoldOut ? (
+                                                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                                                    ) : isLimited ? (
+                                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                                    ) : (
+                                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                                    )}
+                                                  </div>
+
+                                                  {/* Desktop: Detailed badge pill */}
+                                                  <div className="hidden sm:flex flex-col items-center mt-0.5 leading-none w-full max-w-full px-0.5">
+                                                    <span
+                                                      className={`text-[9px] font-extrabold truncate w-full max-w-full text-center px-1.5 py-0.5 rounded-full ${
+                                                        isCheckInDate || isCheckOutDate
+                                                          ? "text-white bg-amber-600/80"
+                                                          : isSoldOut
+                                                          ? "text-rose-400 bg-rose-950/60"
+                                                          : hasAvail
+                                                          ? isLimited
+                                                            ? "text-amber-400 bg-amber-950/70 border border-amber-500/30"
+                                                            : "text-emerald-400 bg-emerald-950/70 border border-emerald-500/30"
+                                                          : "text-emerald-400 bg-emerald-950/70"
+                                                      }`}
+                                                    >
+                                                      {isSoldOut ? "Full" : availCount !== undefined ? `${availCount} rms` : "Avail"}
+                                                    </span>
+                                                  </div>
+                                                </>
+                                              )}
+
+                                              {isClosed && (
+                                                <span className="text-[7.5px] text-rose-400 font-bold leading-none mt-0.5">✕</span>
+                                              )}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        {/* 5. Modal Footer: Status Legend & Action Buttons */}
+                        <div className="px-4 sm:px-6 py-3 border-t border-zinc-800 bg-zinc-900/90 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-3">
+                          {/* Legend */}
+                          <div className="flex items-center gap-3 sm:gap-4 flex-wrap text-zinc-400 text-[10px] sm:text-xs justify-center sm:justify-start">
+                            <span className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                              <span>Available</span>
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-amber-400" />
+                              <span>Fast Filling (≤2)</span>
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-rose-400" />
+                              <span>Sold Out / Closed</span>
+                            </span>
+                          </div>
+
+                          {/* Action Button */}
+                          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                            <button
+                              type="button"
+                              onClick={() => setIsCalendarOpen(false)}
+                              className="w-full sm:w-auto px-5 py-2.5 min-h-[44px] rounded-xl bg-amber-500 hover:bg-amber-400 text-white font-bold text-xs sm:text-sm transition-colors cursor-pointer shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
+                            >
+                              <span>Apply Dates</span>
+                              {checkIn && checkOut && (
+                                <span className="text-[11px] font-mono bg-amber-600/60 px-1.5 py-0.5 rounded">
+                                  {quote?.nights || 1}N
+                                </span>
+                              )}
+                              <span>✓</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    </div>,
+                    document.body
                   )}
                 </div>
 
