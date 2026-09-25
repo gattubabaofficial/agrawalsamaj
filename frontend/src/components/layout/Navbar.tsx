@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -35,7 +36,12 @@ export default function Navbar() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Scroll effect
   useEffect(() => {
@@ -60,10 +66,18 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", close);
   }, []);
 
-  // Lock the page while the mobile sheet is open.
+  // Lock the page while the mobile sheet is open (both body and html)
   useEffect(() => {
-    document.body.style.overflow = isOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    if (isOpen) {
+      const originalBodyOverflow = document.body.style.overflow;
+      const originalHtmlOverflow = document.documentElement.style.overflow;
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalBodyOverflow;
+        document.documentElement.style.overflow = originalHtmlOverflow;
+      };
+    }
   }, [isOpen]);
 
   const checkAuth = async () => {
@@ -257,95 +271,105 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile sheet — full field, items cascade in */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3, ease: EASE }}
-            className="fixed inset-0 z-100 flex flex-col bg-paper lg:hidden"
-          >
-            <div className="flex items-center justify-between px-4 py-4 sm:px-8 sm:py-5">
-              <span className="deva text-sm font-semibold text-vermilion">अग्रवाल समाज</span>
-              <button onClick={() => setIsOpen(false)} aria-label="Close menu" title="Close menu" className="flex min-h-[44px] min-w-[44px] items-center justify-center p-2 text-ink">
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-
-            <div className="flex flex-1 flex-col justify-start gap-1 overflow-y-auto px-4 pb-12 pt-2 sm:justify-center sm:px-8 sm:pb-10">
-              {navItems.map((item, i) => (
-                <motion.div
-                  key={item.href}
-                  initial={{ opacity: 0, y: 18 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.06 + i * 0.045, ease: EASE }}
-                >
-                  <Link
-                    href={item.href}
-                    onClick={() => setIsOpen(false)}
-                    title={item.description}
-                    className="flex min-h-[44px] items-center justify-between border-b border-rule py-3.5 sm:py-4"
-                  >
-                    <span className={`display text-2xl sm:text-3xl ${pathname === item.href ? "text-vermilion" : "text-ink"}`}>
-                      {item.name}
-                    </span>
-                    <item.icon className="h-4 w-4 text-ink-3" />
-                  </Link>
-                </motion.div>
-              ))}
-
+      {/* Mobile sheet — mounted via portal directly to document.body to avoid parent stacking/blur context */}
+      {mounted &&
+        createPortal(
+          <AnimatePresence>
+            {isOpen && (
               <motion.div
-                initial={{ opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4, ease: EASE }}
-                className="mt-6 flex flex-col gap-3 sm:mt-8"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3, ease: EASE }}
+                className="fixed inset-0 z-[9999] flex flex-col bg-paper w-screen h-[100dvh] lg:hidden"
+                style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}
               >
-                <Link
-                  href="/members?apply=true"
-                  onClick={() => setIsOpen(false)}
-                  title="मानसरोवर अग्रवाल समाज सदस्यता हेतु ऑनलाइन आवेदन करें"
-                  className="flex min-h-[44px] items-center justify-center gap-2 border-2 border-vermilion bg-vermilion/10 px-5 py-3 text-[0.8125rem] font-bold text-vermilion transition-colors hover:bg-vermilion hover:text-white sm:px-6 sm:py-3.5"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  <span className="deva text-base font-semibold">सदस्यता आवेदन</span> (Apply for Membership)
-                </Link>
-
-                {authUser ? (
-                  <>
-                    <Link
-                      href={getDashboardHref()}
-                      onClick={() => setIsOpen(false)}
-                      title={isVolunteer ? "Open the ticket scanner" : "Go to your dashboard"}
-                      className="flex min-h-[44px] items-center justify-center gap-2 bg-vermilion px-5 py-3 text-[0.8125rem] font-medium uppercase tracking-[0.16em] text-paper sm:px-6 sm:py-3.5"
-                    >
-                      {isVolunteer ? <QrCode className="h-4 w-4" /> : <LayoutDashboard className="h-4 w-4" />}
-                      {isVolunteer ? "Scan tickets" : "Dashboard"}
-                    </Link>
-                    <button
-                      onClick={() => { handleLogout(); setIsOpen(false); }}
-                      title="Sign out of your account"
-                      className="flex min-h-[44px] items-center justify-center gap-2 border border-rule-strong px-5 py-3 text-[0.8125rem] font-medium uppercase tracking-[0.16em] text-ink sm:px-6 sm:py-3.5"
-                    >
-                      <LogOut className="h-4 w-4" /> Sign out
-                    </button>
-                  </>
-                ) : (
-                  <Link
-                    href="/login"
+                <div className="flex items-center justify-between px-5 py-4 sm:px-8 sm:py-5 border-b border-rule bg-paper shrink-0">
+                  <span className="deva text-base font-bold text-vermilion">अग्रवाल समाज</span>
+                  <button
                     onClick={() => setIsOpen(false)}
-                    title="Sign in to your member account"
-                    className="flex min-h-[44px] items-center justify-center gap-2 bg-vermilion px-5 py-3 text-[0.8125rem] font-medium uppercase tracking-[0.16em] text-paper sm:px-6 sm:py-3.5"
+                    aria-label="Close menu"
+                    title="Close menu"
+                    className="flex min-h-[44px] min-w-[44px] items-center justify-center p-2 text-ink rounded-xl hover:bg-paper-2 transition-colors"
                   >
-                    <User className="h-4 w-4" /> Sign in / Member Login
-                  </Link>
-                )}
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                <div className="flex flex-1 flex-col justify-start gap-1 overflow-y-auto px-5 pb-12 pt-2 sm:justify-center sm:px-8 sm:pb-10">
+                  {navItems.map((item, i) => (
+                    <motion.div
+                      key={item.href}
+                      initial={{ opacity: 0, y: 18 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.04 + i * 0.035, ease: EASE }}
+                    >
+                      <Link
+                        href={item.href}
+                        onClick={() => setIsOpen(false)}
+                        title={item.description}
+                        className="flex min-h-[48px] items-center justify-between border-b border-rule py-3.5 sm:py-4"
+                      >
+                        <span className={`display text-2xl sm:text-3xl ${pathname === item.href ? "text-vermilion" : "text-ink"}`}>
+                          {item.name}
+                        </span>
+                        <item.icon className="h-4 w-4 text-ink-3" />
+                      </Link>
+                    </motion.div>
+                  ))}
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 18 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.35, ease: EASE }}
+                    className="mt-6 flex flex-col gap-3 sm:mt-8 pb-6"
+                  >
+                    <Link
+                      href="/members?apply=true"
+                      onClick={() => setIsOpen(false)}
+                      title="मानसरोवर अग्रवाल समाज सदस्यता हेतु ऑनलाइन आवेदन करें"
+                      className="flex min-h-[48px] items-center justify-center gap-2 border-2 border-vermilion bg-vermilion/10 px-5 py-3 text-[0.8125rem] font-bold text-vermilion transition-colors hover:bg-vermilion hover:text-white sm:px-6 sm:py-3.5 rounded-xl"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                      <span className="deva text-base font-semibold">सदस्यता आवेदन</span> (Apply for Membership)
+                    </Link>
+
+                    {authUser ? (
+                      <>
+                        <Link
+                          href={getDashboardHref()}
+                          onClick={() => setIsOpen(false)}
+                          title={isVolunteer ? "Open the ticket scanner" : "Go to your dashboard"}
+                          className="flex min-h-[48px] items-center justify-center gap-2 bg-vermilion px-5 py-3 text-[0.8125rem] font-medium uppercase tracking-[0.16em] text-paper sm:px-6 sm:py-3.5 rounded-xl"
+                        >
+                          {isVolunteer ? <QrCode className="h-4 w-4" /> : <LayoutDashboard className="h-4 w-4" />}
+                          {isVolunteer ? "Scan tickets" : "Dashboard"}
+                        </Link>
+                        <button
+                          onClick={() => { handleLogout(); setIsOpen(false); }}
+                          title="Sign out of your account"
+                          className="flex min-h-[48px] items-center justify-center gap-2 border border-rule-strong px-5 py-3 text-[0.8125rem] font-medium uppercase tracking-[0.16em] text-ink sm:px-6 sm:py-3.5 rounded-xl"
+                        >
+                          <LogOut className="h-4 w-4" /> Sign out
+                        </button>
+                      </>
+                    ) : (
+                      <Link
+                        href="/login"
+                        onClick={() => setIsOpen(false)}
+                        title="Sign in to your member account"
+                        className="flex min-h-[48px] items-center justify-center gap-2 bg-vermilion px-5 py-3 text-[0.8125rem] font-medium uppercase tracking-[0.16em] text-paper sm:px-6 sm:py-3.5 rounded-xl"
+                      >
+                        <User className="h-4 w-4" /> Sign in / Member Login
+                      </Link>
+                    )}
+                  </motion.div>
+                </div>
               </motion.div>
-            </div>
-          </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
         )}
-      </AnimatePresence>
     </nav>
   );
 }
