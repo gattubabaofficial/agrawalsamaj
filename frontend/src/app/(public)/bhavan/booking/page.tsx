@@ -885,12 +885,12 @@ export default function BhavanBookingPage() {
           {/* Stepper Main Step Container */}
           <div className="lg:col-span-2 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-3 xs:p-4 sm:p-8">
 
-            {/* Step 1: Dates & Purpose */}
+            {/* Step 1: Dates */}
             {step === 1 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-1">Step 1: Select Booking Dates & Purpose</h2>
-                  <p className="text-sm text-zinc-400">Choose your check-in and check-out dates to view live room availability and select event purpose</p>
+                  <h2 className="text-2xl font-bold text-white mb-1">Step 1: Select Booking Dates</h2>
+                  <p className="text-sm text-zinc-400">Choose your check-in and check-out dates to view live room availability</p>
                 </div>
 
                 {/* Date Selection Box & Interactive Popover Trigger */}
@@ -1276,33 +1276,6 @@ export default function BhavanBookingPage() {
                   )}
                 </div>
 
-                {/* Purpose Selection */}
-                {purposes.length > 0 && (
-                  <div>
-                    <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
-                      Purpose of Booking
-                    </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {purposes.map((p) => {
-                        const isSelected = purposeId === p.id;
-                        return (
-                          <button
-                            key={p.id}
-                            type="button"
-                            onClick={() => setPurposeId(p.id)}
-                            className={`p-3 rounded-xl border text-center text-xs font-bold transition-all cursor-pointer ${
-                              isSelected
-                                ? "border-amber-500 bg-amber-500/20 text-amber-300 ring-2 ring-amber-500/30 shadow-md"
-                                : "border-zinc-800 bg-zinc-900/80 hover:border-zinc-700 text-zinc-300"
-                            }`}
-                          >
-                            {p.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
 
                 {/* Navigation Actions */}
                 <div className="pt-4 flex items-center justify-between">
