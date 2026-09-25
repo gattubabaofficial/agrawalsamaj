@@ -498,18 +498,18 @@ export default function AdminRulesAndVouchersPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           {activeTab === "rules" ? (
             <button
               onClick={handleOpenCreateRule}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
+              className="min-h-[44px] w-full sm:w-auto justify-center inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-xs sm:text-sm font-bold shadow-sm transition-colors cursor-pointer"
             >
               <Plus className="w-4 h-4" /> Add Rule
             </button>
           ) : (
             <button
               onClick={handleOpenCreateVoucher}
-              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-500 transition-colors cursor-pointer"
+              className="min-h-[44px] w-full sm:w-auto justify-center inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-emerald-500 transition-colors cursor-pointer"
             >
               <Gift className="w-4 h-4" /> Add Voucher / Offer
             </button>
@@ -518,10 +518,10 @@ export default function AdminRulesAndVouchersPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 p-1 bg-zinc-100/80 rounded-2xl w-fit border border-zinc-200/80">
+      <div className="flex flex-wrap items-center gap-2 p-1 bg-zinc-100/80 rounded-2xl w-full sm:w-fit border border-zinc-200/80">
         <button
           onClick={() => setActiveTab("rules")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex-1 sm:flex-none min-h-[44px] flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
             activeTab === "rules"
               ? "bg-white text-zinc-900 shadow-sm"
               : "text-zinc-500 hover:text-zinc-900"
@@ -532,30 +532,30 @@ export default function AdminRulesAndVouchersPage() {
         </button>
         <button
           onClick={() => setActiveTab("vouchers")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex-1 sm:flex-none min-h-[44px] flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
             activeTab === "vouchers"
               ? "bg-white text-zinc-900 shadow-sm"
               : "text-zinc-500 hover:text-zinc-900"
           }`}
         >
           <Tag className="w-4 h-4 text-emerald-600" />
-          1-Click Vouchers & Offers ({vouchers.length})
+          1-Click Vouchers ({vouchers.length})
         </button>
       </div>
 
       {/* Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-zinc-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-2xl border border-zinc-200 shadow-sm">
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={activeTab === "rules" ? "Search rules by name..." : "Search vouchers by code or title..."}
-            className="w-full pl-9 pr-3 py-2 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:border-amber-500 bg-zinc-50/50"
+            className="w-full min-h-[44px] pl-10 pr-3.5 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-amber-500 bg-zinc-50/50"
           />
         </div>
-        <div className="text-xs font-semibold text-zinc-500">
+        <div className="text-xs sm:text-sm font-medium text-zinc-500 px-1">
           Total Records: <strong className="text-zinc-900">{activeTab === "rules" ? filteredProfiles.length : filteredVouchers.length}</strong>
         </div>
       </div>
@@ -573,7 +573,7 @@ export default function AdminRulesAndVouchersPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full min-w-[750px] text-left border-collapse">
                 <thead>
                   <tr className="bg-zinc-50/80 border-b border-zinc-200 text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
                     <th className="py-3.5 px-4 w-12 text-center">#</th>
@@ -599,7 +599,7 @@ export default function AdminRulesAndVouchersPage() {
                             <p className="text-xs text-zinc-400 font-normal">Custom peak rates & room permissions</p>
                           )}
                         </td>
-                        <td className="py-4 px-4 font-mono text-zinc-700">
+                        <td className="py-4 px-4 font-mono text-zinc-700 whitespace-nowrap">
                           {dates.length > 0 ? (
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-100 text-zinc-700 border border-zinc-200 text-[11px] font-semibold">
@@ -612,31 +612,31 @@ export default function AdminRulesAndVouchersPage() {
                             <span className="text-zinc-400 text-xs italic">No dates set (Rule inactive)</span>
                           )}
                         </td>
-                        <td className="py-4 px-4">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">
                             Active
                           </span>
                         </td>
-                        <td className="py-4 px-4 text-right">
-                          <div className="inline-flex items-center gap-1.5">
+                        <td className="py-4 px-4 text-right whitespace-nowrap">
+                          <div className="inline-flex items-center gap-1">
                             <button
                               onClick={() => setViewingProfile(p)}
                               title="View Details"
-                              className="p-1.5 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                              className="min-h-[38px] min-w-[38px] flex items-center justify-center p-2 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors cursor-pointer"
                             >
                               <Eye className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleOpenEditRule(p)}
                               title="Edit Rule"
-                              className="p-1.5 text-zinc-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                              className="min-h-[38px] min-w-[38px] flex items-center justify-center p-2 text-zinc-500 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-colors cursor-pointer"
                             >
                               <Edit className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => setDeletingProfile(p)}
                               title="Delete Rule"
-                              className="p-1.5 text-zinc-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                              className="min-h-[38px] min-w-[38px] flex items-center justify-center p-2 text-zinc-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -667,7 +667,7 @@ export default function AdminRulesAndVouchersPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full min-w-[750px] text-left border-collapse">
                 <thead>
                   <tr className="bg-zinc-50/80 border-b border-zinc-200 text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
                     <th className="py-3.5 px-4 w-12 text-center">#</th>
@@ -696,42 +696,42 @@ export default function AdminRulesAndVouchersPage() {
                           <p className="text-xs text-zinc-500 line-clamp-1 mt-0.5">{v.description}</p>
                         )}
                       </td>
-                      <td className="py-4 px-4">
+                      <td className="py-4 px-4 whitespace-nowrap">
                         <span className="font-extrabold text-sm text-emerald-600">
                           {v.discount_type === "percentage" ? `${v.discount_value}% OFF` : `₹${v.discount_value} FLAT`}
                         </span>
                       </td>
-                      <td className="py-4 px-4 font-mono text-zinc-700">
+                      <td className="py-4 px-4 font-mono text-zinc-700 whitespace-nowrap">
                         {v.min_booking_amount ? `₹${v.min_booking_amount}` : "None"}
                       </td>
-                      <td className="py-4 px-4 font-mono text-zinc-700">
+                      <td className="py-4 px-4 font-mono text-zinc-700 whitespace-nowrap">
                         {v.max_discount_amount ? `₹${v.max_discount_amount}` : "No Limit"}
                       </td>
-                      <td className="py-4 px-4">
+                      <td className="py-4 px-4 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 uppercase">
                           <CheckCircle2 className="w-3 h-3" /> 1-Click Apply
                         </span>
                       </td>
-                      <td className="py-4 px-4 text-right">
-                        <div className="inline-flex items-center gap-1.5">
+                      <td className="py-4 px-4 text-right whitespace-nowrap">
+                        <div className="inline-flex items-center gap-1">
                           <button
                             onClick={() => setViewingVoucher(v)}
                             title="View Details"
-                            className="p-1.5 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                            className="min-h-[38px] min-w-[38px] flex items-center justify-center p-2 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors cursor-pointer"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleOpenEditVoucher(v)}
                             title="Edit Voucher"
-                            className="p-1.5 text-zinc-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                            className="min-h-[38px] min-w-[38px] flex items-center justify-center p-2 text-zinc-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors cursor-pointer"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setDeletingVoucher(v)}
                             title="Delete Voucher"
-                            className="p-1.5 text-zinc-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            className="min-h-[38px] min-w-[38px] flex items-center justify-center p-2 text-zinc-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -747,10 +747,10 @@ export default function AdminRulesAndVouchersPage() {
       )}
 
       {/* Bottom Navigation & Actions Bar */}
-      <div className="pt-4 border-t border-zinc-200 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-zinc-200 shadow-sm">
+      <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-zinc-200 shadow-sm">
         <Link
           href="/admin/bhavan"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-300 bg-white hover:bg-zinc-50 text-xs font-bold text-zinc-700 shadow-sm transition-all"
+          className="min-h-[44px] inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 text-xs sm:text-sm font-bold text-zinc-700 shadow-sm transition-all"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Bhavan Overview
         </Link>
@@ -759,14 +759,14 @@ export default function AdminRulesAndVouchersPage() {
           {activeTab === "rules" ? (
             <button
               onClick={handleOpenCreateRule}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
+              className="min-h-[44px] w-full sm:w-auto justify-center inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-xs sm:text-sm font-bold shadow-sm transition-colors cursor-pointer"
             >
               <Plus className="w-4 h-4" /> Add Rule
             </button>
           ) : (
             <button
               onClick={handleOpenCreateVoucher}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
+              className="min-h-[44px] w-full sm:w-auto justify-center inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold shadow-sm transition-colors cursor-pointer"
             >
               <Plus className="w-4 h-4" /> Create New Voucher
             </button>

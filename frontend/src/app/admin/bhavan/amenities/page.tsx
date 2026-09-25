@@ -221,30 +221,30 @@ export default function AdminAmenitiesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900">Amenities & Additional Facilities</h1>
-          <p className="text-xs text-zinc-500">Manage chairs, coolers, mattresses, sound systems, and compulsory charges in alphabetical order</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-zinc-900">Amenities & Additional Facilities</h1>
+          <p className="text-xs sm:text-sm text-zinc-500 mt-0.5">Manage chairs, coolers, mattresses, sound systems, and compulsory charges in alphabetical order</p>
         </div>
         <button
           onClick={handleOpenAddModal}
-          className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-amber-400 transition-colors cursor-pointer"
+          className="min-h-[44px] w-full sm:w-auto justify-center inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-amber-400 transition-colors cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Add Amenity
         </button>
       </div>
 
       {/* Search Filter & Count */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-zinc-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-2xl border border-zinc-200 shadow-sm">
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search amenity by name or type..."
-            className="w-full pl-9 pr-3 py-2 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:border-amber-500 bg-zinc-50/50"
+            className="w-full min-h-[44px] pl-10 pr-3.5 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-amber-500 bg-zinc-50/50"
           />
         </div>
-        <div className="flex items-center gap-2 text-xs font-semibold text-zinc-500 self-end sm:self-auto">
+        <div className="flex items-center gap-2 text-xs sm:text-sm font-medium text-zinc-500 self-start sm:self-auto px-1">
           <span>Total Records: <strong className="text-zinc-900">{sortedAndFilteredAmenities.length}</strong></span>
           <span>•</span>
           <span>Compulsory: <strong className="text-amber-700">{sortedAndFilteredAmenities.filter(a => a.is_compulsory).length}</strong></span>
@@ -262,7 +262,7 @@ export default function AdminAmenitiesPage() {
           <p className="text-xs font-bold text-zinc-800">{error}</p>
           <button
             onClick={fetchAmenities}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-white text-xs font-bold rounded-lg hover:bg-amber-400"
+            className="min-h-[44px] inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-white text-xs sm:text-sm font-bold rounded-xl hover:bg-amber-400"
           >
             <RefreshCw className="w-3.5 h-3.5" /> Retry Fetching
           </button>
@@ -279,7 +279,7 @@ export default function AdminAmenitiesPage() {
         /* TABLE VIEW */
         <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full min-w-[750px] text-left border-collapse">
               <thead>
                 <tr className="bg-zinc-50/80 border-b border-zinc-200 text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
                   <th className="py-3.5 px-4 w-12 text-center">#</th>
@@ -319,7 +319,7 @@ export default function AdminAmenitiesPage() {
                     </td>
 
                     {/* Requirement (Compulsory vs Optional) */}
-                    <td className="py-4 px-4">
+                    <td className="py-4 px-4 whitespace-nowrap">
                       {a.is_compulsory ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 uppercase tracking-wider">
                           ★ Compulsory
@@ -332,21 +332,21 @@ export default function AdminAmenitiesPage() {
                     </td>
 
                     {/* Rate */}
-                    <td className="py-4 px-4">
+                    <td className="py-4 px-4 whitespace-nowrap">
                       <span className="font-extrabold text-amber-600 text-sm">
                         ₹{a.price}
                       </span>
                     </td>
 
                     {/* Pricing Type */}
-                    <td className="py-4 px-4">
+                    <td className="py-4 px-4 whitespace-nowrap">
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase tracking-wider">
                         {a.pricing_type.replace(/_/g, " ")}
                       </span>
                     </td>
 
                     {/* Stock */}
-                    <td className="py-4 px-4">
+                    <td className="py-4 px-4 whitespace-nowrap">
                       <span className="font-mono text-zinc-700 font-semibold">
                         {a.available_quantity === null || a.available_quantity === undefined
                           ? "Unlimited"
@@ -355,26 +355,26 @@ export default function AdminAmenitiesPage() {
                     </td>
 
                     {/* Actions */}
-                    <td className="py-4 px-4 text-right">
-                      <div className="inline-flex items-center gap-1.5">
+                    <td className="py-4 px-4 text-right whitespace-nowrap">
+                      <div className="inline-flex items-center gap-1">
                         <button
                           onClick={() => setViewingAmenity(a)}
                           title="View Details"
-                          className="p-1.5 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                          className="min-h-[38px] min-w-[38px] flex items-center justify-center p-2 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors cursor-pointer"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleOpenEditModal(a)}
                           title="Edit Amenity"
-                          className="p-1.5 text-zinc-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                          className="min-h-[38px] min-w-[38px] flex items-center justify-center p-2 text-zinc-500 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-colors cursor-pointer"
                         >
                           <Edit3 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setDeletingAmenity(a)}
                           title="Delete Amenity"
-                          className="p-1.5 text-zinc-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                          className="min-h-[38px] min-w-[38px] flex items-center justify-center p-2 text-zinc-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -389,17 +389,17 @@ export default function AdminAmenitiesPage() {
       )}
 
       {/* Bottom Navigation & Actions Bar */}
-      <div className="pt-4 border-t border-zinc-200 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-zinc-200 shadow-sm">
+      <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-zinc-200 shadow-sm">
         <Link
           href="/admin/bhavan"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-300 bg-white hover:bg-zinc-50 text-xs font-bold text-zinc-700 shadow-sm transition-all"
+          className="min-h-[44px] inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 text-xs sm:text-sm font-bold text-zinc-700 shadow-sm transition-all"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Bhavan Overview
         </Link>
 
         <button
           onClick={handleOpenAddModal}
-          className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-amber-400 transition-colors cursor-pointer"
+          className="min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-amber-400 transition-colors cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Add Amenity
         </button>
@@ -407,8 +407,8 @@ export default function AdminAmenitiesPage() {
 
       {/* MODAL: View Details */}
       {viewingAmenity && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto shadow-xl">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto shadow-xl">
             <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-200">
@@ -422,14 +422,14 @@ export default function AdminAmenitiesPage() {
               </div>
               <button
                 onClick={() => setViewingAmenity(null)}
-                className="text-zinc-400 hover:text-zinc-700 cursor-pointer"
+                className="min-h-[36px] min-w-[36px] flex items-center justify-center text-zinc-400 hover:text-zinc-700 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-zinc-900">{viewingAmenity.name}</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-zinc-900">{viewingAmenity.name}</h2>
               {viewingAmenity.description ? (
                 <div className="mt-2.5 p-3.5 bg-zinc-50 rounded-xl border border-zinc-100">
                   <span className="text-[10px] font-bold text-zinc-400 block uppercase tracking-wider mb-1">Description</span>
@@ -442,11 +442,11 @@ export default function AdminAmenitiesPage() {
               <div className="grid grid-cols-2 gap-3 mt-4">
                 <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-100">
                   <span className="text-[10px] font-bold text-zinc-500 block uppercase">Rate / Price</span>
-                  <span className="text-base font-extrabold text-amber-600">₹{viewingAmenity.price}</span>
+                  <span className="text-sm sm:text-base font-extrabold text-amber-600">₹{viewingAmenity.price}</span>
                 </div>
                 <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-100">
                   <span className="text-[10px] font-bold text-zinc-500 block uppercase">Available Stock</span>
-                  <span className="text-base font-extrabold text-zinc-800">
+                  <span className="text-sm sm:text-base font-extrabold text-zinc-800">
                     {viewingAmenity.available_quantity === null || viewingAmenity.available_quantity === undefined
                       ? "Unlimited"
                       : `${viewingAmenity.available_quantity} Units`}
@@ -461,16 +461,16 @@ export default function AdminAmenitiesPage() {
               )}
             </div>
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-zinc-100">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-zinc-100">
               <button
                 onClick={() => setViewingAmenity(null)}
-                className="px-4 py-2 border border-zinc-200 rounded-lg text-xs font-semibold hover:bg-zinc-50 cursor-pointer"
+                className="min-h-[44px] px-4 py-2.5 border border-zinc-200 rounded-xl text-xs sm:text-sm font-semibold hover:bg-zinc-50 cursor-pointer w-full sm:w-auto"
               >
                 Close
               </button>
               <button
                 onClick={() => handleOpenEditModal(viewingAmenity)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-white font-bold rounded-lg text-xs hover:bg-amber-400 transition-colors shadow-sm cursor-pointer"
+                className="min-h-[44px] inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-amber-500 text-white font-bold rounded-xl text-xs sm:text-sm hover:bg-amber-400 transition-colors shadow-sm cursor-pointer w-full sm:w-auto"
               >
                 <Edit3 className="w-3.5 h-3.5" /> Edit Amenity
               </button>
@@ -481,15 +481,15 @@ export default function AdminAmenitiesPage() {
 
       {/* MODAL: Add / Edit Amenity */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto shadow-xl">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto shadow-xl">
             <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-              <h3 className="text-lg font-bold text-zinc-900">
+              <h3 className="text-base sm:text-lg font-bold text-zinc-900">
                 {editingAmenity ? "Edit Amenity" : "Add Amenity"}
               </h3>
               <button
                 onClick={() => { setShowModal(false); setEditingAmenity(null); }}
-                className="text-zinc-400 hover:text-zinc-700 cursor-pointer"
+                className="min-h-[36px] min-w-[36px] flex items-center justify-center text-zinc-400 hover:text-zinc-700 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -509,7 +509,7 @@ export default function AdminAmenitiesPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Cleaning Charge, Sound System, Cooler"
-                className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-amber-500"
+                className="w-full min-h-[44px] px-3.5 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-amber-500"
               />
             </div>
 
@@ -520,11 +520,11 @@ export default function AdminAmenitiesPage() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Enter details, equipment specs, or usage instructions..."
-                className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm resize-none focus:outline-none focus:border-amber-500"
+                className="w-full px-3.5 py-2.5 border border-zinc-200 rounded-xl text-sm resize-none focus:outline-none focus:border-amber-500"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col justify-end">
                 <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1.5 truncate">
                   Rate / Price (₹) *
@@ -534,7 +534,7 @@ export default function AdminAmenitiesPage() {
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="e.g. 100"
-                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm font-bold text-amber-600 focus:outline-none focus:border-amber-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  className="w-full min-h-[44px] px-3.5 py-2 border border-zinc-200 rounded-xl text-sm font-bold text-amber-600 focus:outline-none focus:border-amber-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
               <div className="flex flex-col justify-end">
@@ -544,7 +544,7 @@ export default function AdminAmenitiesPage() {
                 <select
                   value={pricingType}
                   onChange={(e) => setPricingType(e.target.value)}
-                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-amber-500 bg-white"
+                  className="w-full min-h-[44px] px-3.5 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-amber-500 bg-white"
                 >
                   <option value="per_unit">Per Unit</option>
                   <option value="per_day">Per Day</option>
@@ -564,7 +564,7 @@ export default function AdminAmenitiesPage() {
                 value={stock}
                 onChange={(e) => setStock(e.target.value)}
                 placeholder="Unlimited"
-                className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-amber-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="w-full min-h-[44px] px-3.5 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-amber-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
             </div>
 
@@ -575,23 +575,23 @@ export default function AdminAmenitiesPage() {
                   type="checkbox"
                   checked={isCompulsory}
                   onChange={(e) => setIsCompulsory(e.target.checked)}
-                  className="w-4 h-4 mt-0.5 rounded text-amber-600 focus:ring-amber-500 border-zinc-300 cursor-pointer"
+                  className="w-5 h-5 mt-0.5 rounded text-amber-600 focus:ring-amber-500 border-zinc-300 cursor-pointer"
                 />
                 <div className="space-y-0.5">
-                  <span className="text-xs font-bold text-zinc-900 block">Compulsory Amenity</span>
-                  <span className="text-[11px] text-zinc-500 block leading-normal">
+                  <span className="text-xs sm:text-sm font-bold text-zinc-900 block">Compulsory Amenity</span>
+                  <span className="text-[11px] sm:text-xs text-zinc-500 block leading-normal">
                     Automatically added to all booking enquiries and calculated into the customer's final bill.
                   </span>
                 </div>
               </label>
             </div>
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-zinc-100">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-zinc-100">
               <button
                 type="button"
                 disabled={isSaving}
                 onClick={() => { setShowModal(false); setEditingAmenity(null); }}
-                className="px-4 py-2 border border-zinc-200 rounded-lg text-xs font-semibold hover:bg-zinc-50 cursor-pointer disabled:opacity-50"
+                className="min-h-[44px] px-4 py-2.5 border border-zinc-200 rounded-xl text-xs sm:text-sm font-semibold hover:bg-zinc-50 cursor-pointer disabled:opacity-50 w-full sm:w-auto"
               >
                 Cancel
               </button>
@@ -599,7 +599,7 @@ export default function AdminAmenitiesPage() {
                 type="button"
                 disabled={isSaving}
                 onClick={handleSaveAmenity}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-white font-bold rounded-lg text-xs hover:bg-amber-400 transition-colors shadow-sm cursor-pointer disabled:opacity-60"
+                className="min-h-[44px] inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-amber-500 text-white font-bold rounded-xl text-xs sm:text-sm hover:bg-amber-400 transition-colors shadow-sm cursor-pointer disabled:opacity-60 w-full sm:w-auto"
               >
                 {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 {isSaving ? "Saving..." : "Save Amenity"}
@@ -611,29 +611,29 @@ export default function AdminAmenitiesPage() {
 
       {/* MODAL: Delete Confirmation */}
       {deletingAmenity && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm space-y-4 text-center shadow-xl">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-sm space-y-4 text-center shadow-xl">
             <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-zinc-900">Delete Amenity?</h3>
+              <h3 className="text-base sm:text-lg font-bold text-zinc-900">Delete Amenity?</h3>
               <p className="text-xs text-zinc-500 mt-1">
                 Are you sure you want to delete <strong className="text-zinc-800">"{deletingAmenity.name}"</strong>?
               </p>
             </div>
-            <div className="flex justify-center gap-3 pt-2">
+            <div className="flex flex-col-reverse sm:flex-row justify-center gap-2.5 pt-2">
               <button
                 disabled={isDeleting}
                 onClick={() => setDeletingAmenity(null)}
-                className="px-4 py-2 border border-zinc-200 rounded-lg text-xs font-semibold hover:bg-zinc-50 cursor-pointer disabled:opacity-50"
+                className="min-h-[44px] px-4 py-2.5 border border-zinc-200 rounded-xl text-xs sm:text-sm font-semibold hover:bg-zinc-50 cursor-pointer disabled:opacity-50 w-full sm:w-auto"
               >
                 Cancel
               </button>
               <button
                 disabled={isDeleting}
                 onClick={handleDeleteAmenity}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-600 text-white font-bold rounded-lg text-xs hover:bg-rose-500 transition-colors shadow-sm cursor-pointer disabled:opacity-60"
+                className="min-h-[44px] inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-rose-600 text-white font-bold rounded-xl text-xs sm:text-sm hover:bg-rose-500 transition-colors shadow-sm cursor-pointer disabled:opacity-60 w-full sm:w-auto"
               >
                 {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 {isDeleting ? "Deleting..." : "Delete"}

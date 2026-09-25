@@ -427,7 +427,7 @@ export default function AdminMembersPage() {
           <h1 className="text-2xl font-bold text-zinc-900">Manage Directory</h1>
           <p className="text-sm text-zinc-500 mt-1">Full view of Samaj members, including contact details and address details.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
           <button
             type="button"
             onClick={() => {
@@ -436,34 +436,34 @@ export default function AdminMembersPage() {
               setAddMemberError("");
               setAddMemberSuccess("");
             }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-sm font-bold rounded-xl shadow-md transition-all cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-sm font-bold rounded-xl shadow-md transition-all cursor-pointer flex-1 sm:flex-none"
           >
-            <UserPlus className="w-4 h-4" />
-            + Add New Member
+            <UserPlus className="w-4 h-4 shrink-0" />
+            <span>+ Add New Member</span>
           </button>
           <Link
             href="/admin/roles"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors cursor-pointer flex-1 sm:flex-none text-center"
           >
-            <ShieldCheck className="w-4 h-4" />
-            Custom Roles &amp; Permissions
+            <ShieldCheck className="w-4 h-4 shrink-0" />
+            <span>Roles &amp; Permissions</span>
           </Link>
-          <div className="px-4 py-2 bg-amber-50 text-amber-700 text-sm font-semibold rounded-xl border border-amber-200">
+          <div className="px-4 py-2.5 min-h-[44px] flex items-center justify-center bg-amber-50 text-amber-700 text-sm font-semibold rounded-xl border border-amber-200 w-full sm:w-auto text-center">
             Total Members: {filteredMembers.length}
           </div>
         </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-zinc-200 bg-zinc-50/50">
+        <div className="p-3 sm:p-4 border-b border-zinc-200 bg-zinc-50/50">
           <div className="relative max-w-md w-full">
-            <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input 
               type="text" 
               placeholder="Search members by name, Samaj ID, email or phone..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white"
+              className="w-full pl-9 pr-4 py-2.5 min-h-[44px] text-sm border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 bg-white"
             />
           </div>
         </div>
@@ -478,26 +478,26 @@ export default function AdminMembersPage() {
             No members found.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 p-4 sm:p-6">
             {filteredMembers.map((m) => {
               const initials = `${m.first_name.charAt(0)}${m.surname.charAt(0)}`.toUpperCase();
               return (
-                <div key={m.user_id} className="bg-white border border-zinc-200 rounded-2xl p-5 hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+                <div key={m.user_id} className="bg-white border border-zinc-200 rounded-2xl p-4 sm:p-5 hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
                   <div className="space-y-4">
                     <div className="flex items-start gap-4">
                       {m.profile_photo ? (
                         <img 
                           src={mediaUrl(m.profile_photo) || m.profile_photo} 
                           alt={`${m.first_name} ${m.surname}`}
-                          className="w-12 h-12 rounded-full object-cover border-2 border-amber-500/20"
+                          className="w-12 h-12 rounded-full object-cover border-2 border-amber-500/20 shrink-0"
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-sm border border-amber-200">
+                        <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-sm border border-amber-200 shrink-0">
                           {initials}
                         </div>
                       )}
-                      <div>
-                        <h4 className="font-bold text-zinc-900 text-base">{m.first_name} {m.surname}</h4>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-zinc-900 text-base truncate">{m.first_name} {m.surname}</h4>
                         <div className="flex flex-wrap items-center gap-1.5 mt-1">
                           {m.samaj_id && (
                             <span className="inline-flex items-center gap-1 text-xs font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-100">
@@ -513,38 +513,38 @@ export default function AdminMembersPage() {
                             ) : null;
                           })()}
                         </div>
-                        {formatParentage(m.father_name) && <p className="text-xs text-zinc-500 mt-1">{formatParentage(m.father_name)}</p>}
-                        {m.profession && <p className="text-xs text-zinc-500 mt-1 italic">{m.profession}</p>}
+                        {formatParentage(m.father_name) && <p className="text-xs text-zinc-500 mt-1 truncate">{formatParentage(m.father_name)}</p>}
+                        {m.profession && <p className="text-xs text-zinc-500 mt-1 italic truncate">{m.profession}</p>}
                       </div>
                     </div>
 
                     <div className="border-t border-zinc-100 pt-3 space-y-2.5 text-sm">
                       {m.family_name && (
                         <div className="flex items-center gap-2 text-zinc-600">
-                          <FileUser className="w-4 h-4 text-zinc-400" />
-                          <span>{m.family_name} ({m.family_relation || 'Member'})</span>
+                          <FileUser className="w-4 h-4 text-zinc-400 shrink-0" />
+                          <span className="truncate">{m.family_name} ({m.family_relation || 'Member'})</span>
                         </div>
                       )}
                       
                       <div className="flex items-center gap-2 text-zinc-600">
-                        <Mail className="w-4 h-4 text-zinc-400" />
+                        <Mail className="w-4 h-4 text-zinc-400 shrink-0" />
                         <span className="break-all">{m.email || 'No email provided'}</span>
                       </div>
 
                       <div className="flex items-center gap-2 text-zinc-600">
-                        <Phone className="w-4 h-4 text-zinc-400" />
+                        <Phone className="w-4 h-4 text-zinc-400 shrink-0" />
                         <span>{m.mobile || 'No phone provided'}</span>
                       </div>
 
                       <div className="flex items-start gap-2 text-zinc-600">
-                        <MapPin className="w-4 h-4 text-zinc-400 mt-0.5" />
+                        <MapPin className="w-4 h-4 text-zinc-400 mt-0.5 shrink-0" />
                         <span className="line-clamp-2">{m.address || 'No address configured'}</span>
                       </div>
 
                       {m.native_place && (
                         <div className="flex items-center gap-2 text-xs text-zinc-600">
                           <span className="font-semibold text-zinc-500">Origin:</span>
-                          <span>🚩 {m.native_place}</span>
+                          <span className="truncate">🚩 {m.native_place}</span>
                         </div>
                       )}
 
@@ -555,7 +555,7 @@ export default function AdminMembersPage() {
                       )}
 
                       {(m.zone || m.house_no) && (
-                        <div className="flex items-center gap-2 text-xs text-zinc-500">
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
                           {m.zone && <span className="bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200"><span className="font-semibold">Zone:</span> {m.zone}</span>}
                           {m.house_no && <span className="bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200"><span className="font-semibold">House:</span> {m.house_no}</span>}
                         </div>
@@ -564,37 +564,37 @@ export default function AdminMembersPage() {
                   </div>
 
                   <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap w-full">
                       <button
                         onClick={() => setViewMemberModal(m)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                        className="inline-flex items-center justify-center gap-1.5 px-3 py-2 min-h-[38px] bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold rounded-lg transition-colors cursor-pointer flex-1 sm:flex-none"
                       >
-                        <Eye className="w-3.5 h-3.5 text-zinc-600" /> View Details
+                        <Eye className="w-3.5 h-3.5 text-zinc-600" /> View
                       </button>
                       <a
                         href={`${getApiBaseUrl()}/membership/members/${m.user_id}/application-pdf`}
                         target="_blank"
                         rel="noopener noreferrer"
                         title="Download Official Member Record / Application PDF"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-semibold rounded-lg border border-amber-200 transition-colors cursor-pointer"
+                        className="inline-flex items-center justify-center gap-1.5 px-3 py-2 min-h-[38px] bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-semibold rounded-lg border border-amber-200 transition-colors cursor-pointer"
                       >
                         <FileText className="w-3.5 h-3.5" /> PDF
                       </a>
                       <button
                         onClick={() => handleOpenMessageModal(m)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
+                        className="inline-flex items-center justify-center gap-1.5 px-3 py-2 min-h-[38px] bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer flex-1 sm:flex-none"
                       >
                         <MessageSquare className="w-3.5 h-3.5" /> Message
                       </button>
                       <button
                         onClick={() => handleOpenEditModal(m)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
+                        className="inline-flex items-center justify-center gap-1.5 px-3 py-2 min-h-[38px] bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
                       >
                         <Edit className="w-3.5 h-3.5" /> Edit
                       </button>
                       <button
                         onClick={() => handleDeleteUser(m.user_id)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
+                        className="inline-flex items-center justify-center gap-1.5 px-3 py-2 min-h-[38px] bg-red-500 hover:bg-red-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" /> Delete
                       </button>
@@ -602,21 +602,21 @@ export default function AdminMembersPage() {
                         <button
                           onClick={() => updateRole(m.user_id, 'member')}
                           disabled={updatingUserId === m.user_id}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 min-h-[38px] bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
                         >
-                          <Undo2 className="w-3.5 h-3.5" /> Revoke Volunteer
+                          <Undo2 className="w-3.5 h-3.5" /> Revoke
                         </button>
                       ) : m.role === 'member' ? (
                         <button
                           onClick={() => updateRole(m.user_id, 'volunteer')}
                           disabled={updatingUserId === m.user_id}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 min-h-[38px] bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
                         >
-                          <HandHeart className="w-3.5 h-3.5" /> Make Volunteer
+                          <HandHeart className="w-3.5 h-3.5" /> Volunteer
                         </button>
                       ) : null}
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap mt-1">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
                         m.role === 'volunteer' ? 'bg-sky-50 text-sky-700 border border-sky-100' :
                         'bg-emerald-50 text-emerald-700 border border-emerald-100'
@@ -640,19 +640,19 @@ export default function AdminMembersPage() {
 
       {/* MODAL 1: Edit Member Details Form */}
       {editingMember && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-zinc-200 flex flex-col animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-zinc-100 flex items-center justify-between sticky top-0 bg-white z-10">
+            <div className="p-4 sm:p-6 border-b border-zinc-100 flex items-center justify-between sticky top-0 bg-white z-10">
               <div>
-                <h3 className="font-bold text-lg text-zinc-900">Edit Member Details</h3>
+                <h3 className="font-bold text-base sm:text-lg text-zinc-900">Edit Member Details</h3>
                 <p className="text-xs text-zinc-500">Edit core, contact, zone and household attributes.</p>
               </div>
-              <button onClick={() => setEditingMember(null)} className="p-1 rounded-lg hover:bg-zinc-100">
+              <button onClick={() => setEditingMember(null)} className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-zinc-100">
                 <X className="w-5 h-5 text-zinc-500" />
               </button>
             </div>
             
-            <form onSubmit={handleEditSubmit} className="p-6 space-y-6">
+            <form onSubmit={handleEditSubmit} className="p-4 sm:p-6 space-y-6">
               {editError && (
                 <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-sm font-semibold rounded-xl flex items-center gap-2">
                   <ShieldAlert className="w-5 h-5 shrink-0" />
@@ -663,9 +663,9 @@ export default function AdminMembersPage() {
               {/* Profile Photo File Upload */}
               <div className="space-y-1.5 p-4 bg-amber-50/50 rounded-2xl border border-amber-200/80">
                 <label className="text-xs font-bold text-zinc-700 block">Profile Photo (Upload Image File)</label>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-4">
                   {editForm.profile_photo ? (
-                    <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-amber-500/40 shadow-sm flex-shrink-0">
+                    <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-amber-500/40 shadow-sm shrink-0">
                       <img src={mediaUrl(editForm.profile_photo) || editForm.profile_photo} alt="Profile Preview" className="w-full h-full object-cover" />
                       <button
                         type="button"
@@ -677,12 +677,12 @@ export default function AdminMembersPage() {
                       </button>
                     </div>
                   ) : (
-                    <div className="w-20 h-20 rounded-2xl bg-amber-100/70 border border-dashed border-amber-400 flex flex-col items-center justify-center text-amber-700 flex-shrink-0">
+                    <div className="w-20 h-20 rounded-2xl bg-amber-100/70 border border-dashed border-amber-400 flex flex-col items-center justify-center text-amber-700 shrink-0">
                       <Camera className="w-8 h-8" />
                     </div>
                   )}
-                  <div className="flex-1 space-y-1.5">
-                    <label className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors shadow-sm">
+                  <div className="flex-1 space-y-1.5 min-w-[180px]">
+                    <label className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors shadow-sm">
                       {uploadingPhoto ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
                       {editForm.profile_photo ? "Change Image File" : "Choose Image File"}
                       <input
@@ -707,30 +707,30 @@ export default function AdminMembersPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-700">First Name *</label>
-                    <input required type="text" value={editForm.first_name || ""} onChange={e => setEditForm({...editForm, first_name: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                    <input required type="text" value={editForm.first_name || ""} onChange={e => setEditForm({...editForm, first_name: e.target.value})} className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-700">Surname *</label>
-                    <input required type="text" value={editForm.surname || ""} onChange={e => setEditForm({...editForm, surname: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                    <input required type="text" value={editForm.surname || ""} onChange={e => setEditForm({...editForm, surname: e.target.value})} className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-700">Father's / Husband's Name</label>
-                    <input type="text" value={editForm.father_name || ""} onChange={e => setEditForm({...editForm, father_name: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                    <input type="text" value={editForm.father_name || ""} onChange={e => setEditForm({...editForm, father_name: e.target.value})} className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-700">Samaj ID</label>
-                    <input type="text" value={editForm.samaj_id || ""} onChange={e => setEditForm({...editForm, samaj_id: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                    <input type="text" value={editForm.samaj_id || ""} onChange={e => setEditForm({...editForm, samaj_id: e.target.value})} className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-700">Life Member No (LM No)</label>
-                    <input type="number" value={editForm.lm_no === undefined ? "" : editForm.lm_no ?? ""} onChange={e => setEditForm({...editForm, lm_no: e.target.value ? Number(e.target.value) : null})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                    <input type="number" value={editForm.lm_no === undefined ? "" : editForm.lm_no ?? ""} onChange={e => setEditForm({...editForm, lm_no: e.target.value ? Number(e.target.value) : null})} className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-700">Relation to Head</label>
                     <select
                       value={editForm.family_relation || ""}
                       onChange={e => setEditForm({...editForm, family_relation: e.target.value})}
-                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white"
+                      className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white"
                     >
                       <option value="">Select Relation...</option>
                       <option value="Self">Self / स्वयं (Head)</option>
@@ -756,15 +756,15 @@ export default function AdminMembersPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-700">Mobile Phone</label>
-                    <input type="tel" value={editForm.mobile || ""} onChange={e => setEditForm({...editForm, mobile: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                    <input type="tel" value={editForm.mobile || ""} onChange={e => setEditForm({...editForm, mobile: e.target.value})} className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-700">Email Address</label>
-                    <input type="email" value={editForm.email || ""} onChange={e => setEditForm({...editForm, email: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                    <input type="email" value={editForm.email || ""} onChange={e => setEditForm({...editForm, email: e.target.value})} className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
                   </div>
                   <div className="md:col-span-2 space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-700">Residential Address</label>
-                    <input type="text" value={editForm.address || ""} onChange={e => setEditForm({...editForm, address: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                    <input type="text" value={editForm.address || ""} onChange={e => setEditForm({...editForm, address: e.target.value})} className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
                   </div>
                 </div>
               </div>
@@ -775,18 +775,18 @@ export default function AdminMembersPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-700">Colony Zone</label>
-                    <input type="text" value={editForm.zone || ""} onChange={e => setEditForm({...editForm, zone: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                    <input type="text" value={editForm.zone || ""} onChange={e => setEditForm({...editForm, zone: e.target.value})} className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-700">House Number</label>
-                    <input type="text" value={editForm.house_no || ""} onChange={e => setEditForm({...editForm, house_no: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                    <input type="text" value={editForm.house_no || ""} onChange={e => setEditForm({...editForm, house_no: e.target.value})} className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-700">Member Status</label>
                     <select
                       value={editForm.member_status || "active"}
                       onChange={e => setEditForm({...editForm, member_status: e.target.value})}
-                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white"
+                      className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white"
                     >
                       <option value="active">Active / सक्रिय</option>
                       <option value="shifted">Shifted / स्थान्तरित</option>
@@ -805,15 +805,15 @@ export default function AdminMembersPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-700">Profession / Occupation</label>
-                    <input type="text" value={editForm.profession || ""} onChange={e => setEditForm({...editForm, profession: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                    <input type="text" value={editForm.profession || ""} onChange={e => setEditForm({...editForm, profession: e.target.value})} className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-700">Native Place / Origin</label>
-                    <input type="text" value={editForm.native_place || ""} onChange={e => setEditForm({...editForm, native_place: e.target.value})} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                    <input type="text" value={editForm.native_place || ""} onChange={e => setEditForm({...editForm, native_place: e.target.value})} className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
                   </div>
                   <div className="md:col-span-2 space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-700">Bio Note</label>
-                    <textarea value={editForm.bio || ""} onChange={e => setEditForm({...editForm, bio: e.target.value})} rows={2} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                    <textarea value={editForm.bio || ""} onChange={e => setEditForm({...editForm, bio: e.target.value})} rows={2} className="w-full px-3.5 py-2.5 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
                   </div>
                 </div>
               </div>
@@ -834,7 +834,7 @@ export default function AdminMembersPage() {
                   <select
                     value={editForm.custom_role_id || ""}
                     onChange={e => setEditForm({...editForm, custom_role_id: e.target.value})}
-                    className="w-full px-3.5 py-2.5 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white cursor-pointer"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white cursor-pointer"
                   >
                     <option value="">-- No Custom Role (Regular Member) --</option>
                     {customRoles.map(r => (
@@ -849,11 +849,11 @@ export default function AdminMembersPage() {
                 </div>
               </div>
 
-              <div className="pt-4 border-t flex justify-end gap-3 sticky bottom-0 bg-white z-10 py-3">
-                <button type="button" onClick={() => setEditingMember(null)} className="px-5 py-2 border border-zinc-200 rounded-xl text-sm font-semibold hover:bg-zinc-50 cursor-pointer">
+              <div className="pt-4 border-t flex flex-wrap items-center justify-end gap-3 sticky bottom-0 bg-white z-10 py-3">
+                <button type="button" onClick={() => setEditingMember(null)} className="px-5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl text-sm font-semibold hover:bg-zinc-50 cursor-pointer flex-1 sm:flex-none">
                   Cancel
                 </button>
-                <button type="submit" disabled={editSubmitting} className="px-5 py-2 bg-amber-500 text-white rounded-xl text-sm font-semibold hover:bg-amber-600 disabled:opacity-50 cursor-pointer">
+                <button type="submit" disabled={editSubmitting} className="px-5 py-2.5 min-h-[44px] bg-amber-500 text-white rounded-xl text-sm font-semibold hover:bg-amber-600 disabled:opacity-50 cursor-pointer flex-1 sm:flex-none">
                   {editSubmitting ? "Saving..." : "Save Changes"}
                 </button>
               </div>
@@ -864,14 +864,14 @@ export default function AdminMembersPage() {
 
       {/* MODAL 2: Send Message Request (replacing chat redirect) */}
       {messageMember && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-zinc-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
+            <div className="p-4 sm:p-6 border-b border-zinc-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-amber-500" />
-                <h3 className="font-bold text-lg">Message {messageMember.first_name}</h3>
+                <MessageSquare className="w-5 h-5 text-amber-500 shrink-0" />
+                <h3 className="font-bold text-base sm:text-lg">Message {messageMember.first_name}</h3>
               </div>
-              <button onClick={() => setMessageMember(null)} className="p-1 rounded-lg hover:bg-zinc-100">
+              <button onClick={() => setMessageMember(null)} className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-zinc-100">
                 <X className="w-5 h-5 text-zinc-500" />
               </button>
             </div>
@@ -881,12 +881,12 @@ export default function AdminMembersPage() {
                 <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg mx-auto">✓</div>
                 <h4 className="text-xl font-bold text-zinc-950">Message Sent!</h4>
                 <p className="text-sm text-zinc-500 leading-relaxed px-4">{msgSuccess}</p>
-                <button onClick={() => setMessageMember(null)} className="px-6 py-2 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 text-sm cursor-pointer mt-4">
+                <button onClick={() => setMessageMember(null)} className="px-6 py-2.5 min-h-[44px] bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 text-sm cursor-pointer mt-4">
                   Close Window
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleMessageSubmit} className="p-6 space-y-4">
+              <form onSubmit={handleMessageSubmit} className="p-4 sm:p-6 space-y-4">
                 <p className="text-xs text-zinc-500 leading-relaxed bg-amber-50/50 p-3 rounded-lg border border-amber-100">
                   ✉️ This will send a WhatsApp message directly to <strong>{messageMember.first_name} {messageMember.surname}</strong> with your contact information.
                 </p>
@@ -899,17 +899,17 @@ export default function AdminMembersPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-zinc-700">Sender Name *</label>
-                  <input required type="text" value={senderName} onChange={e => setSenderName(e.target.value)} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                  <input required type="text" value={senderName} onChange={e => setSenderName(e.target.value)} className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-zinc-700">Sender Mobile (WhatsApp Number) *</label>
-                  <input required type="tel" value={senderMobile} onChange={e => setSenderMobile(e.target.value)} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" placeholder="e.g. 9876543210" />
+                  <input required type="tel" value={senderMobile} onChange={e => setSenderMobile(e.target.value)} className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" placeholder="e.g. 9876543210" />
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-zinc-700">Sender Email (Optional)</label>
-                  <input type="email" value={senderEmail} onChange={e => setSenderEmail(e.target.value)} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
+                  <input type="email" value={senderEmail} onChange={e => setSenderEmail(e.target.value)} className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" />
                 </div>
 
                 <div className="space-y-1.5">
@@ -917,7 +917,7 @@ export default function AdminMembersPage() {
                   <select
                     value={messageReason}
                     onChange={e => setMessageReason(e.target.value)}
-                    className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white"
                   >
                     <option value="General Inquiry">General Inquiry</option>
                     <option value="Matrimonial Query">Matrimonial Query</option>
@@ -928,14 +928,14 @@ export default function AdminMembersPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-zinc-700">Your Message *</label>
-                  <textarea required rows={3} value={messageText} onChange={e => setMessageText(e.target.value)} className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" placeholder="Type your message details here..." />
+                  <textarea required rows={3} value={messageText} onChange={e => setMessageText(e.target.value)} className="w-full px-3.5 py-2.5 border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-white" placeholder="Type your message details here..." />
                 </div>
 
-                <div className="pt-4 border-t flex justify-end gap-3 py-1">
-                  <button type="button" onClick={() => setMessageMember(null)} className="px-5 py-2 border border-zinc-200 rounded-xl text-sm font-semibold hover:bg-zinc-50 cursor-pointer">
+                <div className="pt-4 border-t flex flex-wrap items-center justify-end gap-3 py-1">
+                  <button type="button" onClick={() => setMessageMember(null)} className="px-5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl text-sm font-semibold hover:bg-zinc-50 cursor-pointer flex-1 sm:flex-none">
                     Cancel
                   </button>
-                  <button type="submit" disabled={sendingMsg} className="px-5 py-2 bg-amber-500 text-white rounded-xl text-sm font-semibold hover:bg-amber-600 disabled:opacity-50 cursor-pointer">
+                  <button type="submit" disabled={sendingMsg} className="px-5 py-2.5 min-h-[44px] bg-amber-500 text-white rounded-xl text-sm font-semibold hover:bg-amber-600 disabled:opacity-50 cursor-pointer flex-1 sm:flex-none">
                     {sendingMsg ? "Sending..." : "Send Message"}
                   </button>
                 </div>
@@ -947,29 +947,29 @@ export default function AdminMembersPage() {
 
       {/* View Details Modal */}
       {viewMemberModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
           <div className="bg-white rounded-3xl max-w-xl w-full border border-zinc-200 shadow-2xl overflow-hidden my-8">
-            <div className="px-6 py-5 bg-gradient-to-r from-amber-500 to-orange-600 text-white flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 bg-gradient-to-r from-amber-500 to-orange-600 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0">
                 {viewMemberModal.profile_photo ? (
-                  <img src={mediaUrl(viewMemberModal.profile_photo) || viewMemberModal.profile_photo} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-white/40" />
+                  <img src={mediaUrl(viewMemberModal.profile_photo) || viewMemberModal.profile_photo} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-white/40 shrink-0" />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold text-sm">
+                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold text-sm shrink-0">
                     {viewMemberModal.first_name?.[0]}{viewMemberModal.surname?.[0]}
                   </div>
                 )}
-                <div>
-                  <h3 className="font-bold text-lg leading-tight">{viewMemberModal.first_name} {viewMemberModal.surname}</h3>
-                  <p className="text-xs text-amber-100">{viewMemberModal.samaj_id || "Samaj Member"}</p>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-bold text-base sm:text-lg leading-tight truncate">{viewMemberModal.first_name} {viewMemberModal.surname}</h3>
+                  <p className="text-xs text-amber-100 truncate">{viewMemberModal.samaj_id || "Samaj Member"}</p>
                 </div>
               </div>
-              <button onClick={() => setViewMemberModal(null)} className="p-2 rounded-full hover:bg-white/20 transition-colors">
+              <button onClick={() => setViewMemberModal(null)} className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4 text-sm divide-y divide-zinc-100 max-h-[75vh] overflow-y-auto">
-              <div className="grid grid-cols-2 gap-4 pt-1">
+            <div className="p-4 sm:p-6 space-y-4 text-sm divide-y divide-zinc-100 max-h-[75vh] overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                 <div>
                   <p className="text-xs text-zinc-400 font-semibold uppercase">Full Name</p>
                   <p className="font-bold text-zinc-900 mt-0.5">{viewMemberModal.first_name} {viewMemberModal.surname}</p>
@@ -994,7 +994,7 @@ export default function AdminMembersPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3">
                 <div>
                   <p className="text-xs text-zinc-400 font-semibold uppercase">Mobile no (whatsapp no)</p>
                   <p className="font-mono font-semibold text-zinc-800 mt-0.5">{viewMemberModal.mobile || "N/A"}</p>
@@ -1013,7 +1013,7 @@ export default function AdminMembersPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3">
                 <div>
                   <p className="text-xs text-zinc-400 font-semibold uppercase">Zone</p>
                   <p className="font-medium text-zinc-800 mt-0.5">{viewMemberModal.zone || "N/A"}</p>
@@ -1037,18 +1037,18 @@ export default function AdminMembersPage() {
               )}
             </div>
 
-            <div className="p-4 bg-zinc-50 border-t border-zinc-200 flex items-center justify-between">
+            <div className="p-4 bg-zinc-50 border-t border-zinc-200 flex flex-wrap items-center justify-between gap-3">
               <a
                 href={`${getApiBaseUrl()}/membership/members/${viewMemberModal.user_id}/application-pdf`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm flex-1 sm:flex-none text-center"
               >
-                <FileText className="w-4 h-4" /> Download Application PDF
+                <FileText className="w-4 h-4 shrink-0" /> <span>Download Application PDF</span>
               </a>
               <button
                 onClick={() => setViewMemberModal(null)}
-                className="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold rounded-xl transition-colors"
+                className="px-6 py-2.5 min-h-[44px] bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold rounded-xl transition-colors flex-1 sm:flex-none"
               >
                 Close Details
               </button>
@@ -1059,28 +1059,28 @@ export default function AdminMembersPage() {
 
       {/* MODAL 3: Add New Member (Admin Direct Creation without OTP) */}
       {addMemberModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto backdrop-blur-sm">
           <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-zinc-200 flex flex-col animate-in fade-in zoom-in-95 duration-200 my-6">
-            <div className="p-6 bg-gradient-to-r from-emerald-600 via-teal-700 to-cyan-800 text-white flex items-center justify-between sticky top-0 z-10">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/20 rounded-xl">
+            <div className="p-4 sm:p-6 bg-gradient-to-r from-emerald-600 via-teal-700 to-cyan-800 text-white flex items-center justify-between sticky top-0 z-10">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 bg-white/20 rounded-xl shrink-0">
                   <UserPlus className="w-6 h-6 text-white" />
                 </div>
-                <div>
-                  <h3 className="font-bold text-lg leading-tight">Add New Member (Admin Portal)</h3>
-                  <p className="text-xs text-emerald-100">Create new membership directly without OTP verification</p>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-bold text-base sm:text-lg leading-tight truncate">Add New Member (Admin Portal)</h3>
+                  <p className="text-xs text-emerald-100 truncate">Create new membership directly without OTP verification</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setAddMemberModalOpen(false)}
-                className="p-1.5 rounded-full hover:bg-white/20 transition-colors"
+                className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-white/20 transition-colors shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleAddMemberSubmit} className="p-6 space-y-6">
+            <form onSubmit={handleAddMemberSubmit} className="p-4 sm:p-6 space-y-6">
               {addMemberSuccess && (
                 <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold rounded-2xl flex items-center gap-2.5">
                   <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
@@ -1098,7 +1098,7 @@ export default function AdminMembersPage() {
               {/* Photo Upload */}
               <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-200/80">
                 <label className="text-xs font-bold text-zinc-700 block mb-2">Member Profile Photo (Optional)</label>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-4">
                   {addMemberForm.profile_photo ? (
                     <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-emerald-500/40 shadow-sm shrink-0">
                       <img src={mediaUrl(addMemberForm.profile_photo) || addMemberForm.profile_photo} alt="" className="w-full h-full object-cover" />
@@ -1115,8 +1115,8 @@ export default function AdminMembersPage() {
                       <Camera className="w-7 h-7" />
                     </div>
                   )}
-                  <div className="flex-1 space-y-1.5">
-                    <label className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors shadow-sm">
+                  <div className="flex-1 space-y-1.5 min-w-[180px]">
+                    <label className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors shadow-sm">
                       {uploadingAddPhoto ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
                       {addMemberForm.profile_photo ? "Change Photo" : "Upload Photo"}
                       <input
@@ -1147,7 +1147,7 @@ export default function AdminMembersPage() {
                       placeholder="e.g. Ramesh"
                       value={addMemberForm.first_name || ""}
                       onChange={e => setAddMemberForm({ ...addMemberForm, first_name: e.target.value })}
-                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                      className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
                     />
                   </div>
                   <div className="space-y-1">
@@ -1158,7 +1158,7 @@ export default function AdminMembersPage() {
                       placeholder="e.g. Agrawal / Gupta / Mittal"
                       value={addMemberForm.surname || ""}
                       onChange={e => setAddMemberForm({ ...addMemberForm, surname: e.target.value })}
-                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                      className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
                     />
                   </div>
                   <div className="space-y-1">
@@ -1168,7 +1168,7 @@ export default function AdminMembersPage() {
                       placeholder="e.g. Late Shri S.N. Agrawal"
                       value={addMemberForm.father_name || ""}
                       onChange={e => setAddMemberForm({ ...addMemberForm, father_name: e.target.value })}
-                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                      className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
                     />
                   </div>
                   <div className="space-y-1">
@@ -1176,7 +1176,7 @@ export default function AdminMembersPage() {
                     <select
                       value={addMemberForm.family_relation || "Self"}
                       onChange={e => setAddMemberForm({ ...addMemberForm, family_relation: e.target.value })}
-                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                      className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
                     >
                       <option value="Self">Self / स्वयं (Head)</option>
                       <option value="Spouse">Spouse / पति-पत्नी</option>
@@ -1200,7 +1200,7 @@ export default function AdminMembersPage() {
                       placeholder="e.g. 9829012345"
                       value={addMemberForm.mobile || ""}
                       onChange={e => setAddMemberForm({ ...addMemberForm, mobile: e.target.value })}
-                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                      className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
                     />
                   </div>
                   <div className="space-y-1">
@@ -1210,7 +1210,7 @@ export default function AdminMembersPage() {
                       placeholder="e.g. member@gmail.com"
                       value={addMemberForm.email || ""}
                       onChange={e => setAddMemberForm({ ...addMemberForm, email: e.target.value })}
-                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                      className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
                     />
                   </div>
                   <div className="space-y-1">
@@ -1220,7 +1220,7 @@ export default function AdminMembersPage() {
                       placeholder="e.g. 1502"
                       value={addMemberForm.lm_no === undefined ? "" : addMemberForm.lm_no ?? ""}
                       onChange={e => setAddMemberForm({ ...addMemberForm, lm_no: e.target.value ? Number(e.target.value) : null })}
-                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white font-mono"
+                      className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white font-mono"
                     />
                   </div>
                   <div className="space-y-1">
@@ -1230,7 +1230,7 @@ export default function AdminMembersPage() {
                       placeholder="e.g. LM-1502 or custom"
                       value={addMemberForm.samaj_id || ""}
                       onChange={e => setAddMemberForm({ ...addMemberForm, samaj_id: e.target.value })}
-                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white font-mono"
+                      className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white font-mono"
                     />
                   </div>
                   <div className="space-y-1">
@@ -1238,7 +1238,7 @@ export default function AdminMembersPage() {
                     <select
                       value={addMemberForm.member_status || "active"}
                       onChange={e => setAddMemberForm({ ...addMemberForm, member_status: e.target.value })}
-                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                      className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
                     >
                       <option value="active">Active Member</option>
                       <option value="shifted">Shifted</option>
@@ -1253,7 +1253,7 @@ export default function AdminMembersPage() {
                     <select
                       value={addMemberForm.custom_role_id || ""}
                       onChange={e => setAddMemberForm({ ...addMemberForm, custom_role_id: e.target.value })}
-                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                      className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
                     >
                       <option value="">None (Regular Member)</option>
                       {customRoles.map(role => (
@@ -1275,7 +1275,7 @@ export default function AdminMembersPage() {
                       placeholder="e.g. CA / Business / Engineer"
                       value={addMemberForm.profession || ""}
                       onChange={e => setAddMemberForm({ ...addMemberForm, profession: e.target.value })}
-                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                      className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
                     />
                   </div>
                   <div className="space-y-1">
@@ -1285,7 +1285,7 @@ export default function AdminMembersPage() {
                       placeholder="e.g. Agroha / Jhunjhunu / Alwar"
                       value={addMemberForm.native_place || ""}
                       onChange={e => setAddMemberForm({ ...addMemberForm, native_place: e.target.value })}
-                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                      className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
                     />
                   </div>
                   <div className="space-y-1">
@@ -1295,7 +1295,7 @@ export default function AdminMembersPage() {
                       placeholder="e.g. Zone 1 / Ward 27"
                       value={addMemberForm.zone || ""}
                       onChange={e => setAddMemberForm({ ...addMemberForm, zone: e.target.value })}
-                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                      className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
                     />
                   </div>
                   <div className="space-y-1">
@@ -1305,7 +1305,7 @@ export default function AdminMembersPage() {
                       placeholder="e.g. 52/120"
                       value={addMemberForm.house_no || ""}
                       onChange={e => setAddMemberForm({ ...addMemberForm, house_no: e.target.value })}
-                      className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                      className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
                     />
                   </div>
                 </div>
@@ -1317,7 +1317,7 @@ export default function AdminMembersPage() {
                     placeholder="Full residential address in Mansarovar, Jaipur"
                     value={addMemberForm.address || ""}
                     onChange={e => setAddMemberForm({ ...addMemberForm, address: e.target.value })}
-                    className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                    className="w-full px-3.5 py-2.5 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
                   />
                 </div>
 
@@ -1328,25 +1328,25 @@ export default function AdminMembersPage() {
                     placeholder="Brief family note or introduction"
                     value={addMemberForm.bio || ""}
                     onChange={e => setAddMemberForm({ ...addMemberForm, bio: e.target.value })}
-                    className="w-full px-3.5 py-2 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
+                    className="w-full px-3.5 py-2.5 border border-zinc-200 rounded-xl focus:outline-none focus:border-emerald-500 text-sm bg-white"
                   />
                 </div>
               </div>
 
               {/* Submit Buttons */}
-              <div className="pt-4 border-t border-zinc-100 flex items-center justify-end gap-3 sticky bottom-0 bg-white p-2">
+              <div className="pt-4 border-t border-zinc-100 flex flex-wrap items-center justify-end gap-3 sticky bottom-0 bg-white p-2">
                 <button
                   type="button"
                   disabled={addMemberSubmitting}
                   onClick={() => setAddMemberModalOpen(false)}
-                  className="px-5 py-2.5 text-zinc-600 text-sm font-semibold hover:bg-zinc-100 rounded-xl transition-colors"
+                  className="px-5 py-2.5 min-h-[44px] text-zinc-600 text-sm font-semibold hover:bg-zinc-100 rounded-xl transition-colors flex-1 sm:flex-none"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={addMemberSubmitting}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-sm font-bold rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-2.5 min-h-[44px] bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-sm font-bold rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50 flex-1 sm:flex-none"
                 >
                   {addMemberSubmitting ? (
                     <>

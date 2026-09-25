@@ -77,16 +77,16 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8 max-w-7xl">
       {/* Header Banner */}
-      <div className="bg-zinc-900 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden border border-zinc-800">
+      <div className="bg-zinc-900 rounded-3xl p-5 sm:p-8 text-white shadow-xl relative overflow-hidden border border-zinc-800">
         <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 space-y-2 max-w-2xl">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-xs font-semibold border border-amber-500/30">
             <Shield className="w-4 h-4" /> Admin Portal Management
           </span>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight">
             Manage Directory &amp; Portal Modules
           </h1>
-          <p className="text-zinc-400 text-sm sm:text-base leading-relaxed">
+          <p className="text-zinc-400 text-xs sm:text-sm md:text-base leading-relaxed">
             Select any management card below to access administrative modules, approve directory requests, or manage events and communications.
           </p>
         </div>

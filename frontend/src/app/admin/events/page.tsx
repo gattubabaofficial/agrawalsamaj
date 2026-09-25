@@ -313,23 +313,23 @@ export default function AdminEventsPage() {
   });
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-3 sm:p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-6 rounded-2xl border border-zinc-200 shadow-sm">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900">Event & Registration Management</h1>
-          <p className="text-xs text-zinc-500 mt-1">Manage events, track attendee passes, verify tickets & process cancellations.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-zinc-900">Event &amp; Registration Management</h1>
+          <p className="text-xs text-zinc-500 mt-1">Manage events, track attendee passes, verify tickets &amp; process cancellations.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
           <button
             onClick={handleOpenRegistrations}
-            className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+            className="px-4 py-2.5 min-h-[44px] bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer flex-1 sm:flex-none"
           >
             <List className="w-4 h-4 text-zinc-600" /> All Passes ({registrations.length})
           </button>
           <button
             onClick={handleOpenCreate}
-            className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-bold rounded-xl shadow-md flex items-center gap-2 transition-all cursor-pointer"
+            className="px-4 py-2.5 min-h-[44px] bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer flex-1 sm:flex-none"
           >
             <Plus className="w-4 h-4" /> Create Event
           </button>
@@ -337,7 +337,7 @@ export default function AdminEventsPage() {
       </div>
 
       {activeView === "events" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {events.map((evt) => (
             <div key={evt.event_id} className="bg-white border border-zinc-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
               <div>
@@ -351,8 +351,8 @@ export default function AdminEventsPage() {
                     {evt.pricing_type}
                   </span>
                 </div>
-                <div className="p-5 space-y-3">
-                  <h3 className="font-bold text-lg text-zinc-900 line-clamp-1">{evt.title}</h3>
+                <div className="p-4 sm:p-5 space-y-3">
+                  <h3 className="font-bold text-base sm:text-lg text-zinc-900 line-clamp-1">{evt.title}</h3>
                   <p className="text-xs text-zinc-500 line-clamp-2">{evt.description}</p>
                   
                   <div className="space-y-1.5 pt-2 border-t border-zinc-100 text-xs text-zinc-600">
@@ -368,13 +368,13 @@ export default function AdminEventsPage() {
                 </div>
               </div>
               
-              <div className="p-5 pt-0 border-t border-zinc-100 mt-4 flex items-center justify-between gap-2 bg-zinc-50/50">
-                <button onClick={() => handleOpenEventBookings(evt.event_id)} title="View bookings for this event" className="px-3 py-2 border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-xs font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer">
+              <div className="p-4 sm:p-5 pt-0 border-t border-zinc-100 mt-4 flex items-center justify-between gap-2 bg-zinc-50/50 flex-wrap">
+                <button onClick={() => handleOpenEventBookings(evt.event_id)} title="View bookings for this event" className="px-3 py-2 min-h-[38px] border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-xs font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer flex-1 sm:flex-none justify-center">
                   <Users className="w-3.5 h-3.5 text-amber-600" /> View Bookings
                 </button>
                 <div className="flex items-center gap-1.5">
                   <EditButton onClick={() => handleOpenEdit(evt)} size="sm" title="Edit this event" />
-                  <button onClick={() => handleDelete(evt.event_id)} className="p-2 text-zinc-500 hover:text-red-600 rounded-lg hover:bg-zinc-100 cursor-pointer" title="Delete event">
+                  <button onClick={() => handleDelete(evt.event_id)} className="p-2 min-w-[38px] min-h-[38px] flex items-center justify-center text-zinc-500 hover:text-red-600 rounded-lg hover:bg-zinc-100 cursor-pointer" title="Delete event">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -386,10 +386,10 @@ export default function AdminEventsPage() {
 
       {/* CREATE / EDIT EVENT FORM VIEW */}
       {activeView === "form" && (
-        <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm space-y-6 max-w-3xl mx-auto">
+        <div className="bg-white border border-zinc-200 rounded-2xl p-4 sm:p-6 shadow-sm space-y-6 max-w-3xl mx-auto">
           <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
-            <h2 className="text-xl font-bold text-zinc-900">{editingId ? "Edit Event" : "Create New Event"}</h2>
-            <button onClick={() => setActiveView("events")} className="px-3 py-1.5 border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-xs font-semibold rounded-xl flex items-center gap-1 cursor-pointer">
+            <h2 className="text-lg sm:text-xl font-bold text-zinc-900">{editingId ? "Edit Event" : "Create New Event"}</h2>
+            <button onClick={() => setActiveView("events")} className="px-3 py-2 min-h-[44px] border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-xs font-semibold rounded-xl flex items-center gap-1 cursor-pointer">
               <ArrowLeft className="w-3.5 h-3.5" /> Cancel
             </button>
           </div>
@@ -402,7 +402,7 @@ export default function AdminEventsPage() {
                 required
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full px-3.5 py-2.5 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
                 placeholder="e.g. Maharaja Agrasen Jayanti Mahotsav"
               />
             </div>
@@ -413,31 +413,31 @@ export default function AdminEventsPage() {
                 rows={3}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-3.5 py-2.5 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
                 placeholder="Detailed event information..."
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="font-bold text-zinc-700">Start Date & Time *</label>
+                <label className="font-bold text-zinc-700">Start Date &amp; Time *</label>
                 <input
                   type="datetime-local"
                   required
                   value={formData.start_datetime}
                   onChange={(e) => setFormData({ ...formData, start_datetime: e.target.value })}
-                  className="w-full px-3.5 py-2.5 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold text-zinc-700">End Date & Time *</label>
+                <label className="font-bold text-zinc-700">End Date &amp; Time *</label>
                 <input
                   type="datetime-local"
                   required
                   value={formData.end_datetime}
                   onChange={(e) => setFormData({ ...formData, end_datetime: e.target.value })}
-                  className="w-full px-3.5 py-2.5 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -450,7 +450,7 @@ export default function AdminEventsPage() {
                   required
                   value={formData.venue}
                   onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
-                  className="w-full px-3.5 py-2.5 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
                   placeholder="Agrasen Bhavan, Shipra Path, Mansrovar"
                 />
               </div>
@@ -460,7 +460,7 @@ export default function AdminEventsPage() {
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-3.5 py-2.5 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none bg-white font-medium"
+                  className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none bg-white font-medium"
                 >
                   <option value="cultural">Cultural</option>
                   <option value="religious">Religious</option>
@@ -478,7 +478,7 @@ export default function AdminEventsPage() {
                 <select
                   value={formData.pricing_type}
                   onChange={(e) => setFormData({ ...formData, pricing_type: e.target.value })}
-                  className="w-full px-3.5 py-2.5 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none bg-white font-medium"
+                  className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none bg-white font-medium"
                 >
                   <option value="free">Free Event</option>
                   <option value="paid">Paid Event</option>
@@ -492,7 +492,7 @@ export default function AdminEventsPage() {
                   value={formData.pass_price}
                   disabled={formData.pricing_type === "free"}
                   onChange={(e) => setFormData({ ...formData, pass_price: Number(e.target.value) })}
-                  className="w-full px-3.5 py-2.5 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none disabled:bg-zinc-100"
+                  className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none disabled:bg-zinc-100"
                 />
               </div>
 
@@ -503,14 +503,14 @@ export default function AdminEventsPage() {
                   placeholder="Unlimited"
                   value={formData.total_passes}
                   onChange={(e) => setFormData({ ...formData, total_passes: e.target.value === "" ? "" : Number(e.target.value) })}
-                  className="w-full px-3.5 py-2.5 border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-300 rounded-xl text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
                 />
               </div>
             </div>
 
-            <div className="space-y-1.5 p-3 bg-amber-50/50 rounded-2xl border border-amber-200/80">
+            <div className="space-y-1.5 p-4 bg-amber-50/50 rounded-2xl border border-amber-200/80">
               <label className="font-bold text-zinc-700 block">Banner Image File</label>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 {formData.banner_url ? (
                   <div className="relative w-24 h-16 rounded-xl overflow-hidden border border-amber-300 shadow-sm shrink-0">
                     <img src={mediaUrl(formData.banner_url) || formData.banner_url} alt="Banner Preview" className="w-full h-full object-cover" />
@@ -520,7 +520,7 @@ export default function AdminEventsPage() {
                     <ImageIcon className="w-6 h-6" />
                   </div>
                 )}
-                <label className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors shadow-sm inline-flex items-center gap-1.5">
+                <label className="px-4 py-2.5 min-h-[44px] bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors shadow-sm inline-flex items-center gap-1.5">
                   {uploadingImage ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
                   {formData.banner_url ? "Change Image" : "Upload Banner"}
                   <input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={handleImageUpload} />
@@ -528,11 +528,11 @@ export default function AdminEventsPage() {
               </div>
             </div>
 
-            <div className="pt-4 flex justify-end gap-3 border-t border-zinc-100">
-              <button type="button" onClick={() => setActiveView("events")} className="px-5 py-2.5 border border-zinc-300 text-zinc-700 font-bold rounded-xl hover:bg-zinc-50">
+            <div className="pt-4 flex flex-wrap items-center justify-end gap-3 border-t border-zinc-100">
+              <button type="button" onClick={() => setActiveView("events")} className="px-5 py-2.5 min-h-[44px] border border-zinc-300 text-zinc-700 font-bold rounded-xl hover:bg-zinc-50 flex-1 sm:flex-none">
                 Cancel
               </button>
-              <button type="submit" className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-xl shadow-md hover:from-amber-600 hover:to-orange-700 transition-all">
+              <button type="submit" className="px-6 py-2.5 min-h-[44px] bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-xl shadow-md hover:from-amber-600 hover:to-orange-700 transition-all flex-1 sm:flex-none">
                 {editingId ? "Update Event" : "Create Event"}
               </button>
             </div>
@@ -542,13 +542,13 @@ export default function AdminEventsPage() {
 
       {/* REGISTRATIONS / PASSES VIEW (Tasks #9, #10, #25, #26) */}
       {activeView === "registrations" && (
-        <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm space-y-6">
+        <div className="bg-white border border-zinc-200 rounded-2xl p-4 sm:p-6 shadow-sm space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-100 pb-4">
             <div>
-              <h2 className="text-xl font-bold text-zinc-900">Event Pass Registrations</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-zinc-900">Event Pass Registrations</h2>
               <p className="text-xs text-zinc-500 mt-1">Detailed per-person passes with multi-word search, event filters, and cancellation tracking.</p>
             </div>
-            <button onClick={() => setActiveView("events")} className="px-4 py-2 border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-xs font-semibold rounded-xl flex items-center gap-1.5 cursor-pointer">
+            <button onClick={() => setActiveView("events")} className="px-4 py-2 min-h-[44px] border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer">
               <ArrowLeft className="w-4 h-4" /> Back to Events
             </button>
           </div>
@@ -557,13 +557,13 @@ export default function AdminEventsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {/* Search Bar */}
             <div className="relative sm:col-span-1">
-              <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Search by attendee, booker, phone, event..."
                 value={regSearchQuery}
                 onChange={(e) => setRegSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-3 py-2.5 border border-zinc-200 rounded-xl text-xs focus:ring-1 focus:ring-amber-500 focus:outline-none bg-zinc-50/50"
+                className="w-full pl-10 pr-3 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl text-xs focus:ring-1 focus:ring-amber-500 focus:outline-none bg-zinc-50/50"
               />
             </div>
 
@@ -572,7 +572,7 @@ export default function AdminEventsPage() {
               <select
                 value={selectedEventFilter}
                 onChange={(e) => setSelectedEventFilter(e.target.value)}
-                className="w-full px-3 py-2.5 border border-zinc-200 rounded-xl text-xs font-semibold bg-zinc-50/50 text-zinc-800 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                className="w-full px-3 py-2.5 min-h-[44px] border border-zinc-200 rounded-xl text-xs font-semibold bg-zinc-50/50 text-zinc-800 focus:ring-1 focus:ring-amber-500 focus:outline-none cursor-pointer"
               >
                 <option value="all">All Events ({events.length})</option>
                 {events.map((e) => (
@@ -582,22 +582,22 @@ export default function AdminEventsPage() {
             </div>
 
             {/* Pass Status Tabs (Task #26) */}
-            <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl text-xs font-bold sm:col-span-1">
+            <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl text-xs font-bold sm:col-span-1 min-h-[44px]">
               <button
                 onClick={() => setPassStatusFilter("all")}
-                className={`flex-1 py-1.5 rounded-lg text-center transition-all ${passStatusFilter === "all" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-900"}`}
+                className={`flex-1 py-2 min-h-[38px] rounded-lg text-center transition-all ${passStatusFilter === "all" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-900"}`}
               >
                 All
               </button>
               <button
                 onClick={() => setPassStatusFilter("active")}
-                className={`flex-1 py-1.5 rounded-lg text-center transition-all ${passStatusFilter === "active" ? "bg-white text-emerald-700 shadow-sm" : "text-zinc-500 hover:text-zinc-900"}`}
+                className={`flex-1 py-2 min-h-[38px] rounded-lg text-center transition-all ${passStatusFilter === "active" ? "bg-white text-emerald-700 shadow-sm" : "text-zinc-500 hover:text-zinc-900"}`}
               >
                 Active
               </button>
               <button
                 onClick={() => setPassStatusFilter("cancelled")}
-                className={`flex-1 py-1.5 rounded-lg text-center transition-all ${passStatusFilter === "cancelled" ? "bg-white text-rose-700 shadow-sm" : "text-zinc-500 hover:text-zinc-900"}`}
+                className={`flex-1 py-2 min-h-[38px] rounded-lg text-center transition-all ${passStatusFilter === "cancelled" ? "bg-white text-rose-700 shadow-sm" : "text-zinc-500 hover:text-zinc-900"}`}
               >
                 Cancelled
               </button>
@@ -606,7 +606,7 @@ export default function AdminEventsPage() {
 
           {/* Table (Task #9 - Per Person Pass Rows) */}
           <div className="overflow-x-auto border border-zinc-200 rounded-xl">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-xs min-w-[700px]">
               <thead className="bg-zinc-50 text-zinc-600 font-bold uppercase tracking-wider border-b border-zinc-200">
                 <tr>
                   <th className="px-4 py-3">Attendee Name</th>
@@ -674,7 +674,7 @@ export default function AdminEventsPage() {
                               setRefundAmount(p.amount || 0);
                               setRefundStatus(p.payment_status === "verified" ? "pending" : "not_applicable");
                             }}
-                            className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-[11px] font-bold transition-colors cursor-pointer inline-flex items-center gap-1"
+                            className="px-3 py-1.5 min-h-[38px] bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition-colors cursor-pointer inline-flex items-center gap-1"
                           >
                             <Ban className="w-3 h-3" /> Cancel Pass
                           </button>
@@ -693,25 +693,25 @@ export default function AdminEventsPage() {
 
       {/* EVENT BOOKINGS SPECIFIC VIEW */}
       {activeView === "event_bookings" && (
-        <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
-          <div className="flex items-center justify-between border-b border-zinc-100 pb-4 mb-6">
+        <div className="bg-white border border-zinc-200 rounded-2xl p-4 sm:p-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-100 pb-4 mb-6">
             <div>
-              <h2 className="text-xl font-bold text-zinc-900">Event Pass Bookings</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-zinc-900">Event Pass Bookings</h2>
               <p className="text-xs text-zinc-500 mt-1">Booked passes for selected event.</p>
             </div>
-            <button onClick={() => setActiveView("events")} className="px-4 py-2 border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-semibold rounded-xl flex items-center gap-1.5 cursor-pointer">
+            <button onClick={() => setActiveView("events")} className="px-4 py-2 min-h-[44px] border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-semibold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer">
               <ArrowLeft className="w-3.5 h-3.5" /> Back to Events
             </button>
           </div>
           
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-sm min-w-[650px]">
               <thead className="bg-zinc-50/50 text-zinc-500 text-xs uppercase tracking-wider">
                 <tr>
-                  <th className="px-6 py-4 font-semibold">User / Guest</th>
-                  <th className="px-6 py-4 font-semibold">Passes</th>
-                  <th className="px-6 py-4 font-semibold">Payment Details</th>
-                  <th className="px-6 py-4 font-semibold">Action</th>
+                  <th className="px-4 sm:px-6 py-4 font-semibold">User / Guest</th>
+                  <th className="px-4 sm:px-6 py-4 font-semibold">Passes</th>
+                  <th className="px-4 sm:px-6 py-4 font-semibold">Payment Details</th>
+                  <th className="px-4 sm:px-6 py-4 font-semibold">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -724,18 +724,18 @@ export default function AdminEventsPage() {
                 ) : (
                   eventBookings.map((bk) => (
                     <tr key={bk.registration_id} className="hover:bg-zinc-50 transition-colors">
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-4">
                         <div className="font-semibold text-zinc-900">{bk.name}</div>
                         <div className="text-xs text-zinc-500">{bk.phone}</div>
                         <div className="text-xs text-zinc-500">{bk.email}</div>
                         <div className="text-xs text-zinc-400 mt-1">{formatDateTime12Hour(bk.created_at)}</div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-4">
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 text-xs font-bold border border-amber-100">
                           <Ticket className="w-3.5 h-3.5" /> {bk.pass_count}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-4">
                         <div className="flex flex-col items-start gap-1">
                           <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold uppercase ${
                             bk.payment_status === 'verified' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
@@ -752,11 +752,11 @@ export default function AdminEventsPage() {
                           <div className="text-xs text-zinc-500 font-medium mt-0.5">₹{bk.amount}</div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-4">
                         {bk.payment_status === 'pending' && bk.payment_mode === 'pay_at_venue' && (
                           <button
                             onClick={() => handleMarkPaid(bk.registration_id)}
-                            className="px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                            className="px-3 py-2 min-h-[38px] bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-xs font-bold transition-colors cursor-pointer"
                           >
                             Mark as Paid
                           </button>
@@ -768,7 +768,7 @@ export default function AdminEventsPage() {
                             </span>
                             <button
                               onClick={() => handleResendQR(bk.registration_id)}
-                              className="px-2.5 py-1 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-600 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
+                              className="px-2.5 py-1.5 min-h-[38px] bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-600 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
                             >
                               <Send className="w-3 h-3" /> Resend QR
                             </button>
@@ -786,14 +786,14 @@ export default function AdminEventsPage() {
 
       {/* CANCEL PASS MODAL (Task #25) */}
       {cancelModalPass && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl max-w-md w-full border border-zinc-200 shadow-2xl p-6 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-md w-full border border-zinc-200 shadow-2xl p-4 sm:p-6 space-y-4 my-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
               <div className="flex items-center gap-2 text-rose-600">
                 <Ban className="w-5 h-5" />
-                <h3 className="font-bold text-lg text-zinc-900">Cancel Event Pass</h3>
+                <h3 className="font-bold text-base sm:text-lg text-zinc-900">Cancel Event Pass</h3>
               </div>
-              <button onClick={() => setCancelModalPass(null)} className="p-1 text-zinc-400 hover:text-zinc-600">
+              <button onClick={() => setCancelModalPass(null)} className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-400 hover:text-zinc-600 rounded-full">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -811,7 +811,7 @@ export default function AdminEventsPage() {
                   type="text"
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
-                  className="w-full px-3 py-2 border border-zinc-300 rounded-xl focus:ring-1 focus:ring-rose-500 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-300 rounded-xl focus:ring-1 focus:ring-rose-500 focus:outline-none"
                   placeholder="Reason for pass cancellation"
                 />
               </div>
@@ -822,7 +822,7 @@ export default function AdminEventsPage() {
                   type="number"
                   value={refundAmount}
                   onChange={(e) => setRefundAmount(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-zinc-300 rounded-xl focus:ring-1 focus:ring-rose-500 focus:outline-none font-mono"
+                  className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-300 rounded-xl focus:ring-1 focus:ring-rose-500 focus:outline-none font-mono"
                 />
               </div>
 
@@ -831,7 +831,7 @@ export default function AdminEventsPage() {
                 <select
                   value={refundStatus}
                   onChange={(e) => setRefundStatus(e.target.value)}
-                  className="w-full px-3 py-2 border border-zinc-300 rounded-xl focus:ring-1 focus:ring-rose-500 focus:outline-none font-semibold"
+                  className="w-full px-3.5 py-2.5 min-h-[44px] border border-zinc-300 rounded-xl focus:ring-1 focus:ring-rose-500 focus:outline-none font-semibold cursor-pointer bg-white"
                 >
                   <option value="not_applicable">Not Applicable</option>
                   <option value="pending">Pending Refund</option>
@@ -840,17 +840,17 @@ export default function AdminEventsPage() {
               </div>
             </div>
 
-            <div className="flex gap-2 pt-2">
+            <div className="flex flex-wrap items-center gap-2 pt-2">
               <button
                 onClick={() => setCancelModalPass(null)}
-                className="flex-1 py-2.5 border border-zinc-200 text-zinc-700 font-bold rounded-xl text-xs hover:bg-zinc-50"
+                className="flex-1 py-2.5 min-h-[44px] border border-zinc-200 text-zinc-700 font-bold rounded-xl text-xs hover:bg-zinc-50 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleExecuteCancelPass}
                 disabled={cancellingPass}
-                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 min-h-[44px] bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 {cancellingPass ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
                 Confirm Cancellation

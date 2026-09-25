@@ -137,10 +137,10 @@ export default function AdminRequestsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-zinc-200 gap-6">
+      <div className="flex border-b border-zinc-200 gap-4 sm:gap-6 overflow-x-auto pb-px">
         <button
           onClick={() => setActiveTab("membership")}
-          className={`pb-3 text-sm font-bold transition-all relative flex items-center gap-2 ${
+          className={`pb-3 min-h-[44px] text-sm font-bold transition-all relative flex items-center gap-2 whitespace-nowrap shrink-0 ${
             activeTab === "membership" ? "text-amber-600 border-b-2 border-amber-500" : "text-zinc-500 hover:text-zinc-800"
           }`}
         >
@@ -153,7 +153,7 @@ export default function AdminRequestsPage() {
         </button>
         <button
           onClick={() => setActiveTab("profile_updates")}
-          className={`pb-3 text-sm font-bold transition-all relative flex items-center gap-2 ${
+          className={`pb-3 min-h-[44px] text-sm font-bold transition-all relative flex items-center gap-2 whitespace-nowrap shrink-0 ${
             activeTab === "profile_updates" ? "text-amber-600 border-b-2 border-amber-500" : "text-zinc-500 hover:text-zinc-800"
           }`}
         >
@@ -168,13 +168,13 @@ export default function AdminRequestsPage() {
 
       {/* Search Input */}
       <div className="relative max-w-md w-full">
-        <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         <input
           type="text"
           placeholder={activeTab === "membership" ? "Search by applicant name or family..." : "Search by member name or Samaj ID..."}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-9 pr-4 py-2 text-sm border border-zinc-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white"
+          className="w-full pl-9 pr-4 py-2.5 min-h-[44px] text-sm border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 bg-white"
         />
       </div>
 
@@ -182,15 +182,15 @@ export default function AdminRequestsPage() {
       {activeTab === "membership" && (
         <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[750px]">
               <thead>
                 <tr className="border-b border-zinc-200 text-xs uppercase tracking-wider text-zinc-500 bg-zinc-50/50">
-                  <th className="px-6 py-4 font-medium">Type</th>
-                  <th className="px-6 py-4 font-medium">Applicant Details</th>
-                  <th className="px-6 py-4 font-medium">Contact</th>
-                  <th className="px-6 py-4 font-medium">Message</th>
-                  <th className="px-6 py-4 font-medium">Date</th>
-                  <th className="px-6 py-4 font-medium text-right">Actions</th>
+                  <th className="px-4 sm:px-6 py-4 font-medium">Type</th>
+                  <th className="px-4 sm:px-6 py-4 font-medium">Applicant Details</th>
+                  <th className="px-4 sm:px-6 py-4 font-medium">Contact</th>
+                  <th className="px-4 sm:px-6 py-4 font-medium">Message</th>
+                  <th className="px-4 sm:px-6 py-4 font-medium">Date</th>
+                  <th className="px-4 sm:px-6 py-4 font-medium text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 text-sm">
@@ -204,7 +204,7 @@ export default function AdminRequestsPage() {
                 ) : (
                   filteredMembership.map((req) => (
                     <tr key={req.request_id} className="hover:bg-zinc-50 transition-colors">
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-4">
                         {req.request_type === "family_creation" ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-50 text-orange-700 border border-orange-200">
                             <Home className="w-3 h-3" /> New Family
@@ -216,7 +216,7 @@ export default function AdminRequestsPage() {
                         )}
                       </td>
 
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-4">
                         <p className="font-semibold text-zinc-900">{req.user?.name}</p>
                         {req.family_name && (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200 mt-1">
@@ -225,45 +225,45 @@ export default function AdminRequestsPage() {
                         )}
                       </td>
 
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-4">
                         <p className="text-zinc-900">{req.user?.email || "—"}</p>
                         <p className="text-xs text-zinc-500">{req.user?.mobile || "N/A"}</p>
                       </td>
 
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-4">
                         <p className="text-zinc-600 truncate max-w-xs">{req.message || "No message provided"}</p>
                       </td>
 
-                      <td className="px-6 py-4 text-zinc-500">
+                      <td className="px-4 sm:px-6 py-4 text-zinc-500 whitespace-nowrap">
                         {new Date(req.created_at).toLocaleDateString()}
                       </td>
 
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end items-center gap-2">
+                      <td className="px-4 sm:px-6 py-4 text-right">
+                        <div className="flex justify-end items-center gap-1.5 sm:gap-2 flex-wrap">
                           <button
                             onClick={() => setViewApplication(req)}
-                            className="px-3 py-1.5 bg-zinc-100 text-zinc-700 hover:bg-zinc-200 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1"
+                            className="px-3 py-2 min-h-[38px] bg-zinc-100 text-zinc-700 hover:bg-zinc-200 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                           >
-                            <Eye className="w-3.5 h-3.5" /> View Details
+                            <Eye className="w-3.5 h-3.5" /> View
                           </button>
                           <a
                             href={`${getApiBaseUrl()}/membership/requests/${req.request_id}/pdf`}
                             target="_blank"
                             rel="noopener noreferrer"
                             title="Download Application PDF"
-                            className="px-2.5 py-1.5 bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                            className="px-2.5 py-2 min-h-[38px] bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                           >
                             <FileText className="w-3.5 h-3.5" /> PDF
                           </a>
                           <button
                             onClick={() => openApproveModal(req)}
-                            className="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1"
+                            className="px-3 py-2 min-h-[38px] bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                           >
                             <CheckCircle className="w-3.5 h-3.5" /> Approve
                           </button>
                           <button
                             onClick={() => handleMembershipReject(req.request_id)}
-                            className="px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1"
+                            className="px-3 py-2 min-h-[38px] bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                           >
                             <XCircle className="w-3.5 h-3.5" /> Reject
                           </button>
@@ -420,16 +420,16 @@ export default function AdminRequestsPage() {
                   </div>
 
                   {/* Actions Footer - Bottom Aligned */}
-                  <div className="pt-3 border-t border-zinc-100 flex items-center justify-end gap-3">
+                  <div className="pt-3 border-t border-zinc-100 flex flex-wrap items-center justify-end gap-2.5 sm:gap-3">
                     <button
                       onClick={() => handleProfileUpdateAction(req.request_id, "reject")}
-                      className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5"
+                      className="px-4 py-2.5 min-h-[44px] bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 flex-1 sm:flex-none cursor-pointer"
                     >
                       <XCircle className="w-4 h-4" /> Reject Request
                     </button>
                     <button
                       onClick={() => handleProfileUpdateAction(req.request_id, "approve")}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow-sm"
+                      className="px-4 py-2.5 min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-sm flex-1 sm:flex-none cursor-pointer"
                     >
                       <CheckCircle className="w-4 h-4" /> Approve Edits
                     </button>
@@ -443,31 +443,31 @@ export default function AdminRequestsPage() {
 
       {/* Membership Application — Full Details Modal */}
       {viewApplication && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-xl w-full border border-zinc-200 shadow-2xl overflow-hidden my-8">
-            <div className="px-6 py-5 bg-gradient-to-r from-amber-500 to-orange-600 text-white flex items-center justify-between">
-              <div className="flex items-center gap-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-xl w-full border border-zinc-200 shadow-2xl overflow-hidden my-6 sm:my-8">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 bg-gradient-to-r from-amber-500 to-orange-600 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0">
                 {viewApplication.user?.profile_photo ? (
-                  <img src={mediaUrl(viewApplication.user.profile_photo) || viewApplication.user.profile_photo} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-white/40" />
+                  <img src={mediaUrl(viewApplication.user.profile_photo) || viewApplication.user.profile_photo} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-white/40 shrink-0" />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold text-sm">
+                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold text-sm shrink-0">
                     {viewApplication.user?.first_name?.[0]}{viewApplication.user?.surname?.[0]}
                   </div>
                 )}
-                <div>
-                  <h3 className="font-bold text-lg leading-tight">{viewApplication.user?.name}</h3>
-                  <p className="text-xs text-amber-100">
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-bold text-base sm:text-lg leading-tight truncate">{viewApplication.user?.name}</h3>
+                  <p className="text-xs text-amber-100 truncate">
                     {viewApplication.request_type === "family_creation" ? "New family application" : "Membership application"}
                   </p>
                 </div>
               </div>
-              <button onClick={() => setViewApplication(null)} className="p-2 rounded-full hover:bg-white/20 transition-colors">
+              <button onClick={() => setViewApplication(null)} className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4 text-sm divide-y divide-zinc-100 max-h-[65vh] overflow-y-auto">
-              <div className="grid grid-cols-2 gap-4 pt-1">
+            <div className="p-4 sm:p-6 space-y-4 text-sm divide-y divide-zinc-100 max-h-[65vh] overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                 <div>
                   <p className="text-xs text-zinc-400 font-semibold uppercase">Full Name</p>
                   <p className="font-bold text-zinc-900 mt-0.5">{viewApplication.user?.first_name} {viewApplication.user?.surname}</p>
@@ -482,7 +482,7 @@ export default function AdminRequestsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3">
                 <div>
                   <p className="text-xs text-zinc-400 font-semibold uppercase">Mobile no (whatsapp no)</p>
                   <p className="font-mono font-semibold text-zinc-800 mt-0.5">
@@ -544,25 +544,25 @@ export default function AdminRequestsPage() {
               </div>
             </div>
 
-            <div className="p-4 bg-zinc-50 border-t border-zinc-200 flex items-center justify-between gap-2 flex-wrap">
+            <div className="p-4 bg-zinc-50 border-t border-zinc-200 flex items-center justify-between gap-2.5 flex-wrap">
               <a
                 href={`${getApiBaseUrl()}/membership/requests/${viewApplication.request_id}/pdf`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow-sm"
+                className="px-4 py-2.5 min-h-[44px] bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-sm flex-1 sm:flex-none text-center"
               >
-                <FileText className="w-4 h-4" /> Download Application PDF
+                <FileText className="w-4 h-4 shrink-0" /> <span>Download PDF</span>
               </a>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-1 sm:flex-none justify-end">
                 <button
                   onClick={() => handleMembershipReject(viewApplication.request_id)}
-                  className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5"
+                  className="px-4 py-2.5 min-h-[44px] bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 flex-1 sm:flex-none cursor-pointer"
                 >
                   <XCircle className="w-4 h-4" /> Reject
                 </button>
                 <button
                   onClick={() => openApproveModal(viewApplication)}
-                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow-sm"
+                  className="px-6 py-2.5 min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-sm flex-1 sm:flex-none cursor-pointer"
                 >
                   <CheckCircle className="w-4 h-4" /> Approve
                 </button>
@@ -574,30 +574,30 @@ export default function AdminRequestsPage() {
 
       {/* Approve Membership Modal — Prompt for LM Number */}
       {approveModalRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-lg w-full border border-zinc-200 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-lg w-full border border-zinc-200 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-6">
             {/* Header */}
-            <div className="px-6 py-5 bg-gradient-to-r from-amber-500 to-orange-600 text-white flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-white/20 rounded-xl">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 bg-gradient-to-r from-amber-500 to-orange-600 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-2 bg-white/20 rounded-xl shrink-0">
                   <Award className="w-5 h-5 text-white" />
                 </div>
-                <div>
-                  <h3 className="font-bold text-lg leading-tight">Approve Membership</h3>
-                  <p className="text-xs text-amber-100 mt-0.5">Mansrovar Agrawal Samaj Jaipur</p>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-bold text-base sm:text-lg leading-tight truncate">Approve Membership</h3>
+                  <p className="text-xs text-amber-100 mt-0.5 truncate">Mansrovar Agrawal Samaj Jaipur</p>
                 </div>
               </div>
               <button
                 onClick={() => setApproveModalRequest(null)}
                 disabled={isApproving}
-                className="p-2 rounded-full hover:bg-white/20 transition-colors disabled:opacity-50"
+                className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-white/20 transition-colors disabled:opacity-50"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Content Body */}
-            <div className="p-6 space-y-5">
+            <div className="p-4 sm:p-6 space-y-5">
               {/* Applicant Card */}
               <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-4">
                 <div className="flex items-start gap-3">
@@ -605,10 +605,10 @@ export default function AdminRequestsPage() {
                     <img
                       src={mediaUrl(approveModalRequest.user.profile_photo) || approveModalRequest.user.profile_photo}
                       alt=""
-                      className="w-12 h-12 rounded-full object-cover border border-amber-200"
+                      className="w-12 h-12 rounded-full object-cover border border-amber-200 shrink-0"
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded-full bg-amber-200/70 text-amber-900 flex items-center justify-center font-bold text-sm">
+                    <div className="w-12 h-12 rounded-full bg-amber-200/70 text-amber-900 flex items-center justify-center font-bold text-sm shrink-0">
                       {approveModalRequest.user?.first_name?.[0]}
                       {approveModalRequest.user?.surname?.[0]}
                     </div>
@@ -618,7 +618,7 @@ export default function AdminRequestsPage() {
                       {approveModalRequest.user?.name || `${approveModalRequest.user?.first_name} ${approveModalRequest.user?.surname}`}
                     </h4>
                     {approveModalRequest.user?.father_name && (
-                      <p className="text-xs text-zinc-600 mt-0.5">
+                      <p className="text-xs text-zinc-600 mt-0.5 truncate">
                         {approveModalRequest.user?.parent_relation || "S/o"} {approveModalRequest.user.father_name}
                       </p>
                     )}
@@ -661,7 +661,7 @@ export default function AdminRequestsPage() {
                       }
                     }}
                     disabled={isApproving}
-                    className="w-full px-4 py-2.5 text-base border border-zinc-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 transition-all bg-white font-mono"
+                    className="w-full px-4 py-2.5 min-h-[44px] text-base border border-zinc-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 transition-all bg-white font-mono"
                   />
                 </div>
                 <p className="text-xs text-zinc-500 leading-relaxed">
@@ -679,12 +679,12 @@ export default function AdminRequestsPage() {
             </div>
 
             {/* Actions Footer */}
-            <div className="p-4 bg-zinc-50 border-t border-zinc-200 flex items-center justify-end gap-3">
+            <div className="p-4 bg-zinc-50 border-t border-zinc-200 flex flex-wrap items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setApproveModalRequest(null)}
                 disabled={isApproving}
-                className="px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-200/70 rounded-xl transition-colors disabled:opacity-50"
+                className="px-5 py-2.5 min-h-[44px] text-xs font-semibold text-zinc-700 hover:bg-zinc-200/70 rounded-xl transition-colors disabled:opacity-50 flex-1 sm:flex-none"
               >
                 Cancel
               </button>
@@ -692,7 +692,7 @@ export default function AdminRequestsPage() {
                 type="button"
                 onClick={handleConfirmApprove}
                 disabled={isApproving}
-                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
+                className="px-6 py-2.5 min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 flex-1 sm:flex-none"
               >
                 {isApproving ? (
                   <>

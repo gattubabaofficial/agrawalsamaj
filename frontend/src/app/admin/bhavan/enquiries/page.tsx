@@ -214,34 +214,34 @@ export default function AdminEnquiriesPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900">Enquiry Management</h1>
-          <p className="text-xs text-zinc-500">Search, filter, review, and approve Bhavan booking requests</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-zinc-900">Enquiry Management</h1>
+          <p className="text-xs sm:text-sm text-zinc-500 mt-0.5">Search, filter, review, and approve Bhavan booking requests</p>
         </div>
         <button
           onClick={() => setShowManualModal(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-amber-400"
+          className="min-h-[44px] w-full sm:w-auto justify-center inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-amber-400 transition-colors cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Create Manual Entry
         </button>
       </div>
 
       {/* Filters & Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-4 rounded-xl border border-zinc-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-white p-3.5 sm:p-4 rounded-2xl border border-zinc-200 shadow-sm">
         <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-zinc-400" />
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
             placeholder="Search reference, name, or mobile..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && fetchEnquiries()}
-            className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-zinc-200 focus:outline-none focus:border-amber-500"
+            className="w-full min-h-[44px] pl-10 pr-4 py-2 text-sm rounded-xl border border-zinc-200 focus:outline-none focus:border-amber-500 bg-zinc-50/50"
           />
         </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="w-full sm:w-48 text-sm rounded-lg border border-zinc-200 py-2 px-3 focus:outline-none focus:border-amber-500"
+          className="w-full sm:w-52 min-h-[44px] text-sm rounded-xl border border-zinc-200 py-2 px-3.5 focus:outline-none focus:border-amber-500 bg-white"
         >
           <option value="">All Statuses</option>
           <option value="pending">PENDING</option>
@@ -253,27 +253,27 @@ export default function AdminEnquiriesPage() {
       </div>
 
       {/* Main Grid: List + Detail */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
 
         {/* Enquiry List */}
         <div className="lg:col-span-2 space-y-3">
           {loading ? (
-            <div className="p-8 text-center text-xs text-zinc-400 bg-white rounded-xl border border-zinc-200">Loading enquiries...</div>
+            <div className="p-8 text-center text-xs text-zinc-400 bg-white rounded-2xl border border-zinc-200">Loading enquiries...</div>
           ) : enquiries.length === 0 ? (
-            <div className="p-8 text-center text-xs text-zinc-400 bg-white rounded-xl border border-zinc-200">No enquiries match your filter.</div>
+            <div className="p-8 text-center text-xs text-zinc-400 bg-white rounded-2xl border border-zinc-200">No enquiries match your filter.</div>
           ) : (
             enquiries.map((enq) => (
               <div
                 key={enq.id}
                 onClick={() => setSelectedEnquiry(enq)}
-                className={`p-4 rounded-xl border bg-white cursor-pointer transition-all hover:shadow-md ${
+                className={`p-4 rounded-2xl border bg-white cursor-pointer transition-all hover:shadow-md ${
                   selectedEnquiry?.id === enq.id ? "border-amber-500 ring-2 ring-amber-500/20" : "border-zinc-200"
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <span className="font-mono text-sm font-bold text-amber-600">{enq.reference}</span>
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
                       enq.status === "approved" ? "bg-emerald-50 text-emerald-600" :
                       enq.status === "rejected" ? "bg-rose-50 text-rose-600" :
                       enq.status === "pending" ? "bg-amber-50 text-amber-600" : "bg-zinc-100 text-zinc-600"
@@ -282,26 +282,26 @@ export default function AdminEnquiriesPage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-zinc-900">₹{enq.estimated_total}</span>
+                    <span className="text-sm font-extrabold text-zinc-900">₹{enq.estimated_total}</span>
                     <button
                       type="button"
                       title="Download PDF"
                       onClick={(e) => handleDownloadPdf(enq.id, enq.reference, e)}
                       disabled={downloadingId === enq.id}
-                      className="p-1.5 text-zinc-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                      className="min-h-[36px] min-w-[36px] flex items-center justify-center p-2 text-zinc-500 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-colors"
                     >
                       {downloadingId === enq.id ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600" />
+                        <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
                       ) : (
-                        <Printer className="w-3.5 h-3.5" />
+                        <Printer className="w-4 h-4" />
                       )}
                     </button>
                   </div>
                 </div>
 
-                <div className="mt-2 flex items-center justify-between text-xs text-zinc-600">
+                <div className="mt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs text-zinc-600 border-t border-zinc-50 pt-2">
                   <span className="font-medium text-zinc-900">{enq.full_name} ({enq.mobile})</span>
-                  <span>{enq.check_in} → {enq.check_out} ({enq.nights} nights)</span>
+                  <span className="text-zinc-500">{enq.check_in} → {enq.check_out} ({enq.nights} nights)</span>
                 </div>
               </div>
             ))
@@ -309,10 +309,10 @@ export default function AdminEnquiriesPage() {
         </div>
 
         {/* Selected Enquiry Detail Panel */}
-        <div className="rounded-xl border border-zinc-200 bg-white p-5 space-y-5 h-fit shadow-sm">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 space-y-4 h-fit shadow-sm">
           {selectedEnquiry ? (
             <div className="space-y-4 text-xs">
-              <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-100 pb-3">
                 <div>
                   <p className="font-mono text-base font-extrabold text-amber-600">{selectedEnquiry.reference}</p>
                   <p className="text-[10px] text-zinc-400">Source: {selectedEnquiry.source}</p>
@@ -322,7 +322,7 @@ export default function AdminEnquiriesPage() {
                     type="button"
                     onClick={() => handleDownloadPdf(selectedEnquiry.id, selectedEnquiry.reference)}
                     disabled={downloadingId === selectedEnquiry.id}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-[11px] font-bold hover:bg-amber-100 transition-colors shadow-xs"
+                    className="min-h-[36px] inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-300 bg-amber-50 text-amber-800 text-[11px] font-bold hover:bg-amber-100 transition-colors shadow-xs"
                     title="Print / Download PDF"
                   >
                     {downloadingId === selectedEnquiry.id ? (
@@ -332,7 +332,7 @@ export default function AdminEnquiriesPage() {
                     )}
                     Print PDF
                   </button>
-                  <span className="text-xs font-bold text-emerald-600 uppercase bg-emerald-50 px-2 py-1 rounded">
+                  <span className="text-xs font-bold text-emerald-600 uppercase bg-emerald-50 px-2.5 py-1 rounded-lg">
                     {selectedEnquiry.status}
                   </span>
                 </div>
@@ -357,7 +357,7 @@ export default function AdminEnquiriesPage() {
                   <p className="text-zinc-400 font-semibold uppercase text-[10px]">Multi-Date Room Plan</p>
                   <div className="space-y-1">
                     {selectedEnquiry.quote_snapshot.allocations.map((alloc: any, idx: number) => (
-                      <div key={idx} className="p-2 rounded-lg bg-zinc-50 border border-zinc-100 flex items-center justify-between text-[11px]">
+                      <div key={idx} className="p-2 rounded-xl bg-zinc-50 border border-zinc-100 flex items-center justify-between text-[11px]">
                         <div>
                           <span className="font-bold text-zinc-800">{alloc.from} → {alloc.to}</span>
                           <span className="text-zinc-500 block">{alloc.nights} night(s)</span>
@@ -377,13 +377,13 @@ export default function AdminEnquiriesPage() {
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => handleStatusChange(selectedEnquiry.id, "approved")}
-                    className="py-2 bg-emerald-500 text-white font-bold rounded-lg hover:bg-emerald-400 text-xs"
+                    className="min-h-[44px] py-2 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-400 text-xs sm:text-sm transition-colors shadow-sm"
                   >
                     Approve
                   </button>
                   <button
                     onClick={() => handleStatusChange(selectedEnquiry.id, "rejected")}
-                    className="py-2 bg-rose-500 text-white font-bold rounded-lg hover:bg-rose-400 text-xs"
+                    className="min-h-[44px] py-2 bg-rose-500 text-white font-bold rounded-xl hover:bg-rose-400 text-xs sm:text-sm transition-colors shadow-sm"
                   >
                     Reject
                   </button>
@@ -394,22 +394,22 @@ export default function AdminEnquiriesPage() {
               <div className="border-t border-zinc-100 pt-3 space-y-2">
                 <p className="text-zinc-400 font-semibold uppercase text-[10px]">Internal Admin Notes</p>
                 {selectedEnquiry.notes && selectedEnquiry.notes.map((n: any) => (
-                  <div key={n.id} className="p-2 rounded bg-zinc-50 text-zinc-700 text-[11px]">
+                  <div key={n.id} className="p-2.5 rounded-xl bg-zinc-50 text-zinc-700 text-[11px] border border-zinc-100">
                     <p>{n.note}</p>
                     <p className="text-[9px] text-zinc-400 mt-1">{new Date(n.created_at).toLocaleString()}</p>
                   </div>
                 ))}
-                <div className="flex gap-2">
+                <div className="flex gap-2 pt-1">
                   <input
                     type="text"
                     placeholder="Add internal note..."
                     value={noteText}
                     onChange={(e) => setNoteText(e.target.value)}
-                    className="flex-1 px-3 py-1.5 border border-zinc-200 rounded text-xs focus:outline-none"
+                    className="flex-1 min-h-[44px] px-3.5 py-2 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:border-amber-500 bg-zinc-50/50"
                   />
                   <button
                     onClick={() => handleAddNote(selectedEnquiry.id)}
-                    className="px-3 py-1.5 bg-zinc-900 text-white font-bold rounded text-xs"
+                    className="min-h-[44px] px-4 py-2 bg-zinc-900 text-white font-bold rounded-xl text-xs hover:bg-zinc-800 transition-colors"
                   >
                     Add
                   </button>
@@ -425,17 +425,17 @@ export default function AdminEnquiriesPage() {
       </div>
 
       {/* Bottom Navigation & Actions Bar */}
-      <div className="pt-4 border-t border-zinc-200 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-zinc-200 shadow-sm">
+      <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-zinc-200 shadow-sm">
         <Link
           href="/admin/bhavan"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-300 bg-white hover:bg-zinc-50 text-xs font-bold text-zinc-700 shadow-sm transition-all"
+          className="min-h-[44px] inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 text-xs sm:text-sm font-bold text-zinc-700 shadow-sm transition-all"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Bhavan Overview
         </Link>
 
         <button
           onClick={() => setShowManualModal(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-amber-400 transition-colors cursor-pointer"
+          className="min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-amber-400 transition-colors cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Add Manual Booking
         </button>
@@ -443,18 +443,18 @@ export default function AdminEnquiriesPage() {
 
       {/* Modal: Manual Entry (Walk-in / Phone / Admin) */}
       {showManualModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto shadow-xl">
             <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-              <h3 className="text-lg font-bold text-zinc-900">Create Manual Booking Entry</h3>
-              <button onClick={() => setShowManualModal(false)} className="text-zinc-400 hover:text-zinc-600">
+              <h3 className="text-base sm:text-lg font-bold text-zinc-900">Create Manual Booking Entry</h3>
+              <button onClick={() => setShowManualModal(false)} className="min-h-[36px] min-w-[36px] flex items-center justify-center text-zinc-400 hover:text-zinc-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Booking Source</label>
-              <select value={manualSource} onChange={(e) => setManualSource(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm">
+              <select value={manualSource} onChange={(e) => setManualSource(e.target.value)} className="w-full min-h-[44px] px-3.5 py-2 border rounded-xl text-sm bg-white">
                 <option value="phone">Phone Contact</option>
                 <option value="walk_in">Walk-in Customer</option>
                 <option value="admin">Admin Entry</option>
@@ -463,29 +463,29 @@ export default function AdminEnquiriesPage() {
 
             <div>
               <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Customer Full Name *</label>
-              <input type="text" value={manualName} onChange={(e) => setManualName(e.target.value)} placeholder="Full Name" className="w-full px-3 py-2 border rounded-lg text-sm" />
+              <input type="text" value={manualName} onChange={(e) => setManualName(e.target.value)} placeholder="Full Name" className="w-full min-h-[44px] px-3.5 py-2 border rounded-xl text-sm focus:outline-none focus:border-amber-500" />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Mobile no (whatsapp no) *</label>
-              <input type="tel" value={manualMobile} onChange={(e) => setManualMobile(e.target.value)} placeholder="10-digit mobile" className="w-full px-3 py-2 border rounded-lg text-sm" />
+              <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Mobile no (WhatsApp no) *</label>
+              <input type="tel" value={manualMobile} onChange={(e) => setManualMobile(e.target.value)} placeholder="10-digit mobile" className="w-full min-h-[44px] px-3.5 py-2 border rounded-xl text-sm focus:outline-none focus:border-amber-500" />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Check-in Date *</label>
-                <input type="date" value={manualCheckIn} onChange={(e) => setManualCheckIn(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" />
+                <input type="date" value={manualCheckIn} onChange={(e) => setManualCheckIn(e.target.value)} className="w-full min-h-[44px] px-3.5 py-2 border rounded-xl text-sm bg-white" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Check-out Date *</label>
-                <input type="date" value={manualCheckOut} onChange={(e) => setManualCheckOut(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" />
+                <input type="date" value={manualCheckOut} onChange={(e) => setManualCheckOut(e.target.value)} className="w-full min-h-[44px] px-3.5 py-2 border rounded-xl text-sm bg-white" />
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-2">
                 <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Accommodation</label>
-                <select value={manualTypeId} onChange={(e) => setManualTypeId(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm">
+                <select value={manualTypeId} onChange={(e) => setManualTypeId(e.target.value)} className="w-full min-h-[44px] px-3.5 py-2 border rounded-xl text-sm bg-white">
                   {accTypes.map((t) => (
                     <option key={t.id} value={t.id}>{t.name}</option>
                   ))}
@@ -493,13 +493,13 @@ export default function AdminEnquiriesPage() {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-zinc-500 uppercase mb-1">Qty</label>
-                <input type="number" min="1" value={manualQty} onChange={(e) => setManualQty(parseInt(e.target.value) || 1)} className="w-full px-3 py-2 border rounded-lg text-sm" />
+                <input type="number" min="1" value={manualQty} onChange={(e) => setManualQty(parseInt(e.target.value) || 1)} className="w-full min-h-[44px] px-3.5 py-2 border rounded-xl text-sm" />
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
-              <button onClick={() => setShowManualModal(false)} className="px-4 py-2 border rounded-lg text-xs">Cancel</button>
-              <button onClick={handleCreateManualEnquiry} className="px-4 py-2 bg-amber-500 text-white font-bold rounded-lg text-xs">Create & Approve Entry</button>
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-zinc-100">
+              <button onClick={() => setShowManualModal(false)} className="min-h-[44px] px-4 py-2.5 border rounded-xl text-xs sm:text-sm font-semibold hover:bg-zinc-50 w-full sm:w-auto">Cancel</button>
+              <button onClick={handleCreateManualEnquiry} className="min-h-[44px] px-5 py-2.5 bg-amber-500 text-white font-bold rounded-xl text-xs sm:text-sm hover:bg-amber-400 transition-colors shadow-sm w-full sm:w-auto">Create & Approve Entry</button>
             </div>
           </div>
         </div>

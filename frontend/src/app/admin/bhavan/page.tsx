@@ -42,124 +42,124 @@ export default function AdminBhavanDashboard() {
   };
 
   return (
-    <div className="space-y-8" suppressHydrationWarning>
+    <div className="space-y-6 sm:space-y-8" suppressHydrationWarning>
       <div>
-        <h1 className="text-3xl font-extrabold text-zinc-900">Bhavan Booking Management</h1>
-        <p className="text-sm text-zinc-500 mt-1">Overview of enquiries, rule engine profiles, availability calendar, and inventory</p>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-900">Bhavan Booking Management</h1>
+        <p className="text-xs sm:text-sm text-zinc-500 mt-1">Overview of enquiries, rule engine profiles, availability calendar, and inventory</p>
       </div>
 
       {/* Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between text-amber-500 mb-3">
-            <Clock className="w-6 h-6" />
-            <span className="text-xs font-bold uppercase tracking-wider bg-amber-50 text-amber-600 px-2 py-0.5 rounded">Pending</span>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-5">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 shadow-sm">
+          <div className="flex items-center justify-between text-amber-500 mb-2 sm:mb-3">
+            <Clock className="w-5 h-5 sm:w-6 sm:h-6" />
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-amber-50 text-amber-600 px-2 py-0.5 rounded">Pending</span>
           </div>
-          <p className="text-3xl font-extrabold text-zinc-900">{overview?.pending_enquiries ?? 0}</p>
-          <p className="text-xs text-zinc-500 mt-1">Enquiries awaiting review</p>
+          <p className="text-2xl sm:text-3xl font-extrabold text-zinc-900">{overview?.pending_enquiries ?? 0}</p>
+          <p className="text-2xs sm:text-xs text-zinc-500 mt-1">Enquiries awaiting review</p>
         </div>
 
-        <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between text-blue-500 mb-3">
-            <FileText className="w-6 h-6" />
-            <span className="text-xs font-bold uppercase tracking-wider bg-blue-50 text-blue-600 px-2 py-0.5 rounded">Today</span>
+        <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 shadow-sm">
+          <div className="flex items-center justify-between text-blue-500 mb-2 sm:mb-3">
+            <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-blue-50 text-blue-600 px-2 py-0.5 rounded">Today</span>
           </div>
-          <p className="text-3xl font-extrabold text-zinc-900">{overview?.today_enquiries ?? 0}</p>
-          <p className="text-xs text-zinc-500 mt-1">New requests today</p>
+          <p className="text-2xl sm:text-3xl font-extrabold text-zinc-900">{overview?.today_enquiries ?? 0}</p>
+          <p className="text-2xs sm:text-xs text-zinc-500 mt-1">New requests today</p>
         </div>
 
-        <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between text-emerald-500 mb-3">
-            <CheckCircle className="w-6 h-6" />
-            <span className="text-xs font-bold uppercase tracking-wider bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">Approved</span>
+        <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 shadow-sm">
+          <div className="flex items-center justify-between text-emerald-500 mb-2 sm:mb-3">
+            <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6" />
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">Approved</span>
           </div>
-          <p className="text-3xl font-extrabold text-zinc-900">{overview?.approved_enquiries ?? 0}</p>
-          <p className="text-xs text-zinc-500 mt-1">Committed bookings</p>
+          <p className="text-2xl sm:text-3xl font-extrabold text-zinc-900">{overview?.approved_enquiries ?? 0}</p>
+          <p className="text-2xs sm:text-xs text-zinc-500 mt-1">Committed bookings</p>
         </div>
 
-        <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between text-purple-500 mb-3">
-            <Building className="w-6 h-6" />
-            <span className="text-xs font-bold uppercase tracking-wider bg-purple-50 text-purple-600 px-2 py-0.5 rounded">Inventory</span>
+        <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 shadow-sm">
+          <div className="flex items-center justify-between text-purple-500 mb-2 sm:mb-3">
+            <Building className="w-5 h-5 sm:w-6 sm:h-6" />
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-purple-50 text-purple-600 px-2 py-0.5 rounded">Inventory</span>
           </div>
-          <p className="text-3xl font-extrabold text-zinc-900">{overview?.available_units ?? 0}</p>
-          <p className="text-xs text-zinc-500 mt-1">Active units available</p>
+          <p className="text-2xl sm:text-3xl font-extrabold text-zinc-900">{overview?.available_units ?? 0}</p>
+          <p className="text-2xs sm:text-xs text-zinc-500 mt-1">Active units available</p>
         </div>
 
-        <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between text-rose-500 mb-3">
-            <CalendarRange className="w-6 h-6" />
-            <span className="text-xs font-bold uppercase tracking-wider bg-rose-50 text-rose-600 px-2 py-0.5 rounded">Rule Engine</span>
+        <div className="col-span-2 sm:col-span-1 rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 shadow-sm">
+          <div className="flex items-center justify-between text-rose-500 mb-2 sm:mb-3">
+            <CalendarRange className="w-5 h-5 sm:w-6 sm:h-6" />
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-rose-50 text-rose-600 px-2 py-0.5 rounded">Rule Engine</span>
           </div>
-          <p className="text-3xl font-extrabold text-zinc-900">{overview?.active_rules ?? 0}</p>
-          <p className="text-xs text-zinc-500 mt-1">Active rule profiles</p>
+          <p className="text-2xl sm:text-3xl font-extrabold text-zinc-900">{overview?.active_rules ?? 0}</p>
+          <p className="text-2xs sm:text-xs text-zinc-500 mt-1">Active rule profiles</p>
         </div>
       </div>
 
       {/* Module Navigation Sections */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
 
-        <Link href="/admin/bhavan/enquiries" className="group rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-amber-500 hover:shadow-md transition-all">
-          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-            <FileText className="w-6 h-6" />
+        <Link href="/admin/bhavan/enquiries" className="group rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm hover:border-amber-500 hover:shadow-md transition-all">
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-105 transition-transform">
+            <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <h3 className="text-lg font-bold text-zinc-900 mb-1">Enquiry Management</h3>
-          <p className="text-xs text-zinc-500 mb-4">View, filter, review, approve, or reject online and manual enquiries.</p>
+          <h3 className="text-base sm:text-lg font-bold text-zinc-900 mb-1">Enquiry Management</h3>
+          <p className="text-xs text-zinc-500 mb-3 sm:mb-4">View, filter, review, approve, or reject online and manual enquiries.</p>
           <span className="text-xs font-bold text-amber-600 inline-flex items-center gap-1">Manage Enquiries <ArrowRight className="w-4 h-4" /></span>
         </Link>
 
-        <Link href="/admin/bhavan/calendar" className="group rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-blue-500 hover:shadow-md transition-all">
-          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-            <CalendarRange className="w-6 h-6" />
+        <Link href="/admin/bhavan/calendar" className="group rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm hover:border-blue-500 hover:shadow-md transition-all">
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-105 transition-transform">
+            <CalendarRange className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <h3 className="text-lg font-bold text-zinc-900 mb-1">Availability Calendar</h3>
-          <p className="text-xs text-zinc-500 mb-4">View effective daily rules & inspect layer-by-layer priority stack per date.</p>
+          <h3 className="text-base sm:text-lg font-bold text-zinc-900 mb-1">Availability Calendar</h3>
+          <p className="text-xs text-zinc-500 mb-3 sm:mb-4">View effective daily rules & inspect layer-by-layer priority stack per date.</p>
           <span className="text-xs font-bold text-blue-600 inline-flex items-center gap-1">Open Calendar <ArrowRight className="w-4 h-4" /></span>
         </Link>
 
-        <Link href="/admin/bhavan/rules" className="group rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-rose-500 hover:shadow-md transition-all">
-          <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-            <Settings className="w-6 h-6" />
+        <Link href="/admin/bhavan/rules" className="group rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm hover:border-rose-500 hover:shadow-md transition-all">
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-105 transition-transform">
+            <Settings className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <h3 className="text-lg font-bold text-zinc-900 mb-1">Rules & 1-Click Vouchers</h3>
-          <p className="text-xs text-zinc-500 mb-4">Define custom booking rules, peak rates, room permissions with direct dates, plus 1-click checkout vouchers.</p>
+          <h3 className="text-base sm:text-lg font-bold text-zinc-900 mb-1">Rules & 1-Click Vouchers</h3>
+          <p className="text-xs text-zinc-500 mb-3 sm:mb-4">Define custom booking rules, peak rates, room permissions with direct dates, plus 1-click checkout vouchers.</p>
           <span className="text-xs font-bold text-rose-600 inline-flex items-center gap-1">Configure Rules & Vouchers <ArrowRight className="w-4 h-4" /></span>
         </Link>
 
-        <Link href="/admin/bhavan/accommodation" className="group rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-purple-500 hover:shadow-md transition-all">
-          <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-            <Building className="w-6 h-6" />
+        <Link href="/admin/bhavan/accommodation" className="group rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm hover:border-purple-500 hover:shadow-md transition-all">
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-105 transition-transform">
+            <Building className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <h3 className="text-lg font-bold text-zinc-900 mb-1">Accommodation Inventory</h3>
-          <p className="text-xs text-zinc-500 mb-4">Manage AC/Non-AC rooms, dormitories, bulk unit creation (101-112), and photos.</p>
+          <h3 className="text-base sm:text-lg font-bold text-zinc-900 mb-1">Accommodation Inventory</h3>
+          <p className="text-xs text-zinc-500 mb-3 sm:mb-4">Manage AC/Non-AC rooms, dormitories, bulk unit creation (101-112), and photos.</p>
           <span className="text-xs font-bold text-purple-600 inline-flex items-center gap-1">Manage Inventory <ArrowRight className="w-4 h-4" /></span>
         </Link>
 
-        <Link href="/admin/bhavan/amenities" className="group rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-emerald-500 hover:shadow-md transition-all">
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-            <Heart className="w-6 h-6" />
+        <Link href="/admin/bhavan/amenities" className="group rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm hover:border-emerald-500 hover:shadow-md transition-all">
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-105 transition-transform">
+            <Heart className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <h3 className="text-lg font-bold text-zinc-900 mb-1">Amenities & Facilities</h3>
-          <p className="text-xs text-zinc-500 mb-4">Configure chairs, coolers, mattresses, pricing types, and stock limits.</p>
+          <h3 className="text-base sm:text-lg font-bold text-zinc-900 mb-1">Amenities & Facilities</h3>
+          <p className="text-xs text-zinc-500 mb-3 sm:mb-4">Configure chairs, coolers, mattresses, pricing types, and stock limits.</p>
           <span className="text-xs font-bold text-emerald-600 inline-flex items-center gap-1">Manage Amenities <ArrowRight className="w-4 h-4" /></span>
         </Link>
 
-        <Link href="/admin/bhavan/terms" className="group rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-teal-500 hover:shadow-md transition-all">
-          <div className="w-12 h-12 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-            <ShieldCheck className="w-6 h-6" />
+        <Link href="/admin/bhavan/terms" className="group rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm hover:border-teal-500 hover:shadow-md transition-all">
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-105 transition-transform">
+            <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <h3 className="text-lg font-bold text-zinc-900 mb-1">Terms & Conditions</h3>
-          <p className="text-xs text-zinc-500 mb-4">Markdown editor for Bhavan booking terms, version history, and publishing.</p>
+          <h3 className="text-base sm:text-lg font-bold text-zinc-900 mb-1">Terms & Conditions</h3>
+          <p className="text-xs text-zinc-500 mb-3 sm:mb-4">Markdown editor for Bhavan booking terms, version history, and publishing.</p>
           <span className="text-xs font-bold text-teal-600 inline-flex items-center gap-1">Manage Terms <ArrowRight className="w-4 h-4" /></span>
         </Link>
 
       </div>
 
       {/* Bottom Navigation */}
-      <div className="pt-4 border-t border-zinc-200 flex items-center justify-between bg-white p-4 rounded-2xl border border-zinc-200 shadow-sm">
+      <div className="pt-2 flex items-center justify-between">
         <Link
           href="/admin"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-300 bg-white hover:bg-zinc-50 text-xs font-bold text-zinc-700 shadow-sm transition-all"
+          className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 text-xs sm:text-sm font-bold text-zinc-700 shadow-sm transition-all"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Admin Portal
         </Link>

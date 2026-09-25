@@ -366,16 +366,16 @@ export default function AdminCustomRolesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-2">
-            <Shield className="w-7 h-7 text-amber-500" />
-            Roles &amp; Permissions Management
+          <h1 className="text-xl sm:text-2xl font-bold text-zinc-900 flex items-center gap-2">
+            <Shield className="w-6 h-6 sm:w-7 sm:h-7 text-amber-500 shrink-0" />
+            <span>Roles &amp; Permissions Management</span>
           </h1>
-          <p className="text-sm text-zinc-500 mt-1">
+          <p className="text-xs sm:text-sm text-zinc-500 mt-1">
             Define custom administrative roles, configure capability permissions, and view assigned personnel.
           </p>
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
           <button
             onClick={() => {
               setSelectedMember(null);
@@ -383,26 +383,26 @@ export default function AdminCustomRolesPage() {
               setMemberSearch("");
               setShowAssignModal(true);
             }}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-300 bg-white hover:bg-zinc-50 text-zinc-800 font-semibold text-sm shadow-sm transition-all cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl border border-zinc-300 bg-white hover:bg-zinc-50 text-zinc-800 font-semibold text-xs sm:text-sm shadow-sm transition-all cursor-pointer flex-1 sm:flex-none"
           >
-            <UserCheck className="w-4 h-4 text-amber-500" />
-            Assign Role to User
+            <UserCheck className="w-4 h-4 text-amber-500 shrink-0" />
+            <span>Assign Role to User</span>
           </button>
           <button
             onClick={openCreateModal}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm shadow-md shadow-amber-200 hover:shadow-amber-300 transition-all cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 min-h-[44px] rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs sm:text-sm shadow-md shadow-amber-200 hover:shadow-amber-300 transition-all cursor-pointer flex-1 sm:flex-none"
           >
-            <Plus className="w-4 h-4" />
-            Create Custom Role
+            <Plus className="w-4 h-4 shrink-0" />
+            <span>Create Custom Role</span>
           </button>
         </div>
       </div>
 
       {/* Tabs Switcher */}
-      <div className="flex items-center gap-2 border-b border-zinc-200 pb-2">
+      <div className="flex items-center gap-2 border-b border-zinc-200 pb-2 overflow-x-auto">
         <button
           onClick={() => setActiveTab("roles")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
             activeTab === "roles"
               ? "bg-amber-500 text-white shadow-sm shadow-amber-200"
               : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
@@ -421,7 +421,7 @@ export default function AdminCustomRolesPage() {
 
         <button
           onClick={() => setActiveTab("assigned")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
             activeTab === "assigned"
               ? "bg-amber-500 text-white shadow-sm shadow-amber-200"
               : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
@@ -576,24 +576,24 @@ export default function AdminCustomRolesPage() {
       {activeTab === "assigned" && (
         <div className="space-y-4">
           {/* Controls Bar */}
-          <div className="bg-white p-4 rounded-2xl border border-zinc-200 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="bg-white p-3 sm:p-4 rounded-2xl border border-zinc-200 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <div className="relative flex-1 max-w-md">
-              <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Search by name, mobile, email, or Samaj ID..."
                 value={assignedSearch}
                 onChange={(e) => setAssignedSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-sm border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 bg-white"
+                className="w-full pl-9 pr-4 py-2.5 min-h-[44px] text-sm border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500 bg-white"
               />
             </div>
 
             <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-zinc-400" />
+              <Filter className="w-4 h-4 text-zinc-400 shrink-0" />
               <select
                 value={assignedRoleFilter}
                 onChange={(e) => setAssignedRoleFilter(e.target.value)}
-                className="px-3 py-2 text-xs font-semibold border border-zinc-200 rounded-xl bg-white focus:outline-none focus:border-amber-500 cursor-pointer"
+                className="px-3 py-2.5 min-h-[44px] text-xs font-semibold border border-zinc-200 rounded-xl bg-white focus:outline-none focus:border-amber-500 cursor-pointer w-full sm:w-auto"
               >
                 <option value="ALL">All Assigned People ({assignments.length})</option>
                 <option value="SYSTEM_ADMIN">System Administrators</option>
@@ -631,7 +631,7 @@ export default function AdminCustomRolesPage() {
                   setMemberSearch("");
                   setShowAssignModal(true);
                 }}
-                className="px-4 py-2 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition-all cursor-pointer"
+                className="px-4 py-2.5 min-h-[44px] rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition-all cursor-pointer"
               >
                 + Assign Role to a Member
               </button>
@@ -639,15 +639,15 @@ export default function AdminCustomRolesPage() {
           ) : (
             <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
+                <table className="w-full text-left text-sm min-w-[750px]">
                   <thead className="bg-zinc-50 border-b border-zinc-200 text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
                     <tr>
-                      <th className="px-5 py-3.5">Person</th>
-                      <th className="px-5 py-3.5">Contact Details</th>
-                      <th className="px-5 py-3.5">System Role</th>
-                      <th className="px-5 py-3.5">Assigned Custom Role</th>
-                      <th className="px-5 py-3.5">Active Capabilities</th>
-                      <th className="px-5 py-3.5 text-right">Actions</th>
+                      <th className="px-4 sm:px-5 py-3.5">Person</th>
+                      <th className="px-4 sm:px-5 py-3.5">Contact Details</th>
+                      <th className="px-4 sm:px-5 py-3.5">System Role</th>
+                      <th className="px-4 sm:px-5 py-3.5">Assigned Custom Role</th>
+                      <th className="px-4 sm:px-5 py-3.5">Active Capabilities</th>
+                      <th className="px-4 sm:px-5 py-3.5 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100">
@@ -658,13 +658,13 @@ export default function AdminCustomRolesPage() {
                       return (
                         <tr key={u.user_id} className="hover:bg-zinc-50/60 transition-colors">
                           {/* User Name & Photo */}
-                          <td className="px-5 py-4 whitespace-nowrap">
+                          <td className="px-4 sm:px-5 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-3">
                               {u.profile_photo ? (
                                 <img
                                   src={mediaUrl(u.profile_photo) || u.profile_photo}
                                   alt=""
-                                  className="w-10 h-10 rounded-full object-cover border border-amber-200"
+                                  className="w-10 h-10 rounded-full object-cover border border-amber-200 shrink-0"
                                 />
                               ) : (
                                 <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-800 font-bold text-xs flex items-center justify-center border border-amber-200 shrink-0">
@@ -685,17 +685,17 @@ export default function AdminCustomRolesPage() {
                           </td>
 
                           {/* Contact Details */}
-                          <td className="px-5 py-4 whitespace-nowrap">
+                          <td className="px-4 sm:px-5 py-4 whitespace-nowrap">
                             <p className="text-xs font-semibold text-zinc-800">{u.mobile || "No Mobile"}</p>
                             <p className="text-[11px] text-zinc-500">{u.email || "No Email"}</p>
                           </td>
 
                           {/* System Role */}
-                          <td className="px-5 py-4 whitespace-nowrap">
+                          <td className="px-4 sm:px-5 py-4 whitespace-nowrap">
                             <span
                               className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider ${
                                 ["ADMIN", "SUPER_ADMIN"].includes(u.role.toUpperCase())
-                                  ? "bg-purple-50 text-purple-800 border border-purple-200"
+                                   ? "bg-purple-50 text-purple-800 border border-purple-200"
                                   : u.role.toUpperCase() === "VOLUNTEER"
                                   ? "bg-sky-50 text-sky-800 border border-sky-200"
                                   : "bg-zinc-100 text-zinc-700 border border-zinc-200"
@@ -706,7 +706,7 @@ export default function AdminCustomRolesPage() {
                           </td>
 
                           {/* Assigned Custom Role */}
-                          <td className="px-5 py-4 whitespace-nowrap">
+                          <td className="px-4 sm:px-5 py-4 whitespace-nowrap">
                             {customRole ? (
                               <div>
                                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
@@ -725,7 +725,7 @@ export default function AdminCustomRolesPage() {
                           </td>
 
                           {/* Permissions */}
-                          <td className="px-5 py-4">
+                          <td className="px-4 sm:px-5 py-4">
                             {customRole && customRole.permissions?.length > 0 ? (
                               <div className="flex flex-wrap gap-1 max-w-sm">
                                 {customRole.permissions.map((pId) => {
@@ -746,11 +746,11 @@ export default function AdminCustomRolesPage() {
                           </td>
 
                           {/* Actions */}
-                          <td className="px-5 py-4 whitespace-nowrap text-right">
-                            <div className="inline-flex items-center gap-2">
+                          <td className="px-4 sm:px-5 py-4 whitespace-nowrap text-right">
+                            <div className="inline-flex items-center gap-1.5 sm:gap-2">
                               <button
                                 onClick={() => openAssignModalForUser(u)}
-                                className="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold transition-colors cursor-pointer"
+                                className="px-3 py-1.5 min-h-[38px] rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold transition-colors cursor-pointer"
                                 title="Change or assign new role"
                               >
                                 Change Role
@@ -758,7 +758,7 @@ export default function AdminCustomRolesPage() {
                               {u.custom_role_id && (
                                 <button
                                   onClick={() => handleUnassignRole(u.user_id, `${u.first_name} ${u.surname}`)}
-                                  className="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-colors cursor-pointer"
+                                  className="px-2.5 py-1.5 min-h-[38px] rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-colors cursor-pointer"
                                   title="Revoke custom role"
                                 >
                                   Remove
@@ -779,13 +779,13 @@ export default function AdminCustomRolesPage() {
 
       {/* MODAL: Inspect Assigned Users for a Specific Role */}
       {inspectRole && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-5 shadow-2xl animate-in fade-in zoom-in duration-200 max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-4 sm:p-8 space-y-5 shadow-2xl animate-in fade-in zoom-in duration-200 max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
               <div>
-                <h3 className="font-bold text-zinc-900 text-xl flex items-center gap-2">
-                  <ShieldCheck className="w-6 h-6 text-amber-500" />
-                  {inspectRole.name} - Assigned People
+                <h3 className="font-bold text-zinc-900 text-lg sm:text-xl flex items-center gap-2">
+                  <ShieldCheck className="w-6 h-6 text-amber-500 shrink-0" />
+                  <span>{inspectRole.name} - Assigned People</span>
                 </h3>
                 <p className="text-xs text-zinc-500 mt-0.5">
                   Community members holding this role ({inspectRoleUsers.length} total)
@@ -794,7 +794,7 @@ export default function AdminCustomRolesPage() {
               <button
                 type="button"
                 onClick={() => setInspectRole(null)}
-                className="p-1 text-zinc-400 hover:text-zinc-600 rounded-lg cursor-pointer"
+                className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-400 hover:text-zinc-600 rounded-xl cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -802,13 +802,13 @@ export default function AdminCustomRolesPage() {
 
             {/* Quick Search */}
             <div className="relative">
-              <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Search within this role by name or mobile..."
                 value={inspectSearch}
                 onChange={(e) => setInspectSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-sm border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500"
+                className="w-full pl-9 pr-4 py-2.5 min-h-[44px] text-sm border border-zinc-200 rounded-xl focus:outline-none focus:border-amber-500"
               />
             </div>
 
@@ -823,7 +823,7 @@ export default function AdminCustomRolesPage() {
                       setInspectRole(null);
                       openAssignModalForRole(rId);
                     }}
-                    className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition-colors cursor-pointer"
+                    className="mt-3 inline-flex items-center gap-1.5 px-4 py-2.5 min-h-[44px] rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition-colors cursor-pointer"
                   >
                     <Plus className="w-4 h-4" /> Assign Member Now
                   </button>
@@ -834,14 +834,14 @@ export default function AdminCustomRolesPage() {
                   return (
                     <div
                       key={u.user_id}
-                      className="p-3.5 flex items-center justify-between gap-3 bg-white hover:bg-zinc-50 transition-colors"
+                      className="p-3.5 flex items-center justify-between gap-3 bg-white hover:bg-zinc-50 transition-colors flex-wrap sm:flex-nowrap"
                     >
                       <div className="flex items-center gap-3">
                         {u.profile_photo ? (
                           <img
                             src={mediaUrl(u.profile_photo) || u.profile_photo}
                             alt=""
-                            className="w-9 h-9 rounded-full object-cover border border-amber-200"
+                            className="w-9 h-9 rounded-full object-cover border border-amber-200 shrink-0"
                           />
                         ) : (
                           <div className="w-9 h-9 rounded-full bg-amber-50 text-amber-800 font-bold text-xs flex items-center justify-center border border-amber-200 shrink-0">
@@ -867,13 +867,13 @@ export default function AdminCustomRolesPage() {
                             setInspectRole(null);
                             openAssignModalForUser(u);
                           }}
-                          className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 transition-colors cursor-pointer"
+                          className="px-3 py-1.5 min-h-[38px] text-xs font-semibold rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 transition-colors cursor-pointer"
                         >
                           Change
                         </button>
                         <button
                           onClick={() => handleUnassignRole(u.user_id, `${u.first_name} ${u.surname}`)}
-                          className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 transition-colors cursor-pointer"
+                          className="px-3 py-1.5 min-h-[38px] text-xs font-semibold rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 transition-colors cursor-pointer"
                         >
                           Remove
                         </button>
@@ -885,11 +885,11 @@ export default function AdminCustomRolesPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-between pt-3 border-t border-zinc-100">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-zinc-100">
               <button
                 type="button"
                 onClick={() => setInspectRole(null)}
-                className="px-4 py-2 rounded-xl border border-zinc-200 text-xs font-bold text-zinc-600 hover:bg-zinc-50 cursor-pointer"
+                className="px-5 py-2.5 min-h-[44px] rounded-xl border border-zinc-200 text-xs font-bold text-zinc-600 hover:bg-zinc-50 cursor-pointer flex-1 sm:flex-none"
               >
                 Close
               </button>
@@ -900,7 +900,7 @@ export default function AdminCustomRolesPage() {
                   setInspectRole(null);
                   openAssignModalForRole(rId);
                 }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow transition-colors cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 min-h-[44px] rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow transition-colors cursor-pointer flex-1 sm:flex-none"
               >
                 <Plus className="w-4 h-4" /> Assign Another Person
               </button>
@@ -911,11 +911,11 @@ export default function AdminCustomRolesPage() {
 
       {/* MODAL: Create / Edit Role Definition */}
       {showRoleModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-6 shadow-2xl animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-4 sm:p-8 space-y-6 shadow-2xl animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto my-6">
             <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
               <div>
-                <h3 className="font-bold text-zinc-900 text-xl">
+                <h3 className="font-bold text-zinc-900 text-lg sm:text-xl">
                   {editingRole ? "Edit Custom Role" : "Create Custom Role"}
                 </h3>
                 <p className="text-xs text-zinc-500">Configure role name and capability permissions</p>
@@ -923,7 +923,7 @@ export default function AdminCustomRolesPage() {
               <button
                 type="button"
                 onClick={() => setShowRoleModal(false)}
-                className="p-1 text-zinc-400 hover:text-zinc-600 rounded-lg cursor-pointer"
+                className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-400 hover:text-zinc-600 rounded-xl cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -940,7 +940,7 @@ export default function AdminCustomRolesPage() {
                   placeholder="e.g. Bhavan Manager, Event Coordinator, Editor"
                   value={roleName}
                   onChange={(e) => setRoleName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 text-sm focus:outline-none focus:border-amber-500"
+                  className="w-full px-4 py-2.5 min-h-[44px] rounded-xl border border-zinc-200 text-sm focus:outline-none focus:border-amber-500"
                 />
               </div>
 
@@ -953,7 +953,7 @@ export default function AdminCustomRolesPage() {
                   placeholder="Briefly describe the responsibilities of this role..."
                   value={roleDesc}
                   onChange={(e) => setRoleDesc(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 text-sm focus:outline-none focus:border-amber-500"
+                  className="w-full px-4 py-2.5 min-h-[44px] rounded-xl border border-zinc-200 text-sm focus:outline-none focus:border-amber-500"
                 />
               </div>
 
@@ -970,7 +970,7 @@ export default function AdminCustomRolesPage() {
                       <label
                         key={perm.id}
                         onClick={() => togglePermission(perm.id)}
-                        className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                        className={`flex items-start gap-3 p-3 min-h-[44px] rounded-xl border cursor-pointer transition-all ${
                           isChecked
                             ? "bg-amber-50/60 border-amber-300 text-amber-900"
                             : "bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300"
@@ -995,18 +995,18 @@ export default function AdminCustomRolesPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100">
+              <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-zinc-100">
                 <button
                   type="button"
                   onClick={() => setShowRoleModal(false)}
-                  className="px-5 py-2.5 rounded-xl border border-zinc-200 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 cursor-pointer"
+                  className="px-5 py-2.5 min-h-[44px] rounded-xl border border-zinc-200 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 cursor-pointer flex-1 sm:flex-none"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || !roleName.trim()}
-                  className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-xl shadow-md disabled:opacity-50 transition-all cursor-pointer"
+                  className="px-6 py-2.5 min-h-[44px] bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-xl shadow-md disabled:opacity-50 transition-all cursor-pointer flex-1 sm:flex-none"
                 >
                   {isSubmitting ? "Saving..." : editingRole ? "Update Role" : "Create Role"}
                 </button>
@@ -1018,17 +1018,17 @@ export default function AdminCustomRolesPage() {
 
       {/* MODAL: Assign Role to User */}
       {showAssignModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-4 sm:p-8 space-y-6 shadow-2xl animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto my-6">
             <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
               <div>
-                <h3 className="font-bold text-zinc-900 text-xl">Assign Custom Role to Member</h3>
+                <h3 className="font-bold text-zinc-900 text-lg sm:text-xl">Assign Custom Role to Member</h3>
                 <p className="text-xs text-zinc-500">Select a person and designate their custom role</p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowAssignModal(false)}
-                className="p-1 text-zinc-400 hover:text-zinc-600 rounded-lg cursor-pointer"
+                className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-400 hover:text-zinc-600 rounded-xl cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1041,13 +1041,13 @@ export default function AdminCustomRolesPage() {
                   1. Search &amp; Select Member *
                 </label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
                   <input
                     type="text"
                     placeholder="Search name, mobile, email or Samaj ID..."
                     value={memberSearch}
                     onChange={(e) => setMemberSearch(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 rounded-xl border border-zinc-200 text-sm focus:outline-none focus:border-amber-500"
+                    className="w-full pl-9 pr-4 py-2.5 min-h-[44px] rounded-xl border border-zinc-200 text-sm focus:outline-none focus:border-amber-500"
                   />
                 </div>
 
@@ -1064,7 +1064,7 @@ export default function AdminCustomRolesPage() {
                             setAssignRoleId(m.custom_role_id || "");
                           }
                         }}
-                        className={`p-2.5 flex items-center justify-between cursor-pointer transition-colors ${
+                        className={`p-2.5 min-h-[44px] flex items-center justify-between cursor-pointer transition-colors ${
                           selectedMember?.user_id === m.user_id ? "bg-amber-100/70 text-amber-900 font-bold" : "hover:bg-white"
                         }`}
                       >
@@ -1099,7 +1099,7 @@ export default function AdminCustomRolesPage() {
                 <select
                   value={assignRoleId}
                   onChange={(e) => setAssignRoleId(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 text-sm focus:outline-none focus:border-amber-500 cursor-pointer bg-white"
+                  className="w-full px-4 py-2.5 min-h-[44px] rounded-xl border border-zinc-200 text-sm focus:outline-none focus:border-amber-500 cursor-pointer bg-white"
                 >
                   <option value="">-- No Custom Role (Unassigned) --</option>
                   {roles.map((r) => (
@@ -1110,18 +1110,18 @@ export default function AdminCustomRolesPage() {
                 </select>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100">
+              <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-zinc-100">
                 <button
                   type="button"
                   onClick={() => setShowAssignModal(false)}
-                  className="px-5 py-2.5 rounded-xl border border-zinc-200 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 cursor-pointer"
+                  className="px-5 py-2.5 min-h-[44px] rounded-xl border border-zinc-200 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 cursor-pointer flex-1 sm:flex-none"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={assigning || !selectedMember}
-                  className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-xl shadow-md disabled:opacity-50 transition-all cursor-pointer"
+                  className="px-6 py-2.5 min-h-[44px] bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-xl shadow-md disabled:opacity-50 transition-all cursor-pointer flex-1 sm:flex-none"
                 >
                   {assigning ? "Saving..." : "Save Assignment"}
                 </button>

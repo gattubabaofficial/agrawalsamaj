@@ -167,7 +167,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Link>
             <button
               onClick={() => setIsMobileNavOpen(false)}
-              className="p-1.5 rounded-lg md:hidden text-zinc-400 hover:bg-zinc-800 hover:text-white"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl md:hidden text-zinc-400 hover:bg-zinc-800 hover:text-white cursor-pointer"
               aria-label="Close menu"
               title="Close menu"
             >
@@ -183,7 +183,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   key={item.name}
                   href={item.href}
                   title={item.description}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:translate-x-0.5 ${
+                  className={`flex items-center gap-3 px-3 py-2.5 min-h-[44px] rounded-xl text-sm font-medium transition-all hover:translate-x-0.5 ${
                     isActive
                       ? "bg-gradient-to-r from-amber-500/20 to-rose-500/20 text-amber-400 font-semibold shadow-[0_0_12px_rgba(245,158,11,0.25)]"
                       : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
@@ -204,13 +204,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <header className="h-16 bg-white/80 backdrop-blur-md border-b border-zinc-200 flex items-center justify-between px-4 sm:px-6 flex-shrink-0 sticky top-0 z-10">
           <button
             onClick={() => setIsMobileNavOpen(true)}
-            className="p-2.5 text-zinc-500 hover:text-zinc-800 rounded-lg hover:bg-zinc-100 transition-colors md:hidden"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-500 hover:text-zinc-800 rounded-xl hover:bg-zinc-100 transition-colors md:hidden cursor-pointer"
             aria-label="Open menu"
             title="Open navigation menu"
           >
             <Menu className="w-5 h-5" />
           </button>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 ml-auto md:ml-0">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white font-bold text-sm">
                 {userName ? userName.charAt(0).toUpperCase() : "A"}
@@ -222,8 +222,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
             <button
               onClick={handleLogout}
-              className="p-2 text-zinc-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors ml-2"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-400 hover:text-rose-600 rounded-xl hover:bg-rose-50 transition-colors ml-2 cursor-pointer"
               title="Logout"
+              aria-label="Logout"
             >
               <LogOut className="w-5 h-5" />
             </button>
@@ -231,7 +232,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         {/* Page Content */}
-        <div ref={contentRef} className="flex-1 overflow-auto p-6">
+        <div ref={contentRef} className="flex-1 overflow-auto p-4 sm:p-6">
           {children}
         </div>
       </main>
